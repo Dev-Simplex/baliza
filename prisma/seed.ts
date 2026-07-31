@@ -164,14 +164,6 @@ async function semearDemonstracao() {
       name: "Acme Indústrias",
       slug: "acme-industrias",
       segment: "Indústria",
-      subscription: {
-        create: {
-          planCode: "PROFESSIONAL",
-          status: "ACTIVE",
-          seats: 10,
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 3600 * 1000),
-        },
-      },
     },
     update: {},
   });

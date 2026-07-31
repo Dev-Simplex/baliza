@@ -17,19 +17,6 @@ datasource db {
 // Tenancy
 // ══════════════════════════════════════════════════════════════════════════
 
-enum PlanCode {
-  STARTER
-  PROFESSIONAL
-  ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  CANCELED
-}
-
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -45,7 +32,6 @@ model Organization {
   retentionMonths Int     @default(12)
   isActive        Boolean @default(true)
 
-  subscription    Subscription?
   users           User[]
   jobs            Job[]
   candidates      Candidate[]
@@ -54,44 +40,8 @@ model Organization {
   cultureProfiles CultureProfile[]
   apiKeys         ApiKey[]
   auditLogs       AuditLog[]
-  payments        Payment[]
 
   @@index([slug])
-}
-
-model Subscription {
-  id                 String             @id @default(cuid())
-  organizationId     String             @unique
-  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  planCode           PlanCode           @default(STARTER)
-  status             SubscriptionStatus @default(TRIALING)
-  seats              Int                @default(3)
-  currentPeriodStart DateTime           @default(now())
-  currentPeriodEnd   DateTime
-  canceledAt         DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  payments Payment[]
-
-  @@index([status])
-}
-
-model Payment {
-  id             String        @id @default(cuid())
-  organizationId String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  subscriptionId String?
-  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  amountCents    Int
-  currency       String        @default("BRL")
-  status         String        @default("PAID")
-  method         String?
-  externalId     String?
-  paidAt         DateTime?
-  createdAt      DateTime      @default(now())
-
-  @@index([organizationId, createdAt])
 }
 
 // ══════════════════════════════════════════════════════════════════════════

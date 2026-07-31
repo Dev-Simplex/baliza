@@ -86,7 +86,6 @@ src/
     actions/             Server Actions (auth, vaga, avaliação)
     dados/               consultas do painel, sempre escopadas por empresa
     tenant.ts            ponto único do escopo multiempresa
-    plans.ts             planos e limites
     rate-limit.ts        limitação de taxa com contador em banco
     audit.ts             trilha de auditoria
 
@@ -177,6 +176,12 @@ Escopo declarado que ainda não foi construído:
 - API pública para ATS/ERP
 - Perfil de cultura organizacional e matching
 - Expurgo automático por retenção (o prazo está na interface; o job não existe)
+- Edição do perfil-alvo depois que a vaga é criada (hoje o preset é copiado e
+  fica fixo)
+
+**Não há planos, cobrança nem limite de uso.** O produto é a ferramenta de
+mapeamento, não um SaaS para vender assinatura: nenhuma vaga ou resposta é
+recusada por teto.
 
 Os depoimentos da landing são **de exemplo** e estão marcados como tal no código
 (`src/app/(site)/page.tsx`). Troque por depoimentos reais, com autorização de

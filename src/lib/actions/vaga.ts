@@ -6,7 +6,6 @@ import { z } from "zod";
 
 import { registrarAuditoria } from "@/lib/audit";
 import { PERFIL_NEUTRO, PRESET_POR_ID } from "@/lib/instrument/presets";
-import { limitesDoPlano } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import { exigirPapel } from "@/lib/tenant";
 
@@ -56,24 +55,6 @@ export async function criarVaga(
     for (const p of analise.error.issues) campos[String(p.path[0])] = p.message;
     return { campos };
   }
-
-  // Limite do plano.
-  const assinatura = await prisma.subscription.findUnique({
-    where: { organizationId: contexto.organizationId },
-    select: { planCode: true },
-  });
-  const limites = limitesDoPlano(assinatura?.planCode ?? "STARTER");
-  const ativas = await prisma.job.count({
-    where: {
-      organizationId: contexto.organizationId,
-      status: { in: ["OPEN", "PAUSED"] },
-    },
-  });
-
-  if (ativas >= limites.vagasAtivas)
-    return {
-      erro: `Seu plano permite ${limites.vagasAtivas} vagas ativas. Encerre uma vaga ou mude de plano para criar outra.`,
-    };
 
   const preset = PRESET_POR_ID.get(analise.data.preset);
 

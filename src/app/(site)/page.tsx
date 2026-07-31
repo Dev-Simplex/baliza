@@ -9,7 +9,6 @@ import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPOS } from "@/lib/instrument/archetypes";
 import { ITENS } from "@/lib/instrument/items";
 import { PRESETS } from "@/lib/instrument/presets";
-import { LISTA_DE_PLANOS, formatarPreco } from "@/lib/plans";
 import { FATORES, NOMES_DE_FATOR } from "@/lib/instrument/types";
 
 export const metadata: Metadata = {
@@ -27,7 +26,6 @@ export default function PaginaInicial() {
       <Beneficios />
       <OQueMedimos />
       <Depoimentos />
-      <Planos />
       <Perguntas />
       <ChamadaFinal />
       <Rodape />
@@ -49,9 +47,6 @@ function Cabecalho() {
           </a>
           <a href="#medimos" className="hover:text-foreground">
             O que medimos
-          </a>
-          <a href="#planos" className="hover:text-foreground">
-            Planos
           </a>
           <a href="#perguntas" className="hover:text-foreground">
             Perguntas
@@ -108,7 +103,7 @@ function Hero() {
           </div>
 
           <p className="mt-4 t-corpo-sm text-muted-foreground">
-            Sem cartão. Duas vagas e 30 respostas por mês no plano grátis.
+            Sem cartão e sem limite de uso. Do cadastro ao primeiro link, dois minutos.
           </p>
         </div>
 
@@ -435,74 +430,6 @@ function Depoimentos() {
   );
 }
 
-function Planos() {
-  return (
-    <section id="planos" className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <p className="etiqueta">Planos</p>
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          Comece de graça. Suba quando o volume pedir.
-        </h2>
-
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {LISTA_DE_PLANOS.map((plano) => (
-            <div
-              key={plano.codigo}
-              className={`flex flex-col rounded-2xl border p-7 ${
-                plano.destaque
-                  ? "border-marca/50 bg-marca-forte/[0.04] ring-1 ring-marca-forte/20"
-                  : "bg-card"
-              }`}
-            >
-              <div className="flex items-baseline justify-between">
-                <h3 className="text-[1.0625rem] font-semibold">{plano.nome}</h3>
-                {plano.destaque && (
-                  <span className="etiqueta text-marca">mais escolhido</span>
-                )}
-              </div>
-
-              <p className="mt-2 min-h-[3.25rem] t-corpo-sm leading-relaxed text-muted-foreground">
-                {plano.descricao}
-              </p>
-
-              <p className="mt-5 flex items-baseline gap-1.5">
-                <span className="leitura text-[1.875rem] leading-none font-semibold">
-                  {formatarPreco(plano.precoMensalCentavos)}
-                </span>
-                {plano.precoMensalCentavos > 0 && (
-                  <span className="t-corpo-sm text-muted-foreground">/mês</span>
-                )}
-              </p>
-
-              <ul className="mt-7 flex-1 space-y-2.5">
-                {plano.vitrine.map((linha) => (
-                  <li key={linha} className="flex items-start gap-2.5 t-corpo-sm">
-                    <Check className="mt-0.5 size-3.5 shrink-0 text-dentro" />
-                    {linha}
-                  </li>
-                ))}
-              </ul>
-
-              <BotaoLink
-                href="/cadastrar"
-                variant={plano.destaque ? "default" : "outline"}
-                className="mt-8 w-full"
-              >
-                {plano.precoMensalCentavos === 0 ? "Começar grátis" : "Assinar"}
-              </BotaoLink>
-            </div>
-          ))}
-        </div>
-
-        <p className="mt-6 t-corpo-sm text-muted-foreground">
-          Todos os planos incluem o relatório do candidato, a trilha de auditoria
-          e o expurgo programado das respostas.
-        </p>
-      </div>
-    </section>
-  );
-}
-
 const PERGUNTAS_FREQUENTES = [
   {
     p: "Isso é um teste psicológico?",
@@ -530,7 +457,7 @@ const PERGUNTAS_FREQUENTES = [
   },
   {
     p: "Dá para integrar com o sistema que já usamos?",
-    r: "No plano Enterprise há API pública para integrar com ATS, ERP e sistemas de RH. Nos demais, a exportação em PDF e Excel cobre a maior parte dos casos.",
+    r: "Ainda não. Hoje o caminho é o link da vaga e a leitura direto no painel. Integração com ATS e ERP está no plano de evolução, não no produto atual.",
   },
 ];
 
@@ -608,7 +535,6 @@ function Rodape() {
             itens={[
               { rotulo: "Como funciona", href: "#funciona" },
               { rotulo: "O que medimos", href: "#medimos" },
-              { rotulo: "Planos", href: "#planos" },
             ]}
           />
           <ColunaDoRodape

@@ -12,7 +12,6 @@ import { VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
 import { montarForma } from "@/lib/instrument/form";
 import { escorar } from "@/lib/instrument/scoring";
 import type { PerfilAlvo, RespostaDeCenario, Respostas } from "@/lib/instrument/types";
-import { limitesDoPlano } from "@/lib/plans";
 
 /**
  * Ações do fluxo do candidato.
@@ -74,25 +73,16 @@ export async function entrarPeloLinkDaVaga(
 
   const vaga = await prisma.job.findUnique({
     where: { publicToken },
-    include: { organization: { include: { subscription: true } } },
+    select: {
+      id: true,
+      organizationId: true,
+      publicEnabled: true,
+      status: true,
+    },
   });
 
   if (!vaga || !vaga.publicEnabled || vaga.status !== "OPEN")
     return { erro: "Esta vaga não está mais recebendo respostas." };
-
-  // Limite do plano: a conta não pode receber resposta acima do contratado.
-  const plano = vaga.organization.subscription?.planCode ?? "STARTER";
-  const limites = limitesDoPlano(plano);
-  const inicioDoMes = new Date();
-  inicioDoMes.setDate(1);
-  inicioDoMes.setHours(0, 0, 0, 0);
-  const noMes = await prisma.assessment.count({
-    where: { organizationId: vaga.organizationId, createdAt: { gte: inicioDoMes } },
-  });
-  if (noMes >= limites.avaliacoesPorMes)
-    return {
-      erro: "Esta vaga atingiu o limite de respostas do mês. Fale com quem enviou o link.",
-    };
 
   const email = analise.data.email.toLowerCase().trim();
 

@@ -3,8 +3,6 @@ import type { Metadata } from "next";
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import { CartaoIndicador } from "@/components/app/cartao-indicador";
 import { Painel, PainelCabecalho, NotaDeRodape } from "@/components/ui/painel";
-import { Badge } from "@/components/ui/badge";
-import { PLANOS } from "@/lib/plans";
 import { data, dataHora, haQuantoTempo, numero } from "@/lib/formato";
 import { prisma } from "@/lib/prisma";
 import { exigirAdminPlataforma } from "@/lib/tenant";
@@ -35,7 +33,6 @@ export default async function PaginaDeAdministracao() {
       orderBy: { createdAt: "desc" },
       take: 30,
       include: {
-        subscription: true,
         _count: { select: { users: true, jobs: true, assessments: true } },
       },
     }),
@@ -88,7 +85,7 @@ export default async function PaginaDeAdministracao() {
           <PainelCabecalho
             comBorda
             titulo="Empresas"
-            descricao="Plano, uso e data de entrada."
+            descricao="Uso e data de entrada."
           />
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -96,9 +93,6 @@ export default async function PaginaDeAdministracao() {
                 <tr className="border-b">
                   <th scope="col" className="etiqueta px-5 py-2.5 text-left">
                     Empresa
-                  </th>
-                  <th scope="col" className="etiqueta px-3 py-2.5 text-left">
-                    Plano
                   </th>
                   <th scope="col" className="etiqueta px-3 py-2.5 text-right">
                     Usuários
@@ -115,26 +109,13 @@ export default async function PaginaDeAdministracao() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {empresas.map((empresa) => {
-                  const plano = PLANOS[empresa.subscription?.planCode ?? "STARTER"];
-                  return (
+                {empresas.map((empresa) => (
                     <tr key={empresa.id}>
                       <td className="px-5 py-3">
                         <span className="font-medium">{empresa.name}</span>
                         <span className="leitura block text-xs text-muted-foreground">
                           {empresa.slug}
                         </span>
-                      </td>
-                      <td className="px-3 py-3">
-                        <Badge
-                          className={
-                            empresa.subscription?.status === "TRIALING"
-                              ? "border"
-                              : "border border-marca/30 bg-marca-suave text-accent-foreground"
-                          }
-                        >
-                          {plano.nome}
-                        </Badge>
                       </td>
                       <td className="leitura px-3 py-3 text-right text-muted-foreground">
                         {numero(empresa._count.users)}
@@ -149,8 +130,7 @@ export default async function PaginaDeAdministracao() {
                         {data(empresa.createdAt)}
                       </td>
                     </tr>
-                  );
-                })}
+                ))}
               </tbody>
             </table>
           </div>

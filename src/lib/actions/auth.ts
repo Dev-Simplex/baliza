@@ -79,20 +79,11 @@ export async function cadastrar(
   }
 
   const senhaHash = await bcrypt.hash(senha, 10);
-  const fimDoTeste = new Date();
-  fimDoTeste.setDate(fimDoTeste.getDate() + 14);
 
   const organizacao = await prisma.organization.create({
     data: {
       name: empresa.trim(),
       slug,
-      subscription: {
-        create: {
-          planCode: "STARTER",
-          status: "TRIALING",
-          currentPeriodEnd: fimDoTeste,
-        },
-      },
       users: {
         create: {
           name: nome.trim(),
