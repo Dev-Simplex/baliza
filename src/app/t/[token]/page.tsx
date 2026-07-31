@@ -111,7 +111,7 @@ export default async function PaginaDoTeste({
 function ConviteVencido({ empresa }: { empresa: string }) {
   return (
     <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-6 text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">
+      <h1 className="t-titulo">
         Este link não vale mais
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">

@@ -28,12 +28,12 @@ export function Simbolo({ className }: { className?: string }) {
         width="17"
         height="3.6"
         rx="1.8"
-        fill="var(--n-teal)"
+        fill="var(--dentro)"
         fillOpacity="0.22"
       />
       <path
         d="M2.4 13.4v2.8M17.6 13.4v2.8"
-        stroke="var(--n-teal)"
+        stroke="var(--dentro)"
         strokeWidth="1.3"
         strokeLinecap="round"
       />
@@ -50,7 +50,7 @@ export function Simbolo({ className }: { className?: string }) {
       {/* o peso de latão — a ponta pousa dentro da faixa */}
       <path
         d="M10 8.6 12.5 11.4 10 15.6 7.5 11.4Z"
-        fill="var(--n-brass)"
+        fill="var(--marca-forte)"
       />
     </svg>
   );
@@ -70,7 +70,7 @@ export function Marca({
       className={cn(
         "inline-flex items-center gap-2 font-semibold tracking-tight",
         tamanho === "sm" && "text-sm",
-        tamanho === "md" && "text-[15px]",
+        tamanho === "md" && "t-corpo",
         tamanho === "lg" && "text-lg",
         className,
       )}
@@ -85,7 +85,7 @@ export function Marca({
   return (
     <Link
       href={href}
-      className="rounded-sm focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none"
+      className="rounded-sm"
     >
       {conteudo}
     </Link>

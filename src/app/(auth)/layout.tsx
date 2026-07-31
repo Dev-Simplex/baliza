@@ -41,13 +41,13 @@ export default function LayoutDeConta({
       </div>
 
       {/* Painel de demonstração — some no mobile, onde a atenção é do formulário. */}
-      <aside className="relative hidden overflow-hidden border-l bg-n-surface-2 lg:block">
+      <aside className="relative hidden overflow-hidden border-l bg-superficie-2 lg:block">
         <div className="grade-fina absolute inset-0 opacity-40" />
 
         <div className="relative flex h-full flex-col justify-center px-14">
           <p className="etiqueta">Aderência à vaga · Vendas — prospecção</p>
 
-          <h2 className="mt-4 max-w-md text-[27px] leading-[1.2] font-semibold tracking-tight">
+          <h2 className="mt-4 max-w-md t-secao">
             O número vem sempre com a conta que o gerou.
           </h2>
 
@@ -102,7 +102,7 @@ export default function LayoutDeConta({
               }}
             />
 
-            <p className="border-t pt-4 text-[13px] leading-relaxed text-muted-foreground">
+            <p className="border-t pt-4 t-corpo-sm leading-relaxed text-muted-foreground">
               <span className="font-medium text-foreground">
                 Cooperação bem acima da faixa
               </span>{" "}

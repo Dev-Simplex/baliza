@@ -28,18 +28,18 @@ export function ComparacaoDeVisao() {
         initial={semMovimento ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col rounded-2xl border border-dashed bg-n-surface-2/50 p-6"
+        className="flex flex-col rounded-2xl border border-dashed bg-superficie-2/50 p-6"
       >
         <p className="etiqueta">Com vendas nos olhos</p>
 
         <div className="mt-5">
-          <p className="text-[15px] font-semibold">Bruno Tavares</p>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="t-corpo font-semibold">Bruno Tavares</p>
+          <p className="t-corpo-sm text-muted-foreground">
             Executivo de Vendas — Prospecção
           </p>
         </div>
 
-        <p className="mt-5 border-l-2 border-border pl-3 text-[14px] leading-relaxed text-muted-foreground italic">
+        <p className="mt-5 border-l-2 border-border pl-3 t-corpo leading-relaxed text-muted-foreground italic">
           &ldquo;Ótima entrevista. Simpático, comunicativo, se deu bem com todo
           mundo do time.&rdquo;
         </p>
@@ -52,7 +52,7 @@ export function ComparacaoDeVisao() {
           ].map((nome, i) => (
             <li key={nome}>
               <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[13px] text-muted-foreground">{nome}</span>
+                <span className="t-corpo-sm text-muted-foreground">{nome}</span>
                 <span className="etiqueta">?</span>
               </div>
               {/* A tarja. Mesma altura e raio da faixa alvo do medidor. */}
@@ -68,7 +68,7 @@ export function ComparacaoDeVisao() {
                 style={{
                   transformOrigin: "left center",
                   backgroundImage:
-                    "repeating-linear-gradient(45deg, var(--n-slate) 0 3px, transparent 3px 7px)",
+                    "repeating-linear-gradient(45deg, var(--muted-foreground) 0 3px, transparent 3px 7px)",
                 }}
                 className="mt-2 h-4 rounded-[3px] opacity-35"
               />
@@ -76,7 +76,7 @@ export function ComparacaoDeVisao() {
           ))}
         </ul>
 
-        <p className="mt-auto pt-6 text-[12.5px] leading-relaxed text-muted-foreground">
+        <p className="mt-auto pt-6 t-legenda leading-relaxed text-muted-foreground">
           Currículo diz o que a pessoa fez. Entrevista diz quem se apresenta bem.
           O que decide a contratação fica tapado.
         </p>
@@ -91,14 +91,14 @@ export function ComparacaoDeVisao() {
       >
         <div className="flex items-baseline justify-between gap-3">
           <p className="etiqueta">Com o Prumo</p>
-          <p className="leitura text-[26px] leading-none font-semibold text-n-brass">
+          <p className="leitura text-[1.625rem] leading-none font-semibold text-marca">
             85,1
           </p>
         </div>
 
         <div className="mt-5">
-          <p className="text-[15px] font-semibold">Bruno Tavares</p>
-          <p className="text-[13px] text-muted-foreground">
+          <p className="t-corpo font-semibold">Bruno Tavares</p>
+          <p className="t-corpo-sm text-muted-foreground">
             Executivo de Vendas — Prospecção
           </p>
         </div>
@@ -145,7 +145,7 @@ export function ComparacaoDeVisao() {
           />
         </div>
 
-        <p className="mt-auto pt-6 text-[12.5px] leading-relaxed text-muted-foreground">
+        <p className="mt-auto pt-6 t-legenda leading-relaxed text-muted-foreground">
           <span className="font-medium text-foreground">
             Cooperação bem acima da faixa
           </span>{" "}

@@ -189,3 +189,88 @@ export async function usoDoMes(organizationId: string) {
 
   return { avaliacoesNoMes, vagasAtivas, usuarios };
 }
+
+// ─── Relatórios agregados ──────────────────────────────────────────────────
+
+/** Desempenho por vaga: convite → resposta, e aderência média. */
+export async function desempenhoPorVaga(organizationId: string) {
+  const vagas = await prisma.job.findMany({
+    where: { organizationId, status: { in: ["OPEN", "PAUSED", "CLOSED"] } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      department: true,
+      _count: { select: { invitations: true } },
+      assessments: {
+        select: { status: true, fitScore: true, durationMs: true },
+      },
+    },
+  });
+
+  return vagas.map((vaga) => {
+    const concluidas = vaga.assessments.filter((a) => a.status === "COMPLETED");
+    const soma = concluidas.reduce((a, b) => a + (b.fitScore ?? 0), 0);
+    const tempo = concluidas.reduce((a, b) => a + (b.durationMs ?? 0), 0);
+
+    return {
+      id: vaga.id,
+      titulo: vaga.title,
+      status: vaga.status,
+      departamento: vaga.department,
+      convites: vaga._count.invitations,
+      iniciadas: vaga.assessments.length,
+      concluidas: concluidas.length,
+      conversao:
+        vaga.assessments.length > 0
+          ? (concluidas.length / vaga.assessments.length) * 100
+          : null,
+      aderenciaMedia: concluidas.length > 0 ? soma / concluidas.length : null,
+      duracaoMedia: concluidas.length > 0 ? tempo / concluidas.length : null,
+    };
+  });
+}
+
+/** Distribuição do selo de confiança — a saúde da própria base de respostas. */
+export async function distribuicaoDeConfianca(organizationId: string) {
+  const avaliacoes = await prisma.assessment.findMany({
+    where: { organizationId, status: "COMPLETED" },
+    select: { confidence: true },
+  });
+
+  const contagem = { alta: 0, media: 0, baixa: 0 };
+  for (const { confidence } of avaliacoes) {
+    const c = confidence as { selo?: keyof typeof contagem } | null;
+    if (c?.selo && c.selo in contagem) contagem[c.selo]++;
+  }
+  return { ...contagem, total: avaliacoes.length };
+}
+
+/**
+ * Funil da resposta.
+ *
+ * Conta AVALIAÇÕES, não convites: quem entra pelo link público da vaga gera
+ * avaliação sem passar por convite. Contar convite fazia a mesma tela exibir
+ * "13 respostas concluídas" ao lado de "1 de 2" — dois números verdadeiros que
+ * juntos pareciam erro.
+ */
+export async function funilDeRespostas(organizationId: string) {
+  const linhas = await prisma.assessment.groupBy({
+    by: ["status"],
+    where: { organizationId },
+    _count: { _all: true },
+  });
+
+  const por = (chaves: string[]) =>
+    linhas
+      .filter((l) => chaves.includes(l.status))
+      .reduce((a, b) => a + b._count._all, 0);
+
+  return {
+    convidados: linhas.reduce((a, b) => a + b._count._all, 0),
+    iniciados: por(["IN_PROGRESS", "COMPLETED"]),
+    concluidos: por(["COMPLETED"]),
+  };
+}

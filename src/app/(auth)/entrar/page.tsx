@@ -14,7 +14,7 @@ export default async function PaginaDeLogin({
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">Entrar</h1>
+      <h1 className="t-titulo">Entrar</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Acesse o painel da sua empresa.
       </p>
@@ -25,7 +25,7 @@ export default async function PaginaDeLogin({
         Ainda não tem conta?{" "}
         <Link
           href="/cadastrar"
-          className="font-medium text-foreground underline underline-offset-4 hover:text-n-brass"
+          className="font-medium text-foreground underline underline-offset-4 hover:text-marca"
         >
           Criar conta grátis
         </Link>

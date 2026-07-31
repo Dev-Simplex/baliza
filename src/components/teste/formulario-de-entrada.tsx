@@ -48,12 +48,12 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
         )}
       </div>
 
-      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-[13px] leading-relaxed">
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 t-corpo-sm leading-relaxed">
         <input
           type="checkbox"
           name="consentimento"
           required
-          className="mt-0.5 size-4 shrink-0 accent-[var(--n-brass)]"
+          className="mt-0.5 size-4 shrink-0 accent-[var(--marca-forte)]"
         />
         <span className="text-muted-foreground">
           Concordo que minhas respostas sejam usadas para avaliar minha aderência
@@ -79,7 +79,7 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
         type="submit"
         disabled={pendente}
         size="lg"
-        className="h-11 w-full gap-2 text-[15px]"
+        className="h-11 w-full gap-2 t-corpo"
       >
         {pendente ? (
           <>

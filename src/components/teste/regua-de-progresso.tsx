@@ -50,9 +50,9 @@ export function ReguaDeProgresso({
               className={cn(
                 "flex-1 rounded-full transition-all duration-300",
                 aqui
-                  ? "h-6 bg-n-brass"
+                  ? "h-6 bg-marca-forte"
                   : respondido
-                    ? "h-3.5 bg-n-teal/70"
+                    ? "h-3.5 bg-dentro/70"
                     : marcaDeDezena
                       ? "h-3 bg-border"
                       : "h-2 bg-border/60",

@@ -44,8 +44,8 @@ export function BarraLateral({
                 href={href}
                 aria-current={ativo ? "page" : undefined}
                 className={cn(
-                  "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] transition-colors",
-                  "focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none",
+                  "group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 t-corpo-sm transition-colors",
+                  "",
                   ativo
                     ? "bg-secondary font-medium text-foreground"
                     : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
@@ -54,7 +54,7 @@ export function BarraLateral({
                 {/* Marcador de latão: mesma linguagem do medidor. */}
                 <span
                   className={cn(
-                    "absolute left-0 h-4 w-[2px] rounded-full bg-n-brass transition-opacity",
+                    "absolute left-0 h-4 w-[2px] rounded-full bg-marca-forte transition-opacity",
                     ativo ? "opacity-100" : "opacity-0",
                   )}
                 />
@@ -72,7 +72,7 @@ export function BarraLateral({
           <Link
             href="/admin"
             className={cn(
-              "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] transition-colors",
+              "flex items-center gap-2.5 rounded-md px-2.5 py-2 t-corpo-sm transition-colors",
               caminho.startsWith("/admin")
                 ? "bg-secondary font-medium text-foreground"
                 : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",

@@ -19,7 +19,7 @@ export default function PaginaDeNovaVaga() {
       </Link>
 
       <header className="mt-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Criar vaga</h1>
+        <h1 className="t-titulo">Criar vaga</h1>
         <p className="mt-1.5 text-sm text-muted-foreground">
           O perfil-alvo é a parte que importa: são as faixas que este trabalho
           pede em cada dimensão. Comece por um pronto e ajuste depois.

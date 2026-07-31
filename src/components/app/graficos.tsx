@@ -38,7 +38,7 @@ export const COR_DO_FATOR: Record<Fator, string> = {
 const eixo = {
   fontSize: 11,
   fontFamily: "var(--fonte-mono)",
-  fill: "var(--n-slate)",
+  fill: "var(--muted-foreground)",
 };
 
 function CaixaDeDica({
@@ -59,7 +59,7 @@ function CaixaDeDica({
         <p className="etiqueta mb-1">{String(label)}</p>
       )}
       {payload.map((p, i) => (
-        <p key={i} className="flex items-center gap-2 text-[13px]">
+        <p key={i} className="flex items-center gap-2 t-corpo-sm">
           {p.color && (
             <span
               className="size-2 rounded-full"
@@ -101,7 +101,7 @@ export function RadarComportamental({
   return (
     <ResponsiveContainer width="100%" height={altura}>
       <RadarChart data={dados} outerRadius="68%" margin={{ top: 10, right: 26, bottom: 10, left: 26 }}>
-        <PolarGrid stroke="var(--n-rule)" />
+        <PolarGrid stroke="var(--linha)" />
         <PolarAngleAxis
           dataKey="fator"
           tick={{ ...eixo, fontSize: 10.5, fontFamily: "var(--fonte-ui)" }}
@@ -111,8 +111,8 @@ export function RadarComportamental({
           <Radar
             name={rotuloB}
             dataKey="b"
-            stroke="var(--n-slate)"
-            fill="var(--n-slate)"
+            stroke="var(--muted-foreground)"
+            fill="var(--muted-foreground)"
             fillOpacity={0.12}
             strokeWidth={1.5}
             strokeDasharray="4 3"
@@ -121,8 +121,8 @@ export function RadarComportamental({
         <Radar
           name={rotuloA}
           dataKey="a"
-          stroke="var(--n-brass)"
-          fill="var(--n-brass)"
+          stroke="var(--marca-forte)"
+          fill="var(--marca-forte)"
           fillOpacity={0.22}
           strokeWidth={2}
         />
@@ -149,11 +149,11 @@ export function BarrasPorFator({
   return (
     <ResponsiveContainer width="100%" height={altura}>
       <BarChart data={dados} margin={{ top: 8, right: 8, bottom: 0, left: -22 }}>
-        <CartesianGrid stroke="var(--n-rule)" vertical={false} />
+        <CartesianGrid stroke="var(--linha)" vertical={false} />
         <XAxis dataKey="fator" tick={eixo} axisLine={false} tickLine={false} />
         <YAxis domain={[0, 100]} tick={eixo} axisLine={false} tickLine={false} />
         <Tooltip
-          cursor={{ fill: "var(--n-surface-2)" }}
+          cursor={{ fill: "var(--superficie-2)" }}
           content={<CaixaDeDica />}
         />
         <Bar dataKey="valor" name="Escore" radius={[4, 4, 0, 0]}>
@@ -179,11 +179,11 @@ export function VolumeNoTempo({
       <AreaChart data={dados} margin={{ top: 8, right: 8, bottom: 0, left: -26 }}>
         <defs>
           <linearGradient id="gradienteLatao" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--n-brass)" stopOpacity={0.32} />
-            <stop offset="100%" stopColor="var(--n-brass)" stopOpacity={0.02} />
+            <stop offset="0%" stopColor="var(--marca-forte)" stopOpacity={0.32} />
+            <stop offset="100%" stopColor="var(--marca-forte)" stopOpacity={0.02} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke="var(--n-rule)" vertical={false} />
+        <CartesianGrid stroke="var(--linha)" vertical={false} />
         <XAxis dataKey="semana" tick={eixo} axisLine={false} tickLine={false} />
         <YAxis allowDecimals={false} tick={eixo} axisLine={false} tickLine={false} />
         <Tooltip content={<CaixaDeDica />} />
@@ -191,7 +191,7 @@ export function VolumeNoTempo({
           type="monotone"
           dataKey="total"
           name="Respostas"
-          stroke="var(--n-brass)"
+          stroke="var(--marca-forte)"
           strokeWidth={2}
           fill="url(#gradienteLatao)"
         />
@@ -220,7 +220,7 @@ export function DistribuicaoDeArquetipos({
         layout="vertical"
         margin={{ top: 4, right: 16, bottom: 4, left: 4 }}
       >
-        <CartesianGrid stroke="var(--n-rule)" horizontal={false} />
+        <CartesianGrid stroke="var(--linha)" horizontal={false} />
         <XAxis type="number" allowDecimals={false} tick={eixo} axisLine={false} tickLine={false} />
         <YAxis
           type="category"
@@ -231,13 +231,13 @@ export function DistribuicaoDeArquetipos({
           tickLine={false}
         />
         <Tooltip
-          cursor={{ fill: "var(--n-surface-2)" }}
+          cursor={{ fill: "var(--superficie-2)" }}
           content={<CaixaDeDica />}
         />
         <Bar
           dataKey="total"
           name="Candidatos"
-          fill="var(--n-teal)"
+          fill="var(--dentro)"
           radius={[0, 4, 4, 0]}
           barSize={16}
         />

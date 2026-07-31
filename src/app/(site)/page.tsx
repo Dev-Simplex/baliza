@@ -43,7 +43,7 @@ function Cabecalho() {
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Marca />
 
-        <nav className="hidden items-center gap-7 text-[13.5px] text-muted-foreground md:flex">
+        <nav className="hidden items-center gap-7 t-corpo-sm text-muted-foreground md:flex">
           <a href="#funciona" className="hover:text-foreground">
             Como funciona
           </a>
@@ -62,7 +62,7 @@ function Cabecalho() {
           <AlternarTema className="hidden sm:inline-flex" />
           <Link
             href="/entrar"
-            className="hidden text-[13.5px] text-muted-foreground hover:text-foreground sm:block"
+            className="hidden t-corpo-sm text-muted-foreground hover:text-foreground sm:block"
           >
             Entrar
           </Link>
@@ -84,30 +84,30 @@ function Hero() {
         <div className="max-w-3xl">
           <p className="etiqueta">Mapeamento comportamental para recrutamento</p>
 
-          <h1 className="mt-5 text-balance text-[40px] leading-[1.04] font-semibold tracking-[-0.03em] sm:text-[56px]">
+          <h1 className="mt-5 t-display">
             Não contrate nunca mais com vendas nos olhos.
           </h1>
 
-          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-muted-foreground">
             Cole um link na sua vaga. Em oito minutos o candidato responde. Você
             recebe o ranking com a aderência explicada — e as perguntas exatas
             para fazer a cada um.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <BotaoLink href="/cadastrar" size="lg" className="h-11 gap-2 px-5 text-[15px]">
+            <BotaoLink href="/cadastrar" size="lg" className="h-11 gap-2 px-5 t-corpo">
               Experimentar gratuitamente
               <ArrowRight className="size-4" />
             </BotaoLink>
             <a
               href="#funciona"
-              className="text-[14px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              className="t-corpo text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Ver como funciona
             </a>
           </div>
 
-          <p className="mt-4 text-[13px] text-muted-foreground">
+          <p className="mt-4 t-corpo-sm text-muted-foreground">
             Sem cartão. Duas vagas e 30 respostas por mês no plano grátis.
           </p>
         </div>
@@ -152,7 +152,7 @@ function OQueFicaTapado() {
     <section className="border-b">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <p className="etiqueta">O ponto cego</p>
-        <h2 className="mt-4 max-w-2xl text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+        <h2 className="mt-4 max-w-2xl t-titulo">
           Ninguém contrata mal por falta de esforço. Contrata mal por falta de
           informação.
         </h2>
@@ -163,19 +163,19 @@ function OQueFicaTapado() {
               key={ponto.fonte}
               className="grid gap-2 py-5 md:grid-cols-[13rem_1fr_1fr] md:gap-8"
             >
-              <p className="text-[15.5px] font-semibold">{ponto.fonte}</p>
-              <p className="text-[14.5px] leading-relaxed text-muted-foreground">
+              <p className="text-base font-semibold">{ponto.fonte}</p>
+              <p className="t-corpo leading-relaxed text-muted-foreground">
                 mostra {ponto.mostra}
               </p>
-              <p className="text-[14.5px] leading-relaxed">
-                <span className="text-n-clay">esconde</span>{" "}
+              <p className="t-corpo leading-relaxed">
+                <span className="text-fora">esconde</span>{" "}
                 <span className="text-muted-foreground">{ponto.esconde}</span>
               </p>
             </li>
           ))}
         </ul>
 
-        <p className="mt-10 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+        <p className="mt-10 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
           Nada disso é substituível — e o Prumo não substitui. Ele acrescenta a
           única coisa que faltava: uma medida comparável entre pessoas, com a
           conta aberta do lado. Você continua entrevistando. Só para de
@@ -199,11 +199,11 @@ function FaixaDeMetricas() {
   ];
 
   return (
-    <section className="border-b bg-n-surface-2/60">
+    <section className="border-b bg-superficie-2/60">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-y-8 px-5 py-12 sm:px-8 md:grid-cols-5">
         {metricas.map((m) => (
           <div key={m.rotulo}>
-            <p className="leitura text-[28px] leading-none font-semibold">
+            <p className="leitura text-[1.75rem] leading-none font-semibold">
               {m.valor}
             </p>
             <p className="etiqueta mt-2">{m.rotulo}</p>
@@ -237,7 +237,7 @@ function ComoFunciona() {
     <section id="funciona" className="border-b">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <p className="etiqueta">Como funciona</p>
-        <h2 className="mt-4 max-w-2xl text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+        <h2 className="mt-4 max-w-2xl t-titulo">
           Três passos, e o terceiro é o que você compra.
         </h2>
 
@@ -247,15 +247,15 @@ function ComoFunciona() {
           {passos.map((passo, i) => (
             <li key={passo.titulo} className="relative">
               <div className="flex items-center gap-3">
-                <span className="leitura text-[13px] text-n-brass">
+                <span className="leitura t-corpo-sm text-marca">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="h-px flex-1 bg-border" />
               </div>
-              <h3 className="mt-5 text-[17px] leading-snug font-semibold">
+              <h3 className="mt-5 text-[1.0625rem] leading-snug font-semibold">
                 {passo.titulo}
               </h3>
-              <p className="mt-3 text-[14.5px] leading-relaxed text-muted-foreground">
+              <p className="mt-3 t-corpo leading-relaxed text-muted-foreground">
                 {passo.texto}
               </p>
             </li>
@@ -301,20 +301,20 @@ function Beneficios() {
   ];
 
   return (
-    <section className="border-b bg-n-surface-2/60">
+    <section className="border-b bg-superficie-2/60">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <p className="etiqueta">Diferenciais</p>
-        <h2 className="mt-4 max-w-2xl text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+        <h2 className="mt-4 max-w-2xl t-titulo">
           O produto não é o teste. É a decisão do dia seguinte.
         </h2>
 
         <div className="mt-14 grid gap-x-10 gap-y-11 md:grid-cols-2 lg:grid-cols-3">
           {itens.map((item) => (
             <div key={item.titulo}>
-              <h3 className="text-[16px] leading-snug font-semibold">
+              <h3 className="text-base leading-snug font-semibold">
                 {item.titulo}
               </h3>
-              <p className="mt-2.5 text-[14.5px] leading-relaxed text-muted-foreground">
+              <p className="mt-2.5 t-corpo leading-relaxed text-muted-foreground">
                 {item.texto}
               </p>
             </div>
@@ -331,11 +331,11 @@ function OQueMedimos() {
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:gap-16">
         <div>
           <p className="etiqueta">O instrumento</p>
-          <h2 className="mt-4 text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+          <h2 className="mt-4 t-titulo">
             Cinco dimensões, medidas do jeito que dá pra defender.
           </h2>
 
-          <p className="mt-6 text-[15px] leading-relaxed text-muted-foreground">
+          <p className="mt-6 t-corpo leading-relaxed text-muted-foreground">
             O instrumento é derivado do IPIP, que é de domínio público e mede o
             mesmo modelo de cinco fatores que o mercado vende como diferencial
             proprietário. A prova tem duas partes: 44 afirmações que geram o
@@ -343,14 +343,14 @@ function OQueMedimos() {
             servem para conferir se as duas histórias batem.
           </p>
 
-          <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+          <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
             O escore das situações nunca entra no ranking. Ele compara dimensões
             dentro da mesma pessoa, e responder &ldquo;a Maria é mais organizada
             que o João?&rdquo; com esse tipo de escore é estatisticamente
             inválido — um erro comum no mercado.
           </p>
 
-          <p className="mt-8 rounded-xl border-l-2 border-n-brass bg-secondary/50 px-5 py-4 text-[13.5px] leading-relaxed text-muted-foreground">
+          <p className="mt-8 rounded-xl border-l-2 border-marca bg-secondary/50 px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
             Este é um questionário de autopercepção de comportamento no trabalho.
             Não é teste psicológico, avaliação psicológica, laudo nem
             diagnóstico, e não mede inteligência nem capacidade técnica.
@@ -362,11 +362,11 @@ function OQueMedimos() {
             <li key={f} className="rounded-xl border bg-card p-5">
               <div className="flex items-baseline gap-2.5">
                 <span className="etiqueta">{f}</span>
-                <h3 className="text-[15.5px] font-semibold">
+                <h3 className="text-base font-semibold">
                   {NOMES_DE_FATOR[f].ui}
                 </h3>
               </div>
-              <p className="mt-2 text-[13.5px] text-muted-foreground">
+              <p className="mt-2 t-corpo-sm text-muted-foreground">
                 {NOMES_DE_FATOR[f].facetas
                   .map((faceta) => faceta[0].toUpperCase() + faceta.slice(1))
                   .join(" · ")}
@@ -410,21 +410,21 @@ const DEPOIMENTOS_DE_EXEMPLO = [
 
 function Depoimentos() {
   return (
-    <section className="border-b bg-n-surface-2/60">
+    <section className="border-b bg-superficie-2/60">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <p className="etiqueta">Depoimentos</p>
-        <h2 className="mt-4 max-w-2xl text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+        <h2 className="mt-4 max-w-2xl t-titulo">
           O que muda na prática.
         </h2>
 
         <div className="mt-12 grid gap-5 md:grid-cols-3">
           {DEPOIMENTOS_DE_EXEMPLO.map((d) => (
             <figure key={d.autor} className="rounded-xl border bg-card p-6">
-              <blockquote className="text-[15px] leading-relaxed">
+              <blockquote className="t-corpo leading-relaxed">
                 &ldquo;{d.texto}&rdquo;
               </blockquote>
               <figcaption className="mt-5 border-t pt-4">
-                <p className="text-[13px] font-medium">{d.autor}</p>
+                <p className="t-corpo-sm font-medium">{d.autor}</p>
                 <p className="etiqueta mt-1">{d.contexto}</p>
               </figcaption>
             </figure>
@@ -440,7 +440,7 @@ function Planos() {
     <section id="planos" className="border-b">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
         <p className="etiqueta">Planos</p>
-        <h2 className="mt-4 max-w-2xl text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+        <h2 className="mt-4 max-w-2xl t-titulo">
           Comece de graça. Suba quando o volume pedir.
         </h2>
 
@@ -450,34 +450,34 @@ function Planos() {
               key={plano.codigo}
               className={`flex flex-col rounded-2xl border p-7 ${
                 plano.destaque
-                  ? "border-n-brass/50 bg-n-brass/[0.04] ring-1 ring-n-brass/20"
+                  ? "border-marca/50 bg-marca-forte/[0.04] ring-1 ring-marca-forte/20"
                   : "bg-card"
               }`}
             >
               <div className="flex items-baseline justify-between">
-                <h3 className="text-[17px] font-semibold">{plano.nome}</h3>
+                <h3 className="text-[1.0625rem] font-semibold">{plano.nome}</h3>
                 {plano.destaque && (
-                  <span className="etiqueta text-n-brass">mais escolhido</span>
+                  <span className="etiqueta text-marca">mais escolhido</span>
                 )}
               </div>
 
-              <p className="mt-2 min-h-[3.25rem] text-[13.5px] leading-relaxed text-muted-foreground">
+              <p className="mt-2 min-h-[3.25rem] t-corpo-sm leading-relaxed text-muted-foreground">
                 {plano.descricao}
               </p>
 
               <p className="mt-5 flex items-baseline gap-1.5">
-                <span className="leitura text-[30px] leading-none font-semibold">
+                <span className="leitura text-[1.875rem] leading-none font-semibold">
                   {formatarPreco(plano.precoMensalCentavos)}
                 </span>
                 {plano.precoMensalCentavos > 0 && (
-                  <span className="text-[13px] text-muted-foreground">/mês</span>
+                  <span className="t-corpo-sm text-muted-foreground">/mês</span>
                 )}
               </p>
 
               <ul className="mt-7 flex-1 space-y-2.5">
                 {plano.vitrine.map((linha) => (
-                  <li key={linha} className="flex items-start gap-2.5 text-[13.5px]">
-                    <Check className="mt-0.5 size-3.5 shrink-0 text-n-teal" />
+                  <li key={linha} className="flex items-start gap-2.5 t-corpo-sm">
+                    <Check className="mt-0.5 size-3.5 shrink-0 text-dentro" />
                     {linha}
                   </li>
                 ))}
@@ -494,7 +494,7 @@ function Planos() {
           ))}
         </div>
 
-        <p className="mt-6 text-[13px] text-muted-foreground">
+        <p className="mt-6 t-corpo-sm text-muted-foreground">
           Todos os planos incluem o relatório do candidato, a trilha de auditoria
           e o expurgo programado das respostas.
         </p>
@@ -536,11 +536,11 @@ const PERGUNTAS_FREQUENTES = [
 
 function Perguntas() {
   return (
-    <section id="perguntas" className="border-b bg-n-surface-2/60">
+    <section id="perguntas" className="border-b bg-superficie-2/60">
       <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[20rem_1fr]">
         <div>
           <p className="etiqueta">Perguntas frequentes</p>
-          <h2 className="mt-4 text-balance text-[32px] leading-[1.15] font-semibold tracking-tight">
+          <h2 className="mt-4 t-titulo">
             O que costumam perguntar antes de testar.
           </h2>
         </div>
@@ -548,13 +548,13 @@ function Perguntas() {
         <div className="divide-y border-t">
           {PERGUNTAS_FREQUENTES.map((item) => (
             <details key={item.p} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-[15.5px] font-medium">
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-medium">
                 {item.p}
                 <span className="mt-1 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
                   <Minus className="size-4 rotate-90 group-open:rotate-0" />
                 </span>
               </summary>
-              <p className="mt-3 max-w-2xl text-[14.5px] leading-relaxed text-muted-foreground">
+              <p className="mt-3 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
                 {item.r}
               </p>
             </details>
@@ -569,10 +569,10 @@ function ChamadaFinal() {
   return (
     <section className="border-b">
       <div className="mx-auto max-w-6xl px-5 py-24 text-center sm:px-8">
-        <h2 className="mx-auto max-w-2xl text-balance text-[34px] leading-[1.12] font-semibold tracking-tight sm:text-[42px]">
+        <h2 className="mx-auto max-w-2xl t-display">
           Tire a venda antes da próxima contratação.
         </h2>
-        <p className="mx-auto mt-5 max-w-lg text-[16px] leading-relaxed text-muted-foreground">
+        <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
           Crie a conta, publique uma vaga e mande o link para três candidatos
           hoje mesmo. Você vê o ranking ainda esta semana — e chega na entrevista
           sabendo o que perguntar.
@@ -580,7 +580,7 @@ function ChamadaFinal() {
         <BotaoLink
           href="/cadastrar"
           size="lg"
-          className="mt-9 h-11 gap-2 px-6 text-[15px]"
+          className="mt-9 h-11 gap-2 px-6 t-corpo"
         >
           Experimentar gratuitamente
           <ArrowRight className="size-4" />
@@ -596,7 +596,7 @@ function Rodape() {
       <div className="flex flex-wrap items-start justify-between gap-10">
         <div className="max-w-xs">
           <Marca />
-          <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
+          <p className="mt-4 t-corpo-sm leading-relaxed text-muted-foreground">
             Mapeamento comportamental para processos seletivos. Mostra o que
             currículo e entrevista não mostram — e devolve as perguntas certas.
           </p>
@@ -651,7 +651,7 @@ function ColunaDoRodape({
           <li key={item.rotulo}>
             <Link
               href={item.href}
-              className="text-[13.5px] text-muted-foreground hover:text-foreground"
+              className="t-corpo-sm text-muted-foreground hover:text-foreground"
             >
               {item.rotulo}
             </Link>

@@ -61,10 +61,10 @@ export function Faixa({
   const desvioLargura = Math.abs(escore - bordaMaisProxima);
 
   const cor = irrelevante
-    ? "var(--n-slate)"
+    ? "var(--muted-foreground)"
     : dentro
-      ? "var(--n-teal)"
-      : "var(--n-clay)";
+      ? "var(--dentro)"
+      : "var(--fora)";
 
   return (
     <div className={cn("group", irrelevante && "opacity-55")}>
@@ -74,7 +74,7 @@ export function Faixa({
           <span
             className={cn(
               "truncate font-medium",
-              compacto ? "text-[13px]" : "text-sm",
+              compacto ? "t-corpo-sm" : "text-sm",
             )}
           >
             {nome}
@@ -127,9 +127,9 @@ export function Faixa({
               left: `${lo}%`,
               width: `${hi - lo}%`,
               transformOrigin: "left center",
-              background: "color-mix(in oklab, var(--n-teal) 22%, transparent)",
-              borderLeft: "1.5px solid var(--n-teal)",
-              borderRight: "1.5px solid var(--n-teal)",
+              background: "color-mix(in oklab, var(--dentro) 22%, transparent)",
+              borderLeft: "1.5px solid var(--dentro)",
+              borderRight: "1.5px solid var(--dentro)",
             }}
             className={cn(
               "absolute top-1/2 -translate-y-1/2 rounded-[3px]",
@@ -148,7 +148,7 @@ export function Faixa({
               left: `${desvioEsquerda}%`,
               width: `${desvioLargura}%`,
               background:
-                "repeating-linear-gradient(45deg, var(--n-clay) 0 2px, transparent 2px 5px)",
+                "repeating-linear-gradient(45deg, var(--fora) 0 2px, transparent 2px 5px)",
             }}
             className={cn(
               "absolute top-1/2 -translate-y-1/2 rounded-full",
@@ -162,7 +162,7 @@ export function Faixa({
           <div
             style={{ left: `${ideal}%` }}
             className={cn(
-              "absolute top-1/2 w-px -translate-x-1/2 -translate-y-1/2 bg-n-teal/60",
+              "absolute top-1/2 w-px -translate-x-1/2 -translate-y-1/2 bg-dentro/60",
               compacto ? "h-4" : "h-5",
             )}
           />
@@ -185,8 +185,8 @@ export function Faixa({
               compacto ? "size-2.5" : "size-3",
             )}
             style={{
-              background: "var(--n-brass)",
-              borderColor: "var(--n-brass)",
+              background: "var(--marca-forte)",
+              borderColor: "var(--marca-forte)",
             }}
           />
         </motion.div>
@@ -224,13 +224,13 @@ export function FaixaMinima({
       <div className="absolute inset-0 rounded-full bg-muted" />
       <div
         style={{ left: `${lo}%`, width: `${hi - lo}%` }}
-        className="absolute inset-y-0 rounded-full bg-n-teal/30"
+        className="absolute inset-y-0 rounded-full bg-dentro/30"
       />
       <div
         style={{ left: `${escore}%` }}
         className={cn(
           "absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[1px]",
-          dentro ? "bg-n-brass" : "bg-n-clay",
+          dentro ? "bg-marca-forte" : "bg-fora",
         )}
       />
     </div>

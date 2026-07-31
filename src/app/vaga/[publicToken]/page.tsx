@@ -49,11 +49,11 @@ export default async function PaginaPublicaDaVaga({
       <main className="flex flex-1 flex-col justify-center py-10">
         <p className="etiqueta">{vaga.organization.name}</p>
 
-        <h1 className="mt-3 text-balance text-[28px] leading-[1.2] font-semibold tracking-tight">
+        <h1 className="mt-3 t-titulo">
           {vaga.title}
         </h1>
 
-        <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
+        <div className="mt-3 flex flex-wrap gap-x-2 gap-y-1 t-corpo-sm text-muted-foreground">
           {vaga.department && <span>{vaga.department}</span>}
           <span aria-hidden>·</span>
           <span>{ROTULO_DE_SENIORIDADE[vaga.seniority] ?? vaga.seniority}</span>
@@ -68,7 +68,7 @@ export default async function PaginaPublicaDaVaga({
         </div>
 
         {vaga.description && (
-          <p className="mt-6 text-[14.5px] leading-relaxed whitespace-pre-line text-muted-foreground">
+          <p className="mt-6 t-corpo leading-relaxed whitespace-pre-line text-muted-foreground">
             {vaga.description}
           </p>
         )}
@@ -78,7 +78,7 @@ export default async function PaginaPublicaDaVaga({
             <h2 className="text-sm font-semibold">
               Comece pelo mapeamento comportamental
             </h2>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 t-corpo-sm leading-relaxed text-muted-foreground">
               Leva cerca de 8 minutos. No fim você recebe seu próprio resultado.
             </p>
             <FormularioDeEntrada publicToken={publicToken} />
@@ -90,7 +90,7 @@ export default async function PaginaPublicaDaVaga({
         )}
       </main>
 
-      <footer className="text-[11.5px] leading-relaxed text-muted-foreground">
+      <footer className="t-legenda leading-relaxed text-muted-foreground">
         Seus dados são usados apenas neste processo seletivo e apagados no prazo
         informado pela empresa. Você pode pedir a exclusão a qualquer momento.
       </footer>

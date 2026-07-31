@@ -26,16 +26,16 @@ export function MenuDoUsuario({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 pr-2 transition-colors hover:bg-secondary focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none">
-        <span className="grid size-7 place-items-center rounded-full bg-n-brass/15 text-[11px] font-semibold text-n-brass">
+      <DropdownMenuTrigger className="flex items-center gap-2 rounded-full p-0.5 pr-2 transition-colors hover:bg-secondary">
+        <span className="grid size-7 place-items-center rounded-full bg-marca-forte/15 t-legenda font-semibold text-marca">
           {iniciais(nome)}
         </span>
-        <span className="hidden text-[13px] font-medium sm:inline">{nome}</span>
+        <span className="hidden t-corpo-sm font-medium sm:inline">{nome}</span>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-60">
         <DropdownMenuLabel className="font-normal">
-          <p className="text-[13px] font-medium">{nome}</p>
+          <p className="t-corpo-sm font-medium">{nome}</p>
           <p className="truncate text-xs text-muted-foreground">{email}</p>
           <p className="etiqueta mt-2">
             {empresa} · {ROTULO_DE_PAPEL[papel] ?? papel}

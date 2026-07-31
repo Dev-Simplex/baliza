@@ -61,7 +61,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
               id="senioridade"
               name="senioridade"
               defaultValue="MID"
-              className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none"
+              className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm"
             >
               {Object.entries(ROTULO_DE_SENIORIDADE).map(([valor, rotulo]) => (
                 <option key={valor} value={valor}>
@@ -77,7 +77,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
               id="modelo"
               name="modelo"
               defaultValue="ONSITE"
-              className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none"
+              className="h-9 w-full rounded-lg border bg-transparent px-3 text-sm"
             >
               {Object.entries(ROTULO_DE_MODELO).map(([valor, rotulo]) => (
                 <option key={valor} value={valor}>
@@ -131,22 +131,22 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
                 aria-pressed={ativo}
                 className={cn(
                   "flex items-start gap-2.5 rounded-lg border p-3 text-left transition-colors",
-                  "focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none",
+                  "",
                   ativo
-                    ? "border-n-brass bg-n-brass/8"
-                    : "hover:border-n-brass/40 hover:bg-secondary/50",
+                    ? "border-marca bg-marca-forte/8"
+                    : "hover:border-marca/40 hover:bg-secondary/50",
                 )}
               >
                 <span
                   className={cn(
                     "mt-0.5 grid size-4 shrink-0 place-items-center rounded-full border-[1.5px]",
-                    ativo ? "border-n-brass bg-n-brass" : "border-border",
+                    ativo ? "border-marca bg-marca-forte" : "border-border",
                   )}
                 >
                   {ativo && <Check className="size-2.5 text-background" />}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[13.5px] font-medium">
+                  <span className="block t-corpo-sm font-medium">
                     {preset.nome}
                   </span>
                   <span className="etiqueta">{preset.familia}</span>
@@ -157,7 +157,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
         </div>
 
         {notaDoEscolhido && (
-          <p className="rounded-lg border-l-2 border-n-brass bg-secondary/60 px-4 py-3 text-[13px] leading-relaxed text-muted-foreground">
+          <p className="rounded-lg border-l-2 border-marca bg-secondary/60 px-4 py-3 t-corpo-sm leading-relaxed text-muted-foreground">
             {notaDoEscolhido}
           </p>
         )}

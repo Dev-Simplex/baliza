@@ -14,9 +14,9 @@ export type Confianca = {
 };
 
 const ESTILO = {
-  alta: "border-n-teal/40 bg-n-teal/10 text-n-teal",
-  media: "border-n-brass/45 bg-n-brass/10 text-n-brass",
-  baixa: "border-n-clay/45 bg-n-clay/10 text-n-clay",
+  alta: "border-dentro/40 bg-dentro/10 text-dentro",
+  media: "border-marca/45 bg-marca-forte/10 text-marca",
+  baixa: "border-fora/45 bg-fora/10 text-fora",
 } as const;
 
 const NOME_DO_SINAL: Record<string, string> = {
@@ -49,7 +49,7 @@ export function SeloDeConfianca({
               "inline-flex cursor-help items-center gap-1.5 rounded-full border font-medium",
               ESTILO[confianca.selo],
               tamanho === "sm"
-                ? "px-2 py-0.5 text-[11px]"
+                ? "px-2 py-0.5 t-legenda"
                 : "px-2.5 py-1 text-xs",
             )}
           />
@@ -65,9 +65,9 @@ export function SeloDeConfianca({
       </TooltipTrigger>
 
       <TooltipContent className="max-w-xs" side="top">
-        <p className="text-[13px] leading-relaxed">{confianca.texto}</p>
+        <p className="t-corpo-sm leading-relaxed">{confianca.texto}</p>
         {confianca.sinais.length > 0 && (
-          <ul className="mt-2 space-y-0.5 border-t border-current/15 pt-2 text-[12px] opacity-90">
+          <ul className="mt-2 space-y-0.5 border-t border-current/15 pt-2 t-legenda opacity-90">
             {confianca.sinais.map((s) => (
               <li key={s}>· {NOME_DO_SINAL[s] ?? s}</li>
             ))}

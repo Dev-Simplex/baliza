@@ -46,12 +46,12 @@ export function CompartilharVaga({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 rounded-lg border bg-secondary/50 p-1.5">
-        <code className="leitura flex-1 truncate px-2 text-[12px] text-muted-foreground">
+        <code className="leitura flex-1 truncate px-2 t-legenda text-muted-foreground">
           {url}
         </code>
         <Button size="sm" variant="secondary" onClick={copiar} className="gap-1.5">
           {copiado ? (
-            <Check className="size-3.5 text-n-teal" />
+            <Check className="size-3.5 text-dentro" />
           ) : (
             <Copy className="size-3.5" />
           )}

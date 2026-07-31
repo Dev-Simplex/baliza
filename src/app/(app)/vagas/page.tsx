@@ -17,9 +17,9 @@ import { exigirTenant } from "@/lib/tenant";
 export const metadata: Metadata = { title: "Vagas" };
 
 const COR_DO_STATUS: Record<string, string> = {
-  OPEN: "border-n-teal/40 bg-n-teal/10 text-n-teal",
+  OPEN: "border-dentro/40 bg-dentro/10 text-dentro",
   DRAFT: "border-border bg-secondary text-muted-foreground",
-  PAUSED: "border-n-brass/40 bg-n-brass/10 text-n-brass",
+  PAUSED: "border-marca/40 bg-marca-forte/10 text-marca",
   CLOSED: "border-border bg-secondary text-muted-foreground",
 };
 
@@ -43,7 +43,7 @@ export default async function PaginaDeVagas() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="etiqueta">Processos</p>
-          <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">Vagas</h1>
+          <h1 className="mt-1.5 t-titulo">Vagas</h1>
         </div>
         <BotaoLink href="/vagas/nova" className="gap-2">
           <Plus className="size-4" />
@@ -78,10 +78,10 @@ export default async function PaginaDeVagas() {
               <li key={vaga.id}>
                 <Link
                   href={`/vagas/${vaga.id}`}
-                  className="flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-n-brass/40 hover:bg-secondary/30"
+                  className="flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-marca/40 hover:bg-secondary/30"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="text-[15px] leading-snug font-semibold">
+                    <h2 className="t-corpo leading-snug font-semibold">
                       {vaga.title}
                     </h2>
                     <Badge
@@ -137,7 +137,7 @@ function Indicador({
     <div>
       <p className="etiqueta">{rotulo}</p>
       <p
-        className={`leitura mt-1 text-[15px] font-semibold ${destaque ? "text-n-brass" : ""}`}
+        className={`leitura mt-1 t-corpo font-semibold ${destaque ? "text-marca" : ""}`}
       >
         {valor}
       </p>

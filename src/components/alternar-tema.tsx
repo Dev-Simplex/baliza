@@ -42,9 +42,9 @@ export function AlternarTema({ className }: { className?: string }) {
             onClick={() => setTheme(valor)}
             className={cn(
               "grid size-7 place-items-center rounded-full transition-colors",
-              "focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none",
+              "",
               ativo
-                ? "bg-n-brass/15 text-n-brass"
+                ? "bg-marca-forte/15 text-marca"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

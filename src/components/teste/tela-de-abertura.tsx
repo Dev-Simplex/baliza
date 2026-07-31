@@ -57,12 +57,12 @@ export function TelaDeAbertura({
           {empresa} · {vaga}
         </p>
 
-        <h1 className="mt-4 text-balance text-[30px] leading-[1.18] font-semibold tracking-tight">
+        <h1 className="mt-4 t-titulo">
           {nome ? `${nome.split(" ")[0]}, vamos` : "Vamos"} mapear como você
           trabalha.
         </h1>
 
-        <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
+        <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
           Não é prova e não existe resposta certa. São afirmações sobre o dia a
           dia de trabalho, e a única resposta útil é a sincera — inclusive para
           você, porque no fim você recebe seu próprio resultado.
@@ -86,7 +86,7 @@ export function TelaDeAbertura({
           onClick={comecar}
           disabled={pendente}
           size="lg"
-          className="mt-9 h-11 w-full gap-2 text-[15px]"
+          className="mt-9 h-11 w-full gap-2 t-corpo"
         >
           {pendente ? (
             <>
@@ -102,7 +102,7 @@ export function TelaDeAbertura({
         </Button>
       </main>
 
-      <footer className="text-[11.5px] leading-relaxed text-muted-foreground">
+      <footer className="t-legenda leading-relaxed text-muted-foreground">
         Este é um questionário de autopercepção de comportamento no trabalho. Não
         é teste psicológico nem avaliação psicológica, e o resultado é um insumo
         para a conversa — não uma decisão automática.
@@ -123,11 +123,11 @@ function Linha({
   return (
     <li className="flex gap-3">
       <span className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-secondary">
-        <Icone className="size-4 text-n-brass" />
+        <Icone className="size-4 text-marca" />
       </span>
       <div>
-        <p className="text-[14px] font-medium">{titulo}</p>
-        <p className="text-[13px] leading-relaxed text-muted-foreground">
+        <p className="t-corpo font-medium">{titulo}</p>
+        <p className="t-corpo-sm leading-relaxed text-muted-foreground">
           {children}
         </p>
       </div>

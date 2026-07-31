@@ -258,7 +258,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
           )}
         </div>
 
-        <p className="pb-1 text-center text-[11.5px] text-muted-foreground">
+        <p className="pb-1 text-center t-legenda text-muted-foreground">
           Suas respostas são salvas sozinhas. Você pode fechar e continuar depois
           pelo mesmo link.
         </p>
@@ -283,7 +283,7 @@ function IndicadorDeSalvamento({ estado }: { estado: Salvamento }) {
       {estado === "salvando" ? (
         <Loader2 className="size-3.5 animate-spin" />
       ) : (
-        <Check className="size-3.5 text-n-teal" />
+        <Check className="size-3.5 text-dentro" />
       )}
       {estado === "salvando" ? "Salvando" : "Salvo"}
     </span>
@@ -303,7 +303,7 @@ function PerguntaLikert({
     <div>
       <p className="etiqueta mb-4">O quanto isso combina com você no trabalho?</p>
 
-      <h1 className="text-balance text-[26px] leading-[1.28] font-semibold tracking-tight sm:text-[30px]">
+      <h1 className="text-balance text-[1.625rem] leading-[1.28] font-semibold tracking-tight sm:text-[1.875rem]">
         {texto}
       </h1>
 
@@ -323,29 +323,29 @@ function PerguntaLikert({
               onClick={() => aoResponder(opcao.valor)}
               className={cn(
                 "group flex w-full items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all",
-                "focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none",
+                "",
                 marcado
-                  ? "border-n-brass bg-n-brass/10"
-                  : "hover:border-n-brass/40 hover:bg-secondary/60",
+                  ? "border-marca bg-marca-forte/10"
+                  : "hover:border-marca/40 hover:bg-secondary/60",
               )}
             >
               <span
                 className={cn(
                   "grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors",
-                  marcado ? "border-n-brass" : "border-border",
+                  marcado ? "border-marca" : "border-border",
                 )}
               >
                 <span
                   className={cn(
-                    "size-2.5 rotate-45 rounded-[1px] bg-n-brass transition-transform",
+                    "size-2.5 rotate-45 rounded-[1px] bg-marca-forte transition-transform",
                     marcado ? "scale-100" : "scale-0",
                   )}
                 />
               </span>
 
-              <span className="flex-1 text-[15px]">{opcao.rotulo}</span>
+              <span className="flex-1 t-corpo">{opcao.rotulo}</span>
 
-              <kbd className="leitura hidden rounded border px-1.5 py-0.5 text-[11px] text-muted-foreground sm:block">
+              <kbd className="leitura hidden rounded border px-1.5 py-0.5 t-legenda text-muted-foreground sm:block">
                 {opcao.valor}
               </kbd>
             </button>
@@ -399,15 +399,15 @@ function PerguntaDeCenario({
     <div>
       <p className="etiqueta mb-3">{bloco.titulo}</p>
 
-      <h1 className="text-balance text-[19px] leading-[1.5] font-medium sm:text-[21px]">
+      <h1 className="text-balance t-secao leading-[1.5] font-medium sm:t-secao">
         {bloco.situacao}
       </h1>
 
-      <p className="mt-5 rounded-lg bg-secondary px-3.5 py-2.5 text-[13px] leading-relaxed text-muted-foreground">
+      <p className="mt-5 rounded-lg bg-secondary px-3.5 py-2.5 t-corpo-sm leading-relaxed text-muted-foreground">
         Toque em <strong className="font-medium text-foreground">uma</strong> ação
-        que você faria <strong className="font-medium text-n-teal">primeiro</strong>
+        que você faria <strong className="font-medium text-dentro">primeiro</strong>
         , e depois em <strong className="font-medium text-foreground">outra</strong>{" "}
-        que deixaria por <strong className="font-medium text-n-clay">último</strong>
+        que deixaria por <strong className="font-medium text-fora">último</strong>
         .
       </p>
 
@@ -423,22 +423,22 @@ function PerguntaDeCenario({
               aria-pressed={ehPrimeira || ehUltima}
               className={cn(
                 "flex w-full items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition-all",
-                "focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none",
-                ehPrimeira && "border-n-teal bg-n-teal/10",
-                ehUltima && "border-n-clay bg-n-clay/10",
-                !ehPrimeira && !ehUltima && "hover:border-n-brass/40 hover:bg-secondary/60",
+                "",
+                ehPrimeira && "border-dentro bg-dentro/10",
+                ehUltima && "border-fora bg-fora/10",
+                !ehPrimeira && !ehUltima && "hover:border-marca/40 hover:bg-secondary/60",
               )}
             >
               <span
                 className={cn(
                   "etiqueta mt-0.5 w-16 shrink-0",
-                  ehPrimeira && "text-n-teal",
-                  ehUltima && "text-n-clay",
+                  ehPrimeira && "text-dentro",
+                  ehUltima && "text-fora",
                 )}
               >
                 {ehPrimeira ? "1º faria" : ehUltima ? "por último" : ""}
               </span>
-              <span className="flex-1 text-[15px] leading-snug">{opcao.texto}</span>
+              <span className="flex-1 t-corpo leading-snug">{opcao.texto}</span>
             </button>
           );
         })}
