@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowRight, Check, Minus } from "lucide-react";
 
 import { AlternarTema } from "@/components/alternar-tema";
-import { Faixa } from "@/components/faixa";
 import { Marca } from "@/components/marca";
+import { ComparacaoDeVisao } from "@/components/site/comparacao-de-visao";
 import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPOS } from "@/lib/instrument/archetypes";
 import { ITENS } from "@/lib/instrument/items";
@@ -13,7 +13,7 @@ import { LISTA_DE_PLANOS, formatarPreco } from "@/lib/plans";
 import { FATORES, NOMES_DE_FATOR } from "@/lib/instrument/types";
 
 export const metadata: Metadata = {
-  title: "Prumo — descubra o perfil comportamental ideal para cada contratação",
+  title: "Prumo — não contrate nunca mais com vendas nos olhos",
 };
 
 export default function PaginaInicial() {
@@ -21,6 +21,7 @@ export default function PaginaInicial() {
     <div className="min-h-svh">
       <Cabecalho />
       <Hero />
+      <OQueFicaTapado />
       <FaixaDeMetricas />
       <ComoFunciona />
       <Beneficios />
@@ -79,21 +80,21 @@ function Hero() {
     <section className="relative overflow-hidden border-b">
       <div className="regua-fina absolute inset-x-0 top-0 h-px opacity-60" />
 
-      <div className="mx-auto grid max-w-6xl gap-14 px-5 py-20 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-28">
-        <div>
+      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+        <div className="max-w-3xl">
           <p className="etiqueta">Mapeamento comportamental para recrutamento</p>
 
-          <h1 className="mt-5 text-balance text-[40px] leading-[1.06] font-semibold tracking-[-0.03em] sm:text-[52px]">
-            Descubra o perfil comportamental ideal para cada contratação.
+          <h1 className="mt-5 text-balance text-[40px] leading-[1.04] font-semibold tracking-[-0.03em] sm:text-[56px]">
+            Não contrate nunca mais com vendas nos olhos.
           </h1>
 
-          <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
             Cole um link na sua vaga. Em oito minutos o candidato responde. Você
             recebe o ranking com a aderência explicada — e as perguntas exatas
             para fazer a cada um.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <BotaoLink href="/cadastrar" size="lg" className="h-11 gap-2 px-5 text-[15px]">
               Experimentar gratuitamente
               <ArrowRight className="size-4" />
@@ -106,76 +107,80 @@ function Hero() {
             </a>
           </div>
 
-          <p className="mt-5 text-[13px] text-muted-foreground">
+          <p className="mt-4 text-[13px] text-muted-foreground">
             Sem cartão. Duas vagas e 30 respostas por mês no plano grátis.
           </p>
         </div>
 
-        {/* O herói é o próprio instrumento medindo. Não é ilustração: é a tela
-            que o recrutador vai olhar todo dia. */}
-        <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-7">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <p className="etiqueta">Aderência à vaga</p>
-              <p className="mt-1 text-[13px] text-muted-foreground">
-                Vendas — prospecção
-              </p>
-            </div>
-            <p className="leitura text-[34px] leading-none font-semibold text-n-brass">
-              85,1
-            </p>
-          </div>
-
-          <div className="mt-7 space-y-6">
-            <Faixa
-              atraso={0.15}
-              dados={{
-                fator: "C",
-                nome: "Organização e Entrega",
-                escore: 68.8,
-                faixa: [55, 100],
-                ideal: 100,
-                peso: 4,
-                tipo: "maior_melhor",
-                dentro: true,
-              }}
-            />
-            <Faixa
-              atraso={0.3}
-              dados={{
-                fator: "A",
-                nome: "Cooperação",
-                escore: 93.8,
-                faixa: [30, 60],
-                ideal: 45,
-                peso: 3,
-                tipo: "faixa_otima",
-                dentro: false,
-              }}
-            />
-            <Faixa
-              atraso={0.45}
-              dados={{
-                fator: "O",
-                nome: "Abertura ao Novo",
-                escore: 62.5,
-                faixa: [45, 80],
-                ideal: 62.5,
-                peso: 2,
-                tipo: "faixa_otima",
-                dentro: true,
-              }}
-            />
-          </div>
-
-          <p className="mt-7 border-t pt-5 text-[13.5px] leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">
-              Cooperação bem acima da faixa
-            </span>{" "}
-            é o que mais derruba a aderência aqui. Em prospecção, quem evita
-            atrito não pede o fechamento e dá desconto pra não desagradar.
-          </p>
+        {/* O mesmo candidato, visto de dois jeitos. É o argumento do produto
+            inteiro numa imagem — e usa dados que saem do motor de verdade. */}
+        <div className="mt-12">
+          <ComparacaoDeVisao />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function OQueFicaTapado() {
+  // Nomear o que não se vê é mais forte que prometer o que se vê. Cada linha é
+  // uma fonte de informação que o recrutador JÁ usa — e o limite dela.
+  const pontosCegos = [
+    {
+      fonte: "O currículo",
+      mostra: "o que a pessoa fez",
+      esconde: "como ela faz, e o que acontece quando aperta",
+    },
+    {
+      fonte: "A entrevista",
+      mostra: "quem se apresenta bem",
+      esconde: "quem entrega depois que a conversa acaba",
+    },
+    {
+      fonte: "A referência",
+      mostra: "o que o gestor anterior quer dizer",
+      esconde: "o motivo pelo qual a pessoa saiu",
+    },
+    {
+      fonte: "A intuição",
+      mostra: "o seu próprio viés, de volta",
+      esconde: "todo mundo que não se parece com você",
+    },
+  ];
+
+  return (
+    <section className="border-b">
+      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+        <p className="etiqueta">O ponto cego</p>
+        <h2 className="mt-4 max-w-2xl text-balance text-[32px] leading-[1.15] font-semibold tracking-tight sm:text-[38px]">
+          Ninguém contrata mal por falta de esforço. Contrata mal por falta de
+          informação.
+        </h2>
+
+        <ul className="mt-14 divide-y border-t">
+          {pontosCegos.map((ponto) => (
+            <li
+              key={ponto.fonte}
+              className="grid gap-2 py-5 md:grid-cols-[13rem_1fr_1fr] md:gap-8"
+            >
+              <p className="text-[15.5px] font-semibold">{ponto.fonte}</p>
+              <p className="text-[14.5px] leading-relaxed text-muted-foreground">
+                mostra {ponto.mostra}
+              </p>
+              <p className="text-[14.5px] leading-relaxed">
+                <span className="text-n-clay">esconde</span>{" "}
+                <span className="text-muted-foreground">{ponto.esconde}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-10 max-w-2xl text-[15px] leading-relaxed text-muted-foreground">
+          Nada disso é substituível — e o Prumo não substitui. Ele acrescenta a
+          única coisa que faltava: uma medida comparável entre pessoas, com a
+          conta aberta do lado. Você continua entrevistando. Só para de
+          entrevistar no escuro.
+        </p>
       </div>
     </section>
   );
@@ -565,11 +570,12 @@ function ChamadaFinal() {
     <section className="border-b">
       <div className="mx-auto max-w-6xl px-5 py-24 text-center sm:px-8">
         <h2 className="mx-auto max-w-2xl text-balance text-[34px] leading-[1.12] font-semibold tracking-tight sm:text-[42px]">
-          A próxima contratação pode ser uma decisão, não uma aposta.
+          Tire a venda antes da próxima contratação.
         </h2>
         <p className="mx-auto mt-5 max-w-lg text-[16px] leading-relaxed text-muted-foreground">
           Crie a conta, publique uma vaga e mande o link para três candidatos
-          hoje mesmo. Você vai ver o ranking ainda esta semana.
+          hoje mesmo. Você vê o ranking ainda esta semana — e chega na entrevista
+          sabendo o que perguntar.
         </p>
         <BotaoLink
           href="/cadastrar"
@@ -591,8 +597,8 @@ function Rodape() {
         <div className="max-w-xs">
           <Marca />
           <p className="mt-4 text-[13px] leading-relaxed text-muted-foreground">
-            Mapeamento comportamental para processos seletivos. Ordena
-            candidatos, explica o porquê e devolve as perguntas certas.
+            Mapeamento comportamental para processos seletivos. Mostra o que
+            currículo e entrevista não mostram — e devolve as perguntas certas.
           </p>
         </div>
 
