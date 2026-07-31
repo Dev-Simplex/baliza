@@ -1,0 +1,573 @@
+// Bússola — mapeamento comportamental para processos seletivos.
+//
+// Regra de arquitetura: TUDO que pertence a uma empresa carrega `organizationId`
+// e é lido exclusivamente pelos helpers de `src/lib/tenant.ts`. Consulta que
+// esquece o escopo é vazamento de dados entre clientes, não bug de listagem.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Tenancy
+// ══════════════════════════════════════════════════════════════════════════
+
+enum PlanCode {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  document  String? // CNPJ, opcional
+  logoUrl   String?
+  website   String?
+  segment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prazo de expurgo da resposta bruta (§7.5 do instrumento).
+  retentionMonths Int     @default(12)
+  isActive        Boolean @default(true)
+
+  subscription    Subscription?
+  users           User[]
+  jobs            Job[]
+  candidates      Candidate[]
+  invitations     Invitation[]
+  assessments     Assessment[]
+  cultureProfiles CultureProfile[]
+  apiKeys         ApiKey[]
+  auditLogs       AuditLog[]
+  payments        Payment[]
+
+  @@index([slug])
+}
+
+model Subscription {
+  id                 String             @id @default(cuid())
+  organizationId     String             @unique
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planCode           PlanCode           @default(STARTER)
+  status             SubscriptionStatus @default(TRIALING)
+  seats              Int                @default(3)
+  currentPeriodStart DateTime           @default(now())
+  currentPeriodEnd   DateTime
+  canceledAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  payments Payment[]
+
+  @@index([status])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  amountCents    Int
+  currency       String        @default("BRL")
+  status         String        @default("PAID")
+  method         String?
+  externalId     String?
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Usuários e autenticação
+// ══════════════════════════════════════════════════════════════════════════
+
+enum UserRole {
+  OWNER // dono da conta: tudo, inclusive faturamento
+  ADMIN // administra vagas e usuários
+  RECRUITER // opera vagas e candidatos
+  VIEWER // só leitura
+}
+
+model User {
+  id             String        @id @default(cuid())
+  name           String
+  email          String        @unique
+  passwordHash   String?
+  emailVerified  DateTime?
+  image          String?
+  role           UserRole      @default(RECRUITER)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // Operador da plataforma (painel administrativo). Vive FORA do escopo de tenant.
+  isPlatformAdmin Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  createdJobs Job[]        @relation("JobCreatedBy")
+  invitations Invitation[] @relation("InvitationCreatedBy")
+  auditLogs   AuditLog[]
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Vagas
+// ══════════════════════════════════════════════════════════════════════════
+
+enum Seniority {
+  INTERN
+  JUNIOR
+  MID
+  SENIOR
+  LEAD
+  MANAGER
+  DIRECTOR
+}
+
+enum WorkModel {
+  ONSITE
+  REMOTE
+  HYBRID
+}
+
+enum JobStatus {
+  DRAFT
+  OPEN
+  PAUSED
+  CLOSED
+}
+
+model Job {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?      @db.Text
+  requirements   String?      @db.Text
+  seniority      Seniority    @default(MID)
+  workModel      WorkModel    @default(ONSITE)
+  department     String?
+  location       String?
+  status         JobStatus    @default(DRAFT)
+
+  // Perfil-alvo. `presetId` é só a procedência (qual preset originou);
+  // `targetProfile` é a verdade usada no cálculo e é editável pelo recrutador.
+  presetId      String?
+  targetProfile Json
+
+  // Link público único da vaga: qualquer pessoa com o link responde.
+  publicToken   String  @unique @default(cuid())
+  publicEnabled Boolean @default(true)
+
+  createdById String?
+  createdBy   User?     @relation("JobCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  closedAt    DateTime?
+
+  invitations Invitation[]
+  assessments Assessment[]
+
+  @@index([organizationId, status])
+  @@index([publicToken])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Candidatos e convites
+// ══════════════════════════════════════════════════════════════════════════
+
+model Candidate {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  email          String
+  phone          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  invitations Invitation[]
+  assessments Assessment[]
+
+  // O mesmo e-mail na mesma empresa é a MESMA pessoa — é isso que sustenta
+  // o histórico de evolução de candidato recorrente.
+  @@unique([organizationId, email])
+  @@index([organizationId, name])
+}
+
+enum InvitationChannel {
+  EMAIL
+  LINK
+  QRCODE
+}
+
+enum InvitationStatus {
+  PENDING
+  SENT
+  OPENED
+  STARTED
+  COMPLETED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id             String            @id @default(cuid())
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobId          String
+  job            Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateId    String?
+  candidate      Candidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  email          String?
+  token          String            @unique @default(cuid())
+  channel        InvitationChannel @default(EMAIL)
+  status         InvitationStatus  @default(PENDING)
+  sentAt         DateTime?
+  openedAt       DateTime?
+  expiresAt      DateTime
+  createdById    String?
+  createdBy      User?             @relation("InvitationCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime          @default(now())
+
+  assessment Assessment?
+
+  @@index([organizationId, jobId])
+  @@index([token])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Avaliações (o teste em si)
+// ══════════════════════════════════════════════════════════════════════════
+
+enum AssessmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+  ABANDONED
+}
+
+model Assessment {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  jobId          String
+  job            Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateId    String
+  candidate      Candidate        @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  invitationId   String?          @unique
+  invitation     Invitation?      @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  status         AssessmentStatus @default(PENDING)
+
+  // Forma sorteada para ESTA pessoa. `itemOrder` é a ordem de apresentação já
+  // resolvida (ver src/lib/instrument/form.ts): sorteio de verdade, mas com as
+  // invariantes do instrumento preservadas. `seed` reproduz a mesma forma.
+  instrumentVersion String
+  seed              String
+  itemOrder         Json
+  scenarioOrder     Json
+
+  // Resultado consolidado, gravado no encerramento.
+  scores             Json? // { C, E, X, A, O } na escala 0-100
+  facetNotes         Json? // nuance qualitativa por faceta — nunca número exibido
+  fitScore           Float?
+  fitDetail          Json? // o que puxou pra cima/baixo, dimensões ignoradas
+  confidence         Json? // selo + sinais disparados
+  archetypeId        String?
+  archetypeMixedWith String?
+  percentiles        Json? // só preenchido quando a amostra permite (N ≥ 200)
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+  lastSeenAt  DateTime?
+
+  // O candidato sempre recebe o próprio resultado, sem depender da empresa (§7.3).
+  resultToken String    @unique @default(cuid())
+  // Compartilhamento de relatório pela empresa; revogável.
+  shareToken  String?   @unique
+  sharedAt    DateTime?
+
+  // LGPD
+  consentAt DateTime?
+  ipHash    String?
+  userAgent String?
+  purgedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses         ItemResponse[]
+  scenarioResponses ScenarioResponse[]
+  aiAnalysis        AiAnalysis?
+
+  @@index([organizationId, jobId, status])
+  @@index([candidateId, completedAt])
+  @@index([resultToken])
+}
+
+model ItemResponse {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  itemId       String
+  value        Int // 1..5 na escala Likert, sempre o valor CRU (sem inversão)
+  elapsedMs    Int?
+  answeredAt   DateTime   @default(now())
+
+  @@unique([assessmentId, itemId])
+  @@index([assessmentId])
+}
+
+model ScenarioResponse {
+  id            String     @id @default(cuid())
+  assessmentId  String
+  assessment    Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  blockId       String
+  firstActionId String
+  lastActionId  String
+  elapsedMs     Int?
+  answeredAt    DateTime   @default(now())
+
+  @@unique([assessmentId, blockId])
+  @@index([assessmentId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Banco de itens (gerenciável pelo painel administrativo)
+// ══════════════════════════════════════════════════════════════════════════
+
+enum Factor {
+  C // Conscienciosidade  → Organização e Entrega
+  E // Estabilidade       → Estabilidade sob Pressão
+  X // Extroversão        → Energia Social
+  A // Amabilidade        → Cooperação
+  O // Abertura           → Abertura ao Novo
+  D // Desejabilidade social — não entra em escore de fator
+}
+
+model Item {
+  id      String  @id // slug estável: c_org_1
+  factor  Factor
+  facet   String
+  reverse Boolean @default(false)
+  text    String  @db.Text
+
+  // Nome de mercado exibido ao recrutador (Comunicação, Liderança, ...).
+  // Camada de vocabulário: NÃO é uma dimensão de escoragem.
+  marketDimension String?
+
+  // Par de consistência (§5.2). Os dois itens do par compartilham o mesmo valor.
+  consistencyPair String?
+
+  isActive  Boolean  @default(true)
+  version   String   @default("1.0.0")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([factor, isActive])
+  @@index([consistencyPair])
+}
+
+model ScenarioBlock {
+  id        String   @id
+  situation String   @db.Text
+  isActive  Boolean  @default(true)
+  version   String   @default("1.0.0")
+  createdAt DateTime @default(now())
+
+  actions ScenarioAction[]
+}
+
+model ScenarioAction {
+  id      String        @id
+  blockId String
+  block   ScenarioBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  factor  Factor
+  text    String        @db.Text
+
+  @@index([blockId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// IA
+// ══════════════════════════════════════════════════════════════════════════
+
+enum AnalysisSource {
+  AI
+  DETERMINISTIC
+}
+
+model AiAnalysis {
+  id            String         @id @default(cuid())
+  assessmentId  String         @unique
+  assessment    Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  source        AnalysisSource
+  model         String?
+  promptVersion String         @default("1.0.0")
+
+  summary            String @db.Text
+  behavioralReading  String @db.Text
+  strengths          Json
+  watchpoints        Json
+  interviewQuestions Json
+  fitNarrative       String @db.Text
+  roleSuggestions    Json
+
+  tokensUsed  Int?
+  generatedAt DateTime @default(now())
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Cultura organizacional (matching)
+// ══════════════════════════════════════════════════════════════════════════
+
+model CultureProfile {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?      @db.Text
+  dimensions     Json // mesma forma do targetProfile da vaga
+  isDefault      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Normas / benchmark de mercado
+// ══════════════════════════════════════════════════════════════════════════
+
+// Amostra acumulada para percentil. §4.3: só exibe percentil a partir de N=200,
+// e sempre com o N visível. Recalculada por job/cron.
+model NormSample {
+  id         String   @id @default(cuid())
+  scope      String   @default("GLOBAL") // GLOBAL | SENIORITY | DEPARTMENT
+  scopeKey   String   @default("all")
+  factor     Factor
+  n          Int
+  mean       Float
+  sd         Float
+  buckets    Json // distribuição para o cálculo de percentil
+  computedAt DateTime @default(now())
+
+  @@unique([scope, scopeKey, factor])
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Segurança, auditoria e API pública
+// ══════════════════════════════════════════════════════════════════════════
+
+enum AuditCategory {
+  AUTH
+  ACCESS
+  MUTATION
+  EXPORT
+  ADMIN
+  PRIVACY
+}
+
+model AuditLog {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  category       AuditCategory
+  action         String
+  entity         String?
+  entityId       String?
+  metadata       Json?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([category, createdAt])
+}
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  prefix         String       @unique
+  hashedKey      String
+  scopes         Json
+  lastUsedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId])
+}
+
+model RateLimitCounter {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+}

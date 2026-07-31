@@ -1,0 +1,277 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Bússola — sistema visual
+   ──────────────────────────────────────────────────────────────────────────
+   A metáfora não é a rosa dos ventos: é o INSTRUMENTO DE MEDIÇÃO. Latão,
+   marcas de calibração, leitura tabular. O produto mede posição relativa a uma
+   faixa, e a identidade inteira sai disso.
+
+   Uma decisão de cor que é regra de produto, não gosto: o estado "fora da
+   faixa" é ARGILA (#C2643F), nunca vermelho de alarme. O produto ordena
+   candidatos, nunca elimina — e a cor não pode dizer o que o texto se proíbe
+   de dizer.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--fonte-ui);
+  --font-heading: var(--fonte-display);
+  --font-mono: var(--fonte-mono);
+
+  /* Tokens da identidade — usados diretamente como bg-n-brass, text-n-teal… */
+  --color-n-ink: var(--n-ink);
+  --color-n-paper: var(--n-paper);
+  --color-n-brass: var(--n-brass);
+  --color-n-brass-soft: var(--n-brass-soft);
+  --color-n-teal: var(--n-teal);
+  --color-n-teal-soft: var(--n-teal-soft);
+  --color-n-clay: var(--n-clay);
+  --color-n-clay-soft: var(--n-clay-soft);
+  --color-n-slate: var(--n-slate);
+  --color-n-rule: var(--n-rule);
+  --color-n-surface: var(--n-surface);
+  --color-n-surface-2: var(--n-surface-2);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ─── Claro ─────────────────────────────────────────────────────────────── */
+:root {
+  --n-ink: #0b0e14;
+  --n-paper: #fbfbfd;
+  --n-brass: #a97722;
+  --n-brass-soft: #f4ead6;
+  --n-teal: #1f7f73;
+  --n-teal-soft: #dcefec;
+  --n-clay: #b05631;
+  --n-clay-soft: #f7e5dd;
+  --n-slate: #5b6472;
+  --n-rule: #e6e7ec;
+  --n-surface: #ffffff;
+  --n-surface-2: #f4f5f8;
+
+  --background: #fbfbfd;
+  --foreground: #0b0e14;
+  --card: #ffffff;
+  --card-foreground: #0b0e14;
+  --popover: #ffffff;
+  --popover-foreground: #0b0e14;
+  --primary: #0b0e14;
+  --primary-foreground: #fbfbfd;
+  --secondary: #f4f5f8;
+  --secondary-foreground: #0b0e14;
+  --muted: #f4f5f8;
+  --muted-foreground: #5b6472;
+  --accent: #f4ead6;
+  --accent-foreground: #6b4a11;
+  --destructive: #b05631;
+  --border: #e6e7ec;
+  --input: #dfe1e8;
+  --ring: #a97722;
+
+  /* Gráficos: os cinco fatores têm cor fixa em todo o produto. Trocar de tela
+     não pode trocar a cor de Organização e Entrega. */
+  --chart-1: #a97722; /* C — Organização e Entrega */
+  --chart-2: #1f7f73; /* E — Estabilidade sob Pressão */
+  --chart-3: #3f6ea8; /* X — Energia Social */
+  --chart-4: #7d5ba6; /* A — Cooperação */
+  --chart-5: #b05631; /* O — Abertura ao Novo */
+
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0b0e14;
+  --sidebar-primary: #0b0e14;
+  --sidebar-primary-foreground: #fbfbfd;
+  --sidebar-accent: #f4f5f8;
+  --sidebar-accent-foreground: #0b0e14;
+  --sidebar-border: #e6e7ec;
+  --sidebar-ring: #a97722;
+}
+
+/* ─── Escuro ────────────────────────────────────────────────────────────── */
+.dark {
+  --n-ink: #0b0e14;
+  --n-paper: #f2f3f7;
+  --n-brass: #d4a24c;
+  --n-brass-soft: #2a2114;
+  --n-teal: #4bb5a5;
+  --n-teal-soft: #10261f;
+  --n-clay: #d97d55;
+  --n-clay-soft: #2a1810;
+  --n-slate: #8a93a3;
+  --n-rule: #1c2029;
+  --n-surface: #12161e;
+  --n-surface-2: #171c25;
+
+  --background: #0b0e14;
+  --foreground: #f2f3f7;
+  --card: #12161e;
+  --card-foreground: #f2f3f7;
+  --popover: #12161e;
+  --popover-foreground: #f2f3f7;
+  --primary: #f2f3f7;
+  --primary-foreground: #0b0e14;
+  --secondary: #171c25;
+  --secondary-foreground: #f2f3f7;
+  --muted: #171c25;
+  --muted-foreground: #8a93a3;
+  --accent: #2a2114;
+  --accent-foreground: #d4a24c;
+  --destructive: #d97d55;
+  --border: #1c2029;
+  --input: #232935;
+  --ring: #d4a24c;
+
+  --chart-1: #d4a24c;
+  --chart-2: #4bb5a5;
+  --chart-3: #6d9ada;
+  --chart-4: #a68ad4;
+  --chart-5: #d97d55;
+
+  --sidebar: #0e121a;
+  --sidebar-foreground: #f2f3f7;
+  --sidebar-primary: #d4a24c;
+  --sidebar-primary-foreground: #0b0e14;
+  --sidebar-accent: #171c25;
+  --sidebar-accent-foreground: #f2f3f7;
+  --sidebar-border: #1c2029;
+  --sidebar-ring: #d4a24c;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv05" 1, "ss03" 1;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--fonte-display);
+    letter-spacing: -0.022em;
+  }
+
+  /* Número de instrumento: sempre tabular, pra coluna de ranking não dançar. */
+  .leitura {
+    font-family: var(--fonte-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+  }
+
+  /* Etiqueta de calibração — o rótulo pequeno gravado no instrumento. */
+  .etiqueta {
+    font-family: var(--fonte-mono);
+    font-size: 0.6875rem;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--n-slate);
+  }
+
+  ::selection {
+    background: var(--n-brass);
+    color: var(--n-paper);
+  }
+}
+
+@layer utilities {
+  /* Régua de calibração: o fundo tickado que aparece atrás dos medidores e no
+     topo do fluxo do candidato. É o mesmo desenho em toda escala. */
+  .regua {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--n-rule) 0 1px,
+      transparent 1px 100%
+    );
+    background-size: 10% 100%;
+  }
+
+  .regua-fina {
+    background-image: repeating-linear-gradient(
+      to right,
+      var(--n-rule) 0 1px,
+      transparent 1px 100%
+    );
+    background-size: 5% 100%;
+  }
+
+  /* Brilho de latão sob o marcador do medidor. Discreto de propósito. */
+  .brilho-latao {
+    box-shadow:
+      0 0 0 3px color-mix(in oklab, var(--n-brass) 18%, transparent),
+      0 1px 6px color-mix(in oklab, var(--n-brass) 40%, transparent);
+  }
+
+  .grade-fina {
+    background-image:
+      linear-gradient(to right, var(--n-rule) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--n-rule) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
+
+/* Movimento: quem pediu pra reduzir, recebe reduzido. Sem exceção. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
