@@ -158,5 +158,5 @@ function resumirGap(foraDaFaixa: ContribuicaoDeFit[]) {
     })
     .join(", ");
 
-  return `${foraDaFaixa.length} ${foraDaFaixa.length === 1 ? "dimensão saiu" : "dimensões saíram"} da faixa alvo: ${nomes}. O roteiro sonda exatamente esses pontos.`;
+  return `${foraDaFaixa.length} ${foraDaFaixa.length === 1 ? "dimensão ficou fora de prumo" : "dimensões ficaram fora de prumo"} para esta vaga: ${nomes}. O roteiro sonda exatamente esses pontos.`;
 }

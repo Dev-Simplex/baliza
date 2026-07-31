@@ -36,7 +36,7 @@ export default function LayoutDeConta({
           <Link href="/termos" className="hover:text-foreground">
             Termos
           </Link>
-          <span>© {new Date().getFullYear()} Bússola</span>
+          <span>© {new Date().getFullYear()} Prumo</span>
         </footer>
       </div>
 

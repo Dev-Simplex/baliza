@@ -1,7 +1,12 @@
-# Bússola
+# Prumo
 
 > Mapeamento comportamental para processos seletivos.
-> Nome de trabalho — trocável a qualquer momento.
+
+O prumo é o instrumento de precisão mais antigo que existe: um peso na ponta de
+um fio, que diz onde está o vertical verdadeiro. **"Fora de prumo"** já significa,
+em português corrente, exatamente o que este produto mede — fora do alinhamento
+que aquele trabalho pede. O nome, o símbolo e o gráfico principal dizem a mesma
+coisa, de propósito.
 
 **A frase do produto:**
 
@@ -28,8 +33,8 @@ O banco esperado é PostgreSQL. Configure `DATABASE_URL` no `.env`.
 
 | Perfil | E-mail | Senha |
 |---|---|---|
-| Empresa (dona da conta) | `recrutador@acme.com` | `bussola123` |
-| Operação da plataforma | `admin@bussola.app` | `bussola123` |
+| Empresa (dona da conta) | `recrutador@acme.com` | `prumo123` |
+| Operação da plataforma | `admin@prumo.app` | `prumo123` |
 
 **Atenção em desenvolvimento:** abra por `localhost:3300`, não por
 `127.0.0.1:3300`. O Next 16 bloqueia recursos de dev vindos de outra origem — a

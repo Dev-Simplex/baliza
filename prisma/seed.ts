@@ -143,14 +143,14 @@ function simularRespostas(
 async function semearDemonstracao() {
   console.log("→ demonstração");
 
-  const senha = await bcrypt.hash("bussola123", 10);
+  const senha = await bcrypt.hash("prumo123", 10);
 
   // Operador da plataforma — vive fora de qualquer empresa.
   await prisma.user.upsert({
-    where: { email: "admin@bussola.app" },
+    where: { email: "admin@prumo.app" },
     create: {
-      name: "Operação Bússola",
-      email: "admin@bussola.app",
+      name: "Operação Prumo",
+      email: "admin@prumo.app",
       passwordHash: senha,
       isPlatformAdmin: true,
       role: "OWNER",
@@ -353,8 +353,8 @@ async function semearDemonstracao() {
   }
 
   console.log(`  empresa Acme Indústrias, 3 vagas, ${criadas} avaliações novas`);
-  console.log("  login empresa: recrutador@acme.com / bussola123");
-  console.log("  login plataforma: admin@bussola.app / bussola123");
+  console.log("  login empresa: recrutador@acme.com / prumo123");
+  console.log("  login plataforma: admin@prumo.app / prumo123");
 }
 
 async function main() {

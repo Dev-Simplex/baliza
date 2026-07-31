@@ -1,4 +1,4 @@
-// Bússola — mapeamento comportamental para processos seletivos.
+// Prumo — mapeamento comportamental para processos seletivos.
 //
 // Regra de arquitetura: TUDO que pertence a uma empresa carrega `organizationId`
 // e é lido exclusivamente pelos helpers de `src/lib/tenant.ts`. Consulta que

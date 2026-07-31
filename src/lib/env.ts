@@ -11,7 +11,7 @@ const esquema = z.object({
     .min(32, "AUTH_SECRET precisa de pelo menos 32 caracteres"),
 
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3300"),
-  NEXT_PUBLIC_APP_NAME: z.string().default("Bússola"),
+  NEXT_PUBLIC_APP_NAME: z.string().default("Prumo"),
 
   // Opcionais: a ausência degrada a funcionalidade, nunca derruba o sistema.
   OPENAI_API_KEY: z.string().optional().default(""),
@@ -21,7 +21,7 @@ const esquema = z.object({
   SMTP_PORT: z.string().optional().default("587"),
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASSWORD: z.string().optional().default(""),
-  SMTP_FROM: z.string().optional().default("Bússola <nao-responda@localhost>"),
+  SMTP_FROM: z.string().optional().default("Prumo <nao-responda@localhost>"),
 });
 
 function carregar() {

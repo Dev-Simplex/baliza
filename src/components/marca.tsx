@@ -5,20 +5,54 @@ import { cn } from "@/lib/utils";
 /**
  * A marca.
  *
- * O símbolo não é uma rosa dos ventos — é a leitura de um instrumento: o
- * marcador de latão pousado dentro da faixa. Mesmo desenho do medidor que
- * carrega o produto inteiro, reduzido a 20 pixels.
+ * O símbolo é o próprio instrumento: o fio a prumo descendo, o peso de latão na
+ * ponta, e a faixa alvo atravessando embaixo. A ponta do peso pousa DENTRO da
+ * faixa — que é o estado que o produto procura.
+ *
+ * É o mesmo desenho do medidor (`components/faixa.tsx`) girado 90°: a leitura
+ * na vertical, o alvo na horizontal. Nome, símbolo e gráfico dizendo a mesma
+ * coisa, o que é a única razão de um símbolo existir.
  */
 export function Simbolo({ className }: { className?: string }) {
   return (
-    <span
+    <svg
+      viewBox="0 0 20 20"
       aria-hidden
-      className={cn("relative inline-block h-5 w-5 shrink-0", className)}
+      className={cn("size-5 shrink-0", className)}
+      fill="none"
     >
-      <span className="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-current opacity-25" />
-      <span className="absolute top-1/2 left-1/2 h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-n-teal" />
-      <span className="absolute top-1/2 left-[58%] size-[7px] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[1px] bg-n-brass" />
-    </span>
+      {/* faixa alvo */}
+      <rect
+        x="1.5"
+        y="13"
+        width="17"
+        height="3.6"
+        rx="1.8"
+        fill="var(--n-teal)"
+        fillOpacity="0.22"
+      />
+      <path
+        d="M2.4 13.4v2.8M17.6 13.4v2.8"
+        stroke="var(--n-teal)"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+
+      {/* o fio */}
+      <path
+        d="M10 2.2V9"
+        stroke="currentColor"
+        strokeOpacity="0.32"
+        strokeWidth="1.1"
+        strokeLinecap="round"
+      />
+
+      {/* o peso de latão — a ponta pousa dentro da faixa */}
+      <path
+        d="M10 8.6 12.5 11.4 10 15.6 7.5 11.4Z"
+        fill="var(--n-brass)"
+      />
+    </svg>
   );
 }
 
@@ -42,14 +76,17 @@ export function Marca({
       )}
       style={{ fontFamily: "var(--fonte-display)" }}
     >
-      <Simbolo className={cn(tamanho === "lg" && "h-6 w-6")} />
-      Bússola
+      <Simbolo className={cn(tamanho === "lg" && "size-6")} />
+      Prumo
     </span>
   );
 
   if (!href) return conteudo;
   return (
-    <Link href={href} className="rounded-sm focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none">
+    <Link
+      href={href}
+      className="rounded-sm focus-visible:ring-2 focus-visible:ring-n-brass focus-visible:outline-none"
+    >
       {conteudo}
     </Link>
   );

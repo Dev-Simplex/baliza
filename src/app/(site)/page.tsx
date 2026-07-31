@@ -13,7 +13,7 @@ import { LISTA_DE_PLANOS, formatarPreco } from "@/lib/plans";
 import { FATORES, NOMES_DE_FATOR } from "@/lib/instrument/types";
 
 export const metadata: Metadata = {
-  title: "Bússola — descubra o perfil comportamental ideal para cada contratação",
+  title: "Prumo — descubra o perfil comportamental ideal para cada contratação",
 };
 
 export default function PaginaInicial() {
@@ -623,7 +623,7 @@ function Rodape() {
       </div>
 
       <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <p className="etiqueta">© {new Date().getFullYear()} Bússola</p>
+        <p className="etiqueta">© {new Date().getFullYear()} Prumo</p>
         <AlternarTema />
       </div>
     </footer>

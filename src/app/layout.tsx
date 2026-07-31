@@ -25,14 +25,14 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Bússola — mapeamento comportamental para contratar melhor",
-    template: "%s · Bússola",
+    default: "Prumo — mapeamento comportamental para contratar melhor",
+    template: "%s · Prumo",
   },
   description:
     "Cole um link na sua vaga. Em 8 minutos o candidato responde. Você recebe o ranking com a aderência explicada — e as perguntas exatas para fazer a cada um.",
-  applicationName: "Bússola",
+  applicationName: "Prumo",
   openGraph: {
-    title: "Bússola — mapeamento comportamental para contratar melhor",
+    title: "Prumo — mapeamento comportamental para contratar melhor",
     description:
       "Ranking com aderência explicada e roteiro de entrevista pronto. Oito minutos por candidato.",
     type: "website",
