@@ -1,41 +1,51 @@
-"use client";
-
 import { FileDown } from "lucide-react";
 
 import { Marca } from "@/components/marca";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * O relatório em PDF.
  *
- * ─── Por que não existe geração de PDF no servidor ─────────────────────────
- * Puppeteer/Chromium num contêiner só para desenhar um documento custa RAM,
- * tempo de build e uma SEGUNDA versão do relatório para manter em sincronia —
- * e é essa segunda versão que sempre atrasa: muda o layout na tela, o PDF
- * continua com o de antes. O diálogo do navegador salva em PDF em qualquer
- * sistema operacional e em qualquer celular, e imprime exatamente o que a
- * pessoa está vendo.
+ * ─── Por que isto deixou de ser `window.print()` ───────────────────────────
+ * A primeira versão abria o diálogo de impressão do navegador. Economizava uma
+ * dependência e mantinha uma fonte de verdade só — mas fazia a coisa errada:
+ * "salvar em PDF" abria uma CAIXA DE IMPRESSÃO, e o arquivo que saía de lá
+ * vinha carimbado com a data no canto, o título da aba no topo, a URL inteira
+ * no rodapé e "1/3" ao lado. Nada disso se desliga por CSS — é configuração
+ * do usuário, não do site. Um relatório com `192.168.x.x:3300/candidatos/cms9…`
+ * impresso no pé não é documento, é captura de tela.
  *
- * O que isso cobra em troca é caprichar na folha de impressão, e é onde a
- * versão anterior falhava: sem `@media print`, o navegador cuspia a tela do
- * painel inteira — barra lateral, botões, cartões partidos no meio da página
- * e gráfico em branco. A folha vive em `globals.css`; este arquivo é só o
- * gatilho e o que o papel ganha de diferente da tela.
+ * Então virou um link comum para uma rota que devolve o arquivo pronto com
+ * `Content-Disposition: attachment`. Link e não botão com `fetch`: o navegador
+ * já sabe baixar, e assim funciona com clique do meio, "salvar link como" e
+ * sem JavaScript.
+ *
+ * `<a>` puro e não `next/link`: o destino é um route handler que devolve um
+ * arquivo, não uma página. O roteador do Next tentaria navegar para ele por
+ * conta própria e o clique não faria nada visível.
+ *
+ * A folha de `@media print` continua em `globals.css` e continua valendo — ela
+ * agora serve a quem aperta Ctrl+P na tela, que é outro caminho e legítimo.
  */
-export function BotaoSalvarPdf({ rotulo = "Salvar em PDF" }: { rotulo?: string }) {
+export function BotaoSalvarPdf({
+  href,
+  rotulo = "Salvar em PDF",
+}: {
+  href: string;
+  rotulo?: string;
+}) {
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="gap-1.5"
+    <a
+      href={href}
       // Sai da folha por conta própria: `@media print` esconde todo `button`,
-      // mas o atributo deixa a intenção explícita para quem ler o markup.
+      // mas o link não é botão — o atributo é o que garante.
       data-impressao="ocultar"
-      onClick={() => window.print()}
+      className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
     >
       <FileDown className="size-4" />
       {rotulo}
-    </Button>
+    </a>
   );
 }
 

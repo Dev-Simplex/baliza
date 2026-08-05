@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Amostra de relatorio gerada localmente para conferencia visual. Nao versionar:
+# tem dado de candidato e e regenerada a cada teste.
+/public/exemplo-relatorio.pdf

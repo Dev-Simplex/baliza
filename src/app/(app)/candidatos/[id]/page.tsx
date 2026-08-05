@@ -146,7 +146,9 @@ export default async function PaginaDoCandidato({
           </div>
 
           <div className="flex items-center gap-3">
-            <BotaoSalvarPdf />
+            <BotaoSalvarPdf
+              href={`/candidatos/${candidato.id}/pdf?avaliacao=${avaliacao.id}`}
+            />
             <SeloDeConfianca confianca={confianca} />
             <div className="text-right">
               <p className="etiqueta">Aderência</p>
