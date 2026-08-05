@@ -49,6 +49,8 @@ export function CadastrarCandidato({
   const router = useRouter();
 
   const acesso = estado.acesso;
+  /** Endereço do código sem o esquema: é para ser ditado, não clicado. */
+  const enderecoDeAcesso = `${baseDoSite.replace(/^https?:\/\//, "")}/acesso`;
 
   // O QR é o link desenhado. Gerado aqui, no cliente, porque só existe depois
   // que a ação responde — e é por pessoa, não da vaga.
@@ -263,10 +265,13 @@ export function CadastrarCandidato({
                         {acesso.codigo}
                       </span>
                       {/* A instrução mora COM o código: um código sem o
-                          endereço onde digitá-lo não serve para nada. */}
-                      <p className="mt-0.5 t-legenda text-muted-foreground">
+                          endereço onde digitá-lo não serve para nada.
+                          Sem o `http://` porque este endereço é para ser DITO
+                          em voz alta junto com o código — ninguém dita
+                          "agá-tê-tê-pê-dois-pontos-barra-barra". */}
+                      <p className="mt-0.5 t-legenda break-words text-muted-foreground">
                         digite em{" "}
-                        <span className="leitura">{baseDoSite}/acesso</span>
+                        <span className="leitura">{enderecoDeAcesso}</span>
                       </p>
                     </>
                   ) : (
