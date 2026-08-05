@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Check, Copy, Download, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConvidarPorEmail } from "@/components/app/convidar-por-email";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,34 +20,87 @@ import {
  * Compartilhamento da vaga.
  *
  * Três formas, mesmo destino: o link é a única coisa que existe de verdade. O
- * QR é o link desenhado (feira, mural, balcão) e o e-mail é o link entregue.
+ * QR é o link desenhado (feira, mural, balcão) e o convite por e-mail é o link
+ * entregue — esse último é PESSOAL (`/t/<token>`), então o convidado não repete
+ * nome e e-mail e a vaga sabe quem foi chamado.
  */
 export function CompartilharVaga({
   url,
   qrDataUrl,
   titulo,
+  jobId,
 }: {
   url: string;
   qrDataUrl: string;
   titulo: string;
+  jobId: string;
 }) {
   const [copiado, setCopiado] = useState(false);
+  const idDoLink = "link-publico-da-vaga";
 
+  /**
+   * `navigator.clipboard` só existe em origem SEGURA — https ou localhost. Quem
+   * abre o painel pelo IP da rede (`http://192.168.0.10:3300`) não tem a API, e
+   * o botão principal do produto caía direto no erro. O caminho antigo do
+   * `execCommand` continua valendo em http e é o que salva esse caso.
+   */
   async function copiar() {
-    try {
-      await navigator.clipboard.writeText(url);
+    const marcarSucesso = () => {
       setCopiado(true);
       toast.success("Link copiado");
       window.setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      toast.error("Não foi possível copiar. Selecione o link e copie manualmente.");
+    };
+
+    if (window.isSecureContext && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        marcarSucesso();
+        return;
+      } catch {
+        // Permissão negada: ainda dá para tentar o caminho legado abaixo.
+      }
     }
+
+    try {
+      const campo = document.createElement("textarea");
+      campo.value = url;
+      // Fora da tela, mas selecionável: `display:none` não copia.
+      campo.setAttribute("readonly", "");
+      campo.style.position = "fixed";
+      campo.style.top = "-1000px";
+      document.body.appendChild(campo);
+      campo.select();
+      const deuCerto = document.execCommand("copy");
+      document.body.removeChild(campo);
+      if (!deuCerto) throw new Error("execCommand recusou");
+      marcarSucesso();
+    } catch {
+      // Último recurso: deixa o link selecionado para o Ctrl+C do usuário.
+      selecionarLink();
+      toast.error("Não foi possível copiar sozinho. O link está selecionado — use Ctrl+C.");
+    }
+  }
+
+  /** Seleciona o texto do link, para copiar na mão. */
+  function selecionarLink() {
+    const alvo = document.getElementById(idDoLink);
+    if (!alvo) return;
+    const intervalo = document.createRange();
+    intervalo.selectNodeContents(alvo);
+    const selecao = window.getSelection();
+    selecao?.removeAllRanges();
+    selecao?.addRange(intervalo);
   }
 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 rounded-lg border bg-secondary/50 p-1.5">
-        <code className="leitura flex-1 truncate px-2 t-legenda text-muted-foreground">
+        <code
+          id={idDoLink}
+          onClick={selecionarLink}
+          className="leitura flex-1 cursor-text truncate px-2 t-legenda text-muted-foreground"
+          title={url}
+        >
           {url}
         </code>
         <Button size="sm" variant="secondary" onClick={copiar} className="gap-1.5">
@@ -104,19 +158,7 @@ export function CompartilharVaga({
           </DialogContent>
         </Dialog>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          nativeButton={false}
-          render={
-            <a
-              href={`mailto:?subject=${encodeURIComponent(`Questionário — ${titulo}`)}&body=${encodeURIComponent(`Olá!\n\nPara seguir no processo da vaga de ${titulo}, responda o mapeamento comportamental neste link (leva cerca de 8 minutos):\n\n${url}\n\nObrigado!`)}`}
-            />
-          }
-        >
-          Enviar por e-mail
-        </Button>
+        <ConvidarPorEmail jobId={jobId} tituloDaVaga={titulo} />
       </div>
     </div>
   );

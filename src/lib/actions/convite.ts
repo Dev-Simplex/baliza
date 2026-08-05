@@ -1,0 +1,160 @@
+"use server";
+
+import { z } from "zod";
+
+import { criarAvaliacao } from "@/lib/actions/avaliacao";
+import { registrarAuditoria } from "@/lib/audit";
+import { convitePorEmail, enviarEmail } from "@/lib/email";
+import { prisma } from "@/lib/prisma";
+import { exigirPapel } from "@/lib/tenant";
+import { urlBase } from "@/lib/url-publica";
+
+export type EstadoDoConvite = {
+  ok?: boolean;
+  /** Mensagem de sucesso já pronta para a interface. */
+  mensagem?: string;
+  erro?: string;
+  campos?: Record<string, string>;
+  /**
+   * Sem SMTP configurado o link não sai daqui sozinho. Devolvemos o link para a
+   * interface entregar o caminho manual (copiar / abrir o cliente de e-mail) em
+   * vez de dizer que enviou.
+   */
+  linkParaEnvioManual?: string;
+};
+
+const esquema = z.object({
+  nome: z.string().min(2, "Informe o nome do candidato"),
+  email: z.string().email("E-mail inválido"),
+});
+
+/**
+ * Convida um candidato por e-mail para responder o mapeamento de uma vaga.
+ *
+ * O convite gera um link PESSOAL (`/t/<token>`), diferente do link público da
+ * vaga: como já sabemos quem é, o candidato cai direto no questionário, sem
+ * repetir nome e e-mail. O convite também é o que deixa a vaga saber que aquela
+ * pessoa foi chamada e ainda não respondeu.
+ *
+ * Reaproveita `criarAvaliacao`, então a forma da prova é sorteada e gravada do
+ * mesmo jeito que na entrada pelo link público — inclusive evitando repetir
+ * itens que a pessoa já viu em processos anteriores.
+ */
+export async function convidarPorEmail(
+  jobId: string,
+  _estado: EstadoDoConvite,
+  dados: FormData,
+): Promise<EstadoDoConvite> {
+  const contexto = await exigirPapel("RECRUITER");
+
+  const analise = esquema.safeParse({
+    nome: dados.get("nome"),
+    email: dados.get("email"),
+  });
+
+  if (!analise.success) {
+    const campos: Record<string, string> = {};
+    for (const p of analise.error.issues) campos[String(p.path[0])] = p.message;
+    return { campos };
+  }
+
+  // O escopo por empresa vai no WHERE: id de outra empresa simplesmente não acha.
+  const vaga = await prisma.job.findFirst({
+    where: { id: jobId, organizationId: contexto.organizationId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      organization: { select: { name: true } },
+    },
+  });
+
+  if (!vaga) return { erro: "Vaga não encontrada." };
+  if (vaga.status !== "OPEN")
+    return { erro: "Esta vaga não está mais recebendo respostas." };
+
+  const email = analise.data.email.toLowerCase().trim();
+  const nome = analise.data.nome.trim();
+
+  const candidato = await prisma.candidate.upsert({
+    where: {
+      organizationId_email: { organizationId: contexto.organizationId, email },
+    },
+    create: { organizationId: contexto.organizationId, name: nome, email },
+    update: { name: nome },
+  });
+
+  // Já tem prova nesta vaga? Reaproveita em vez de criar uma segunda: duas
+  // avaliações da mesma pessoa na mesma vaga bagunçam o ranking.
+  const existente = await prisma.assessment.findFirst({
+    where: { jobId: vaga.id, candidateId: candidato.id },
+    include: { invitation: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (existente?.status === "COMPLETED")
+    return { erro: `${nome} já respondeu esta vaga.` };
+
+  const token =
+    existente?.invitation?.token ??
+    (await criarAvaliacao({
+      organizationId: contexto.organizationId,
+      jobId: vaga.id,
+      candidateId: candidato.id,
+      canal: "EMAIL",
+      email,
+      criadoPor: contexto.userId,
+    }));
+
+  const link = `${await urlBase()}/t/${token}`;
+  const mensagem = convitePorEmail({
+    nomeDoCandidato: nome,
+    tituloDaVaga: vaga.title,
+    nomeDaEmpresa: vaga.organization.name,
+    link,
+  });
+
+  const envio = await enviarEmail({
+    para: email,
+    assunto: mensagem.assunto,
+    texto: mensagem.texto,
+    html: mensagem.html,
+  });
+
+  if (envio.enviado) {
+    await prisma.invitation.update({
+      where: { token },
+      data: { sentAt: new Date(), status: "SENT" },
+    });
+  }
+
+  await registrarAuditoria({
+    categoria: "MUTATION",
+    acao: envio.enviado ? "convite_enviado" : "convite_criado_sem_envio",
+    organizationId: contexto.organizationId,
+    userId: contexto.userId,
+    entidade: "Invitation",
+    entidadeId: token,
+    metadados: { vaga: vaga.title, email, motivo: envio.enviado ? null : envio.motivo },
+  });
+
+  // Sem `revalidatePath` aqui, de propósito: esta ação roda de dentro de um
+  // diálogo aberto SOBRE a página da vaga. Revalidar o próprio caminho troca a
+  // árvore por baixo do diálogo, e o resultado da ação nunca chega na tela — o
+  // botão fica em "Enviando" para sempre, mesmo com tudo gravado no banco.
+  // Quem atualiza a página é o cliente, no `router.refresh()` ao FECHAR o
+  // diálogo (ver componente convidar-por-email.tsx).
+
+  if (envio.enviado) {
+    return { ok: true, mensagem: `Convite enviado para ${email}.` };
+  }
+
+  return {
+    ok: true,
+    linkParaEnvioManual: link,
+    mensagem:
+      envio.motivo === "sem-smtp"
+        ? "Convite criado, mas não há servidor de e-mail configurado. Use o link abaixo."
+        : "Convite criado, mas o envio falhou. Use o link abaixo.",
+  };
+}

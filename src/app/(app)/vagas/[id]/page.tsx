@@ -29,9 +29,9 @@ import {
   duracao,
   haQuantoTempo,
 } from "@/lib/formato";
-import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { exigirTenant } from "@/lib/tenant";
+import { urlDaVaga } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Vaga" };
 
@@ -59,7 +59,10 @@ export default async function PaginaDaVaga({
   if (!vaga) notFound();
 
   const perfil = vaga.targetProfile as unknown as PerfilAlvo;
-  const url = `${env.NEXT_PUBLIC_APP_URL}/vaga/${vaga.publicToken}`;
+  // Base derivada do host da requisição: quem abre o painel por IP de rede
+  // recebe um link com esse endereço, e não `localhost` — que só abriria na
+  // máquina de quem copiou. Ver src/lib/url-publica.ts.
+  const url = await urlDaVaga(vaga.publicToken);
 
   const [qr, pendentes] = await Promise.all([
     QRCode.toDataURL(url, {
@@ -183,7 +186,12 @@ export default async function PaginaDaVaga({
               descricao="Quem abrir informa nome e e-mail e já começa a responder."
             />
             <div className="mt-4">
-              <CompartilharVaga url={url} qrDataUrl={qr} titulo={vaga.title} />
+              <CompartilharVaga
+                url={url}
+                qrDataUrl={qr}
+                titulo={vaga.title}
+                jobId={vaga.id}
+              />
             </div>
           </Painel>
 

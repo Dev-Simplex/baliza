@@ -134,6 +134,15 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     }
     setErro(r.erro ?? "Não foi possível concluir.");
     setConcluindo(false);
+
+    // O servidor viu resposta faltando que o navegador achava que tinha salvo
+    // (uma gravação que falhou no meio do caminho, tipicamente por rede). Sem
+    // isto o candidato fica preso: a tela diz "faltam N" e ele não tem como
+    // descobrir QUAL. Recarregar traz o estado real do servidor e a retomada
+    // já existente coloca a pessoa exatamente na primeira em branco.
+    if ("incompleta" in r && r.incompleta) {
+      window.setTimeout(() => window.location.reload(), 1600);
+    }
   }, [dados.token, router]);
 
   // Teclado: 1 a 5 respondem, setas navegam. Quem responde 44 itens no
@@ -163,6 +172,24 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
 
   const tudoRespondido = respondidos.size === total;
   const naUltima = indice === total - 1;
+  const quantasFaltam = total - respondidos.size;
+
+  /**
+   * Primeira pergunta ainda em branco.
+   *
+   * Existe por causa de um beco sem saída real: quem pulava uma pergunta lá
+   * atrás chegava na última tela, via tudo respondido ALI, e encontrava o
+   * "Concluir" desabilitado sem nenhuma explicação e sem caminho de volta —
+   * teria que clicar "Voltar" às cegas dezenas de vezes para achar o buraco.
+   */
+  function irParaAPrimeiraEmBranco() {
+    for (let i = 0; i < total; i += 1) {
+      if (!respondidos.has(i)) {
+        setIndice(i);
+        return;
+      }
+    }
+  }
 
   return (
     <div className="mx-auto flex min-h-svh max-w-2xl flex-col px-5 py-6 sm:px-8">
@@ -213,6 +240,28 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
           >
             {erro}
           </p>
+        )}
+
+        {/* `fora` é a cor de ATENÇÃO do produto (argila), nunca de alarme — a
+            mesma regra do medidor de faixa. Aqui vale igual: falta resposta,
+            não deu erro. */}
+        {naUltima && !tudoRespondido && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5">
+            <p className="text-sm text-foreground">
+              {quantasFaltam === 1
+                ? "Falta 1 resposta para concluir."
+                : `Faltam ${quantasFaltam} respostas para concluir.`}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={irParaAPrimeiraEmBranco}
+              className="gap-1.5"
+            >
+              Ir para a primeira
+              <ArrowLeft className="size-3.5 rotate-180" />
+            </Button>
+          </div>
         )}
 
         <div className="flex items-center justify-between gap-3">

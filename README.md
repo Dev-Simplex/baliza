@@ -156,6 +156,24 @@ sob as mesmas restrições, não embaralhada). Tudo derivado de uma semente, ent
 mesma prova é reconstruível — o que torna retomada e auditoria possíveis.
 Ver `src/lib/instrument/form.ts` e os 18 testes de invariante.
 
+### De onde sai o endereço que vai dentro do link
+
+O link é o produto. Ele não pode depender de onde o servidor *acha* que está:
+com `NEXT_PUBLIC_APP_URL` no valor padrão (`http://localhost:3300`), todo convite
+saía apontando para a máquina de quem copiou — e o candidato abria em nada.
+
+`src/lib/url-publica.ts` resolve a base assim: `NEXT_PUBLIC_APP_URL` vence quando
+aponta para um endereço **não-local** (produção atrás de domínio, onde confiar no
+cabeçalho `Host` deixaria alguém forjar o domínio de um link que vai por e-mail);
+fora isso vale o host da requisição, que é o que acerta sozinho em rede local.
+
+### O convite por e-mail entrega um link PESSOAL
+
+O link da vaga é público e pede nome e e-mail. O convite (`/t/<token>`) já sabe
+quem é: cai direto no questionário e ainda deixa a vaga saber quem foi chamado e
+não respondeu. Sem SMTP configurado o envio **não acontece e não finge que
+aconteceu** — a ação devolve o link para a tela oferecer o caminho manual.
+
 ### Por que "fora da faixa" é argila e não vermelho
 
 Cor é vocabulário. O produto se proíbe de dizer "reprovado"; a paleta não pode
@@ -172,7 +190,6 @@ Escopo declarado que ainda não foi construído:
 - Exportação em PDF e Excel, e compartilhamento de relatório
 - Comparação de candidatos lado a lado
 - Painel administrativo da plataforma
-- Convite por e-mail (o envio; o link e o QR já funcionam)
 - API pública para ATS/ERP
 - Perfil de cultura organizacional e matching
 - Expurgo automático por retenção (o prazo está na interface; o job não existe)

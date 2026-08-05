@@ -358,10 +358,33 @@ export async function concluirAvaliacao(token: string) {
   const respondidos = new Set(avaliacao.responses.map((r) => r.itemId));
   const faltando = itensDaForma.filter((id) => !respondidos.has(id));
 
-  if (faltando.length > 0)
+  // Os cenários entram na mesma conferência que as afirmações. Eles não entram
+  // no ranking (§5: escore ipsativo compara dimensões dentro da pessoa, não
+  // pessoas entre si), mas alimentam a leitura qualitativa — e a prova que a
+  // tela exige é de 52 telas, não 44. Concluir com um bloco a menos entregaria
+  // um relatório mais pobre sem ninguém perceber.
+  const cenariosDaForma = (avaliacao.scenarioOrder as string[]) ?? [];
+  const cenariosRespondidos = new Set(
+    avaliacao.scenarioResponses.map((r) => r.blockId),
+  );
+  const cenariosFaltando = cenariosDaForma.filter(
+    (id) => !cenariosRespondidos.has(id),
+  );
+
+  const totalFaltando = faltando.length + cenariosFaltando.length;
+
+  if (totalFaltando > 0)
     return {
       ok: false as const,
-      erro: `Ainda faltam ${faltando.length} ${faltando.length === 1 ? "afirmação" : "afirmações"}.`,
+      // `incompleta` diz à tela para recarregar e cair na primeira em branco:
+      // se o salvamento de alguma resposta falhou, o navegador acha que está
+      // tudo respondido e o candidato ficaria preso sem saber qual é a que
+      // falta.
+      incompleta: true as const,
+      erro:
+        totalFaltando === 1
+          ? "Falta 1 resposta. Vamos voltar até ela."
+          : `Faltam ${totalFaltando} respostas. Vamos voltar até a primeira.`,
     };
 
   const respostas: Respostas = {};
