@@ -167,6 +167,38 @@ aponta para um endereço **não-local** (produção atrás de domínio, onde con
 cabeçalho `Host` deixaria alguém forjar o domínio de um link que vai por e-mail);
 fora isso vale o host da requisição, que é o que acerta sozinho em rede local.
 
+### As duas formas de a vaga receber gente
+
+A vaga tem **modo**, escolhido na criação e trocável depois:
+
+- **Aberta** — link público, o candidato se cadastra sozinho. É a promessa da
+  landing: cole o link no anúncio.
+- **Por convite** — só responde quem o RH cadastrou. Quem abrir o endereço
+  público vê "esta vaga é por convite" e o caminho do código, e não o
+  formulário. Fechada **não é** encerrada, e a tela diz isso: uma pede o acesso,
+  a outra acabou.
+
+É o `publicEnabled`, que já existia no banco e não tinha interface.
+
+### Três vias para a mesma prova
+
+Escolhidas no momento do cadastro, porque cadastrar e entregar o acesso são o
+mesmo momento:
+
+1. **link pessoal** (`/t/<token>`) — cai direto no questionário, sem repetir
+   nome e e-mail;
+2. **QR** do mesmo link, por pessoa — para mostrar na tela ou imprimir;
+3. **código de 4 dígitos** em `/acesso` — o que dá para ditar no telefone.
+
+O código **não é senha**: quem tem o código entra, igual a quem tem o link. O
+que faz 4 dígitos caberem é (a) a **reciclagem** — o código volta ao acervo
+quando a prova conclui, então os 10.000 governam só os convites em aberto, nunca
+o histórico — e (b) o **limite de 6 tentativas por hora por IP**, que transforma
+a varredura das 10.000 combinações em quase dois anos.
+
+O código continua visível na vaga, em "Aguardando resposta". Sem isso ele seria
+de uso único: fechou o diálogo, perdeu.
+
 ### Por que só o link da VAGA é legível
 
 `/vaga/executivo-de-vendas-prospeccao-u2587v` em vez de um `cuid`. Este é o
