@@ -18,11 +18,11 @@ import { prisma } from "@/lib/prisma";
  * pessoa muito além do que o processo seletivo precisava, e o que perde
  * qualquer utilidade depois que o processo acaba.
  *
- * O resultado consolidado (escores, aderência, selo, arquétipo) FICA. Não é
- * fuga da regra, é o que a regra nº 7 do produto exige: o candidato sempre
- * recebe o próprio resultado, e o link `/r/…` dele "continua funcionando" —
- * está escrito na tela. Apagar o consolidado quebraria a promessa que o
- * produto faz PARA a pessoa em nome da promessa que ele faz SOBRE a pessoa.
+ * O resultado consolidado (escores, aderência, selo, arquétipo) FICA. É ele
+ * que a empresa usa para conduzir e revisitar o processo seletivo, e é o que
+ * ela precisa ter em mãos se o titular pedir acesso aos próprios dados (LGPD
+ * art. 18) depois que a resposta bruta já venceu. Apagar o consolidado junto
+ * deixaria a empresa sem como responder ao próprio pedido de acesso.
  *
  * Junto vão `ipHash` e `userAgent`: eram evidência de que o consentimento foi
  * dado ali, e sem a resposta bruta não sobrou o que evidenciar. `consentAt`

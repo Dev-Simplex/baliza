@@ -285,9 +285,9 @@ function Beneficios() {
         "Não existe e não vai existir corte automático. A lista é sugestão de prioridade de conversa, e a decisão continua sendo de quem entrevista.",
     },
     {
-      titulo: "O candidato recebe o resultado",
+      titulo: "O resultado é seu, da sua empresa",
       texto:
-        "Sempre, integral, sem depender de a empresa liberar. Quem responde seis minutos merece levar algo de volta.",
+        "O mapeamento fica no seu painel, para você conduzir a conversa. O candidato responde, é avisado de que o resultado vai para você, e continua podendo pedir os próprios dados quando quiser.",
     },
     {
       titulo: "Reaplicar mede mudança, não memória",
@@ -465,7 +465,7 @@ const PERGUNTAS_FREQUENTES = [
   },
   {
     p: "O que acontece com os dados de quem responde?",
-    r: "Ficam guardados pelo prazo que a empresa definir (12 meses por padrão) e depois são apagados. Nenhum dado sensível é coletado em nenhuma etapa: nada de origem, religião, opinião política, saúde ou biometria. O candidato recebe o próprio resultado e pode pedir exclusão a qualquer momento.",
+    r: "Ficam guardados pelo prazo que a empresa definir (12 meses por padrão) e depois são apagados. Nenhum dado sensível é coletado em nenhuma etapa: nada de origem, religião, opinião política, saúde ou biometria. O candidato pode pedir acesso, correção ou exclusão dos próprios dados a qualquer momento, e quem responde é a sua empresa, como controladora.",
   },
   {
     p: "Vocês eliminam candidatos automaticamente?",

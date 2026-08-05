@@ -7,6 +7,11 @@ import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
 import { BotaoCopiar } from "@/components/app/copiar";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import { RadarComportamental } from "@/components/app/graficos";
+import {
+  BotaoSalvarPdf,
+  CabecalhoDeImpressao,
+  RodapeDeImpressao,
+} from "@/components/app/impressao";
 import { SeloDeConfianca, type Confianca } from "@/components/app/selo-de-confianca";
 import { Faixa, type DadosDaFaixa } from "@/components/faixa";
 import { BotaoLink } from "@/components/ui/botao-link";
@@ -44,6 +49,9 @@ export default async function PaginaDoCandidato({
   const candidato = await prisma.candidate.findFirst({
     where: { id, organizationId },
     include: {
+      // O nome da empresa só é usado no cabeçalho impresso — a tela já sabe
+      // em qual conta está. Vem por aqui para o documento não sair anônimo.
+      organization: { select: { name: true } },
       assessments: {
         where: { status: "COMPLETED" },
         orderBy: { completedAt: "desc" },
@@ -95,7 +103,28 @@ export default async function PaginaDoCandidato({
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div>
+      <CabecalhoDeImpressao
+        candidato={candidato.name}
+        vaga={avaliacao.job.title}
+        empresa={candidato.organization.name}
+        respondidoEm={
+          avaliacao.completedAt ? data(avaliacao.completedAt) : null
+        }
+        aderencia={
+          avaliacao.fitScore == null ? null : numero(avaliacao.fitScore, 1)
+        }
+        selo={
+          confianca
+            ? {
+                nivel: confianca.selo,
+                rotulo: confianca.rotulo,
+                texto: confianca.texto,
+              }
+            : null
+        }
+      />
+
+      <div data-impressao="ocultar">
         <Link
           href={`/vagas/${avaliacao.job.id}`}
           className="etiqueta inline-flex items-center gap-1.5 hover:text-foreground"
@@ -117,6 +146,7 @@ export default async function PaginaDoCandidato({
           </div>
 
           <div className="flex items-center gap-3">
+            <BotaoSalvarPdf />
             <SeloDeConfianca confianca={confianca} />
             <div className="text-right">
               <p className="etiqueta">Aderência</p>
@@ -351,10 +381,17 @@ export default async function PaginaDoCandidato({
         </div>
       </div>
 
-      <p className="rounded-xl border border-dashed px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
+      {/* Na tela este aviso é o rodapé; no papel ele sairia duas vezes, porque
+          o rodapé impresso já o carrega junto do aviso de confidencialidade. */}
+      <p
+        data-impressao="ocultar"
+        className="rounded-xl border border-dashed px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground"
+      >
         Este resultado é um insumo para a entrevista. Ele não substitui a conversa
         com a pessoa e não deve ser o único critério de decisão.
       </p>
+
+      <RodapeDeImpressao />
     </div>
   );
 }

@@ -63,8 +63,10 @@ export default function PaginaDePrivacidade() {
           em cada consulta ao banco, não por filtro de tela.
         </p>
         <p>
-          O candidato recebe o próprio resultado, integral, por um endereço
-          exclusivo — sem depender de a empresa liberar.
+          O candidato <strong>não</strong> vê o resultado nem as respostas
+          registradas por conta própria: quem aplicou o teste é quem conduz a
+          devolutiva. Isso não retira dele nenhum direito — muda o caminho, que
+          passa a ser o pedido descrito em <em>Direitos do titular</em>, abaixo.
         </p>
       </Secao>
 
@@ -72,7 +74,8 @@ export default function PaginaDePrivacidade() {
         <p>
           As respostas brutas ficam guardadas pelo prazo definido pela empresa,
           que por padrão é de <strong>12 meses</strong>, e depois são apagadas.
-          O prazo aplicável aparece no relatório do candidato.
+          A leitura consolidada continua, porque é dela que a empresa precisa
+          para responder a um pedido de acesso feito depois desse prazo.
         </p>
       </Secao>
 
@@ -80,7 +83,9 @@ export default function PaginaDePrivacidade() {
         <p>
           O candidato pode pedir acesso, correção ou exclusão dos seus dados a
           qualquer momento, respondendo ao e-mail do convite ou falando com a
-          empresa que enviou o link.
+          empresa que enviou o link. Esse é o caminho para receber tanto as
+          respostas que ele deu quanto a leitura gerada a partir delas, e a
+          empresa é quem responde por ele como controladora.
         </p>
         <p>
           Sobre decisão automatizada (art. 20): o resultado é um{" "}

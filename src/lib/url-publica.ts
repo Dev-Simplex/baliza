@@ -57,8 +57,3 @@ export async function urlBase(): Promise<string> {
 export async function urlDaVaga(publicToken: string): Promise<string> {
   return `${await urlBase()}/vaga/${publicToken}`;
 }
-
-/** O link do resultado do candidato (§7.3: ele sempre recebe o próprio). */
-export async function urlDoResultado(resultToken: string): Promise<string> {
-  return `${await urlBase()}/r/${resultToken}`;
-}

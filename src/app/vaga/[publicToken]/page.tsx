@@ -84,7 +84,8 @@ export default async function PaginaPublicaDaVaga({
             </h2>
             <p className="mt-1.5 t-corpo-sm leading-relaxed text-muted-foreground">
               Leva cerca de 6 minutos e responde pelo celular. Não é prova, não
-              precisa criar conta, e no fim você recebe o seu próprio resultado.
+              precisa criar conta, e o resultado vai direto para quem conduz o
+              processo.
             </p>
             <FormularioDeEntrada publicToken={publicToken} />
 

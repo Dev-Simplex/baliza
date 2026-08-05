@@ -40,14 +40,14 @@ export default function PaginaDeAcesso() {
             "não encontrado" e conclui que digitou errado — dizer isso antes
             evita a tentativa e a dúvida. */}
         <p className="mt-6 t-legenda leading-relaxed text-muted-foreground">
-          Já respondeu? O código vale uma vez só. Para rever o seu resultado, use
-          o link que apareceu no fim — ele continua funcionando.
+          Já respondeu? Não é preciso responder de novo: o código vale uma vez só
+          e o acompanhamento é feito pela empresa que te chamou.
         </p>
       </main>
 
       <footer className="t-legenda leading-relaxed text-muted-foreground">
-        Não é prova e não existe resposta certa. Leva cerca de 6 minutos, e no
-        fim você recebe o seu próprio resultado.
+        Não é prova e não existe resposta certa. Leva cerca de 6 minutos, e o
+        resultado vai direto para quem conduz o processo.
       </footer>
     </div>
   );

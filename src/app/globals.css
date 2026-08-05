@@ -389,3 +389,167 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   IMPRESSÃO — o relatório em papel/PDF
+
+   O produto não gera PDF por servidor: o diálogo do navegador salva em PDF
+   em qualquer sistema, inclusive no celular, sem dependência nova e sem uma
+   segunda versão do relatório para manter em sincronia. O preço disso é que
+   a qualidade do arquivo é inteiramente responsabilidade DESTE bloco — e
+   sem ele o resultado é o que era: a tela do painel espremida, com a barra
+   lateral, os botões, os cartões partidos no meio da página e os gráficos
+   saindo em branco.
+
+   As quatro coisas que fazem o arquivo parecer um documento:
+
+   1. TEMA CLARO À FORÇA. Imprimir no escuro cospe páginas pretas ou, pior,
+      texto claro sobre papel branco. As variáveis do `:root` são
+      reafirmadas aqui para valer também quando `.dark` está na árvore.
+   2. COR PRESERVADA. `print-color-adjust: exact` é o que faz o navegador
+      parar de "economizar tinta" e apagar justamente o que codifica dado —
+      a cor de cada fator, o selo de confiança, as barras.
+   3. NADA DE INTERFACE. Barra lateral, botões, menus e o seletor de tema
+      não são o documento; são o caminho até ele.
+   4. QUEBRA NO LUGAR CERTO. Cartão partido ao meio é a diferença mais
+      visível entre "impressão de site" e "relatório".
+   ════════════════════════════════════════════════════════════════════════ */
+
+@page {
+  /* Margem generosa: o cabeçalho impresso encosta no topo e o número da
+     página que o navegador desenha precisa de ar. */
+  margin: 16mm 14mm;
+}
+
+@media print {
+  :root,
+  .dark {
+    color-scheme: light;
+
+    --marca: #8a5f17;
+    --marca-forte: #a97722;
+    --marca-suave: #f6efe0;
+
+    --dentro: #1b6f65;
+    --dentro-suave: #e2efec;
+    --fora: #9e4d2c;
+    --fora-suave: #f8e9e2;
+
+    --superficie: #ffffff;
+    --superficie-2: #f7f8fa;
+    --linha: #d9dce3;
+    --linha-forte: #c3c8d2;
+
+    --background: #ffffff;
+    --foreground: #0b0e14;
+    --card: #ffffff;
+    --card-foreground: #0b0e14;
+    --popover: #ffffff;
+    --popover-foreground: #0b0e14;
+    --primary: #0b0e14;
+    --primary-foreground: #ffffff;
+    --secondary: #f2f3f6;
+    --secondary-foreground: #0b0e14;
+    --muted: #f2f3f6;
+    --muted-foreground: #4a5261;
+    --accent: #f6efe0;
+    --accent-foreground: #6b4a11;
+    --destructive: #9e4d2c;
+    --border: #d9dce3;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    /* 10.5pt lê melhor em papel do que os 14px da tela: a distância de
+       leitura é outra e a densidade de tinta também. */
+    font-size: 10.5pt;
+  }
+
+  /* A interface não vai junto. `[data-impressao="ocultar"]` é a saída para
+     qualquer coisa que só faça sentido com um cursor em cima. */
+  nav,
+  aside,
+  button,
+  [role="toolbar"],
+  [data-slot="dialog-overlay"],
+  [data-impressao="ocultar"] {
+    display: none !important;
+  }
+
+  /* O conteúdo ocupa a folha: sem barra lateral, a grade do painel vira uma
+     coluna só e as larguras máximas de tela ficam apertadas no A4. */
+  main {
+    display: block !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * + * {
+    margin-top: 12px;
+  }
+
+  /* Cartão vira bloco de documento: fundo branco, contorno fino e — o que
+     mais importa — inteiro na mesma página. */
+  section,
+  article,
+  [data-slot="card"],
+  .rounded-xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background: #ffffff !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* Título órfão no pé da página e linha solta no topo da seguinte são o
+     que faz um relatório parecer descuidado. */
+  p,
+  li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Recharts desenha em SVG dimensionado pelo container. Sem isto o gráfico
+     estoura a folha ou some. */
+  svg {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+}
+
+/* Só aparece no papel: cabeçalho e rodapé do documento. Fora da impressão
+   ficam completamente fora do fluxo — nem leitor de tela os anuncia. */
+.so-impressao {
+  display: none;
+}
+
+@media print {
+  .so-impressao {
+    display: block;
+  }
+}

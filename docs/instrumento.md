@@ -355,8 +355,13 @@ Estas cinco regras vão para o código, não para a política de privacidade:
 1. **Zero dado sensível** coletado, em qualquer campo, em qualquer etapa.
 2. **Nenhum corte automático.** O produto **ordena** candidatos; ele nunca elimina. Não existe
    nem existirá funcionalidade "descartar abaixo de X".
-3. **O candidato sempre recebe o próprio resultado**, integral, sem depender da empresa
-   liberar.
+3. **O resultado fica com a empresa que aplicou o teste.** A regra original desta
+   especificação era o oposto — "o candidato sempre recebe o próprio resultado" —
+   e foi revertida por decisão de produto em 2026-08-05. O que a mudança NÃO pode
+   custar é o direito de acesso (LGPD art. 18): ele passa a ser exercido por
+   pedido à empresa, que responde como controladora, e a política de privacidade
+   descreve esse caminho. Por isso a retenção preserva o resultado consolidado
+   mesmo depois de apagar a resposta bruta.
 4. **Monitoramento de impacto adverso.** Se o instrumento passar a ser usado em volume, comparar
    distribuição de fit por faixa etária e gênero autodeclarado **opcionalmente** (coleta
    separada, anônima, desacoplada do escore, sem entrar no cálculo). Se aparecer disparidade

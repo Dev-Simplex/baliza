@@ -25,7 +25,13 @@ export default async function LayoutDoApp({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/85 px-4 backdrop-blur-md sm:px-6">
+        {/* `data-impressao` e não uma regra `header` na folha de impressão:
+            o cabeçalho DO DOCUMENTO também é um `header`, e escondê-lo
+            deixaria o PDF sem identificação nenhuma. */}
+        <header
+          data-impressao="ocultar"
+          className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/85 px-4 backdrop-blur-md sm:px-6"
+        >
           <div className="lg:hidden">
             <BarraLateralMovel ehAdminDaPlataforma={contexto.isPlatformAdmin} />
           </div>

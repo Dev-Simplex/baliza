@@ -78,8 +78,8 @@ export function TelaDeAbertura({
 
         <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
           Não é prova e não existe resposta certa. São afirmações sobre o dia a
-          dia de trabalho, e a única resposta útil é a sincera — inclusive para
-          você, porque no fim você recebe seu próprio resultado.
+          dia de trabalho, e a única resposta útil é a sincera: o mapeamento só
+          ajuda a te colocar no lugar certo se ele for mesmo sobre você.
         </p>
 
         <ul className="mt-8 space-y-3.5">
@@ -90,9 +90,9 @@ export function TelaDeAbertura({
           <Linha Icone={Save} titulo="Salva sozinho">
             Pode fechar e continuar depois pelo mesmo link, de onde parou.
           </Linha>
-          <Linha Icone={Lock} titulo="Você recebe o resultado">
-            O seu relatório fica disponível para você, sem depender da empresa
-            liberar.
+          <Linha Icone={Lock} titulo="Vai direto para a empresa">
+            O resultado é lido por quem conduz o processo. Você pode pedir acesso
+            aos seus dados a qualquer momento a quem te enviou o convite.
           </Linha>
         </ul>
 

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { redirect } from "next/navigation";
 
 import { AvisoDeLink } from "@/components/teste/aviso-de-link";
 import { FluxoDoTeste, type DadosDoTeste } from "@/components/teste/fluxo-do-teste";
 import { TelaDeAbertura } from "@/components/teste/tela-de-abertura";
+import { TelaDeConclusao } from "@/components/teste/tela-de-conclusao";
 import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
 import { ITEM_POR_ID } from "@/lib/instrument/items";
 import { ordenarOpcoesDeCenario } from "@/lib/instrument/form";
@@ -43,7 +43,18 @@ export default async function PaginaDoTeste({
 
   const avaliacao = convite.assessment;
 
-  if (avaliacao.status === "COMPLETED") redirect(`/r/${avaliacao.resultToken}`);
+  // Concluída: agradece e para por aqui. Antes isto redirecionava para
+  // `/r/<resultToken>`, o relatório do candidato — que deixou de existir. O
+  // resultado e as respostas registradas ficam com quem aplicou o teste.
+  if (avaliacao.status === "COMPLETED") {
+    return (
+      <TelaDeConclusao
+        nome={convite.candidate?.name ?? null}
+        empresa={convite.organization.name}
+        vaga={convite.job.title}
+      />
+    );
+  }
 
   // Vencido e cancelado NÃO são a mesma coisa para quem está do outro lado:
   // num caso a pessoa perdeu o prazo, no outro a empresa desfez o convite. A

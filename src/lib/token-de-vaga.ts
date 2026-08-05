@@ -9,7 +9,7 @@ import { randomBytes } from "node:crypto";
  * parece link suspeito e não dá para conferir de bate-pronto se é a vaga certa.
  *
  * Os outros tokens do sistema continuam opacos DE PROPÓSITO, e a diferença não é
- * estética: o do convite (`/t/…`) e o do resultado (`/r/…`) são credenciais —
+ * estética: o do convite (`/t/…`) é credencial —
  * quem tem o token responde ou lê o relatório de alguém. Esses não podem ser
  * legíveis, porque legível é adivinhável.
  */

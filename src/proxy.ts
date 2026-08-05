@@ -18,13 +18,12 @@ const PRIVADAS = [
 const SO_DESLOGADO = ["/entrar", "/cadastrar"];
 
 /**
- * Endereços que são CREDENCIAL: quem tem o endereço responde a prova ou lê o
- * relatório de alguém. As páginas já pedem `noindex` no metadata, mas metadata
- * só existe em resposta HTML — o cabeçalho cobre também o que não passa por
- * lá. Buscador que indexa `/r/…` transforma um link pessoal em resultado de
- * busca pelo nome da pessoa.
+ * Endereços que são CREDENCIAL: quem tem o endereço responde a prova de alguém.
+ * As páginas já pedem `noindex` no metadata, mas metadata só existe em resposta
+ * HTML — o cabeçalho cobre também o que não passa por lá. Buscador que indexa
+ * `/t/…` transforma um convite pessoal em resultado de busca pelo nome.
  */
-const NAO_INDEXAR = ["/r/", "/t/", "/vaga/", "/acesso"];
+const NAO_INDEXAR = ["/t/", "/vaga/", "/acesso"];
 
 export default auth((req) => {
   const { nextUrl } = req;

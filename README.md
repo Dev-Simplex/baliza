@@ -80,7 +80,6 @@ src/
     (app)/           painel da empresa — exige sessão E empresa
     vaga/[token]/    link público da vaga (candidato entra por aqui)
     t/[token]/       o questionário
-    r/[token]/       o resultado do candidato
     api/auth/        NextAuth
 
   lib/
@@ -140,8 +139,11 @@ produto, não refatoração.
 
 6. **O roteiro de entrevista nunca sai vazio.** Ver `src/lib/analise/roteiro.ts`.
 
-7. **O candidato sempre recebe o próprio resultado**, integral, sem depender de
-   a empresa liberar.
+7. **O resultado é da empresa que aplicou o teste.** O candidato conclui a prova
+   e vê apenas a confirmação de envio — não há tela de resultado para ele. O
+   direito de acesso da LGPD (art. 18) continua inteiro, mas passa por pedido à
+   empresa, que é a controladora. Isto REVERTE a regra anterior, que entregava
+   o relatório ao candidato por um endereço próprio (`/r/<token>`, removido).
 
 ---
 

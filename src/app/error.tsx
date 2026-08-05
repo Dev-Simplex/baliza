@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { BotaoLink } from "@/components/ui/botao-link";
 
 /** Rotas onde quem está do outro lado é o candidato, não o cliente. */
-const DO_CANDIDATO = ["/t/", "/r/", "/vaga/", "/acesso"];
+const DO_CANDIDATO = ["/t/", "/vaga/", "/acesso"];
 
 /**
  * Fronteira de erro.

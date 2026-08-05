@@ -306,7 +306,14 @@ model Assessment {
   durationMs  Int?
   lastSeenAt  DateTime?
 
-  // O candidato sempre recebe o próprio resultado, sem depender da empresa (§7.3).
+  // Identificador estável da avaliação, gerado no cadastro.
+  //
+  // Já foi a credencial de `/r/<token>`, o relatório que o candidato abria
+  // sozinho. Essa rota foi removida: o resultado é de quem aplicou o teste. A
+  // coluna fica porque é identificador único e barato, e porque derrubá-la
+  // custaria uma migração destrutiva sem nada em troca — mas ela NÃO é mais
+  // segredo de acesso a nada. Não reintroduza rota pública a partir dela sem
+  // reabrir a decisão de produto.
   resultToken String    @unique @default(cuid())
   // Compartilhamento de relatório pela empresa; revogável.
   shareToken  String?   @unique

@@ -341,8 +341,8 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
       resultado = await concluirAvaliacao(dados.token);
     } catch {
       // Sem este `catch` a rede caindo aqui deixava o botão em "Enviando" para
-      // sempre, sem erro e sem saída: a pessoa terminava 52 telas e travava na
-      // última.
+      // sempre, sem erro e sem saída: a pessoa terminava a prova inteira e
+      // travava na última tela.
       setConcluindo(false);
       setErro(
         "Não conseguimos enviar agora — a conexão parece ter caído. Suas respostas estão guardadas: toque em Concluir de novo quando a internet voltar.",
@@ -351,7 +351,11 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     }
 
     if (resultado.ok) {
-      router.push(`/r/${resultado.resultToken}`);
+      // `refresh()` e não `push()`: a mesma rota `/t/<token>` passa a renderizar
+      // a tela de conclusão assim que o servidor vê a avaliação como concluída.
+      // Antes daqui saía um `push` para `/r/<resultToken>`, o relatório do
+      // candidato — que não existe mais.
+      router.refresh();
       return;
     }
 

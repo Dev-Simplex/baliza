@@ -91,7 +91,7 @@ export function convitePorEmail(dados: {
     "",
     dados.link,
     "",
-    "No fim você recebe o seu próprio resultado, independente da empresa.",
+    "Não é prova e não existe resposta certa: leva cerca de 6 minutos.",
     "",
     "Se você não esperava este e-mail, pode ignorá-lo.",
   ].join("\n");
@@ -105,7 +105,7 @@ export function convitePorEmail(dados: {
         <a href="${dados.link}" style="background:#0b0e14;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block">Responder agora</a>
       </p>
       <p style="font-size:13px;color:#5b6472">Se o botão não abrir, copie este endereço:<br><span style="word-break:break-all">${escapar(dados.link)}</span></p>
-      <p style="font-size:13px;color:#5b6472">No fim você recebe o seu próprio resultado, independente da empresa. Se você não esperava este e-mail, pode ignorá-lo.</p>
+      <p style="font-size:13px;color:#5b6472">Não é prova e não existe resposta certa. Se você não esperava este e-mail, pode ignorá-lo.</p>
     </div>
   `.trim();
 

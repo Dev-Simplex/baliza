@@ -114,8 +114,14 @@ export async function entrarPeloLinkDaVaga(
     orderBy: { createdAt: "desc" },
   });
 
+  // Já concluiu: cai na tela de conclusão do próprio convite. Note que sem
+  // convite não há para onde mandar — é o caso da avaliação criada por fora do
+  // fluxo, e aí a mensagem honesta é a de que não há mais o que responder.
+  if (existente?.status === "COMPLETED" && existente.invitation)
+    redirect(`/t/${existente.invitation.token}`);
+
   if (existente?.status === "COMPLETED")
-    redirect(`/r/${existente.resultToken}`);
+    return { erro: "Você já respondeu esta vaga. O acompanhamento é feito pela empresa." };
 
   if (existente?.invitation) redirect(`/t/${existente.invitation.token}`);
 
@@ -236,7 +242,7 @@ export async function entrarPeloCodigo(
 
   const convite = await prisma.invitation.findUnique({
     where: { accessCode: codigo },
-    include: { assessment: { select: { status: true, resultToken: true } } },
+    include: { assessment: { select: { status: true } } },
   });
 
   // Mensagem única para código inexistente e para código expirado: dizer "esse
@@ -247,11 +253,11 @@ export async function entrarPeloCodigo(
   // que não errou a digitação.
   if (!convite || convite.expiresAt < new Date())
     return {
-      erro: "Código não encontrado. Confira os dígitos com quem te enviou — e, se você já concluiu, o código deixa de valer: use o link do seu resultado.",
+      erro: "Código não encontrado. Confira os dígitos com quem te enviou — e, se você já concluiu, o código deixa de valer: não é preciso responder de novo.",
     };
 
   if (convite.assessment?.status === "COMPLETED")
-    redirect(`/r/${convite.assessment.resultToken}`);
+    redirect(`/t/${convite.token}`);
 
   redirect(`/t/${convite.token}`);
 }
@@ -461,8 +467,8 @@ export async function concluirAvaliacao(token: string) {
   const avaliacao = convite?.assessment;
   if (!avaliacao) return { ok: false as const, erro: "Convite não encontrado" };
 
-  if (avaliacao.status === "COMPLETED")
-    return { ok: true as const, resultToken: avaliacao.resultToken };
+  // Reenvio de quem tocou duas vezes: já concluída é sucesso, não erro.
+  if (avaliacao.status === "COMPLETED") return { ok: true as const };
 
   const itensDaForma = (avaliacao.itemOrder as string[]) ?? [];
   const cenariosDaForma = (avaliacao.scenarioOrder as string[]) ?? [];
@@ -470,8 +476,8 @@ export async function concluirAvaliacao(token: string) {
   // Os cenários entram na mesma conferência que as afirmações. Eles não entram
   // no ranking (§5: escore ipsativo compara dimensões dentro da pessoa, não
   // pessoas entre si), mas alimentam a leitura qualitativa — e a prova que a
-  // tela exige é de 52 telas, não 44. Concluir com um bloco a menos entregaria
-  // um relatório mais pobre sem ninguém perceber.
+  // tela exige são as `TOTAL_DE_TELAS`, não só as afirmações. Concluir com um
+  // bloco a menos entregaria um relatório mais pobre sem ninguém perceber.
   const pendencias = pendenciasDaProva({
     itensDaForma,
     cenariosDaForma,
@@ -560,5 +566,5 @@ export async function concluirAvaliacao(token: string) {
     metadados: { fit: resultado.fit.score, selo: resultado.confianca.selo },
   });
 
-  return { ok: true as const, resultToken: avaliacao.resultToken };
+  return { ok: true as const };
 }
