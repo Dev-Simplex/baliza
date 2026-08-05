@@ -18,9 +18,28 @@ type PresetResumido = {
   nota: string;
 };
 
+/**
+ * As duas formas de a vaga receber gente, e a diferença entre elas é de
+ * processo, não de recurso: na aberta o candidato se cadastra sozinho; na
+ * fechada o RH cadastra primeiro e só então manda o acesso.
+ */
+const MODOS_DE_ENTRADA = [
+  {
+    id: "aberta" as const,
+    nome: "Aberta",
+    nota: "Qualquer pessoa com o link responde e se cadastra sozinha. É o link que você cola no anúncio.",
+  },
+  {
+    id: "fechada" as const,
+    nome: "Por convite",
+    nota: "Só responde quem você cadastrar. O link público recusa quem não foi convidado.",
+  },
+];
+
 export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
   const [estado, acao, pendente] = useActionState(criarVaga, {} as EstadoDaVaga);
   const [escolhido, setEscolhido] = useState(presets[0]?.id ?? "");
+  const [entrada, setEntrada] = useState<"aberta" | "fechada">("aberta");
 
   const notaDoEscolhido = presets.find((p) => p.id === escolhido)?.nota;
 
@@ -106,6 +125,42 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
             rows={3}
             placeholder="Experiência, formação, ferramentas."
           />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div>
+          <h2 className="text-sm font-semibold">Quem pode responder</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Dá para mudar depois, na página da vaga.
+          </p>
+        </div>
+
+        <input type="hidden" name="entrada" value={entrada} />
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          {MODOS_DE_ENTRADA.map((modo) => {
+            const ativo = entrada === modo.id;
+            return (
+              <button
+                key={modo.id}
+                type="button"
+                onClick={() => setEntrada(modo.id)}
+                aria-pressed={ativo}
+                className={cn(
+                  "rounded-lg border p-3 text-left transition-colors",
+                  ativo
+                    ? "border-marca bg-marca-forte/8"
+                    : "hover:border-marca/40 hover:bg-secondary/50",
+                )}
+              >
+                <span className="block text-sm font-medium">{modo.nome}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {modo.nota}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 

@@ -31,7 +31,7 @@ import {
 } from "@/lib/formato";
 import { prisma } from "@/lib/prisma";
 import { exigirTenant } from "@/lib/tenant";
-import { urlDaVaga } from "@/lib/url-publica";
+import { urlBase, urlDaVaga } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Vaga" };
 
@@ -63,6 +63,7 @@ export default async function PaginaDaVaga({
   // recebe um link com esse endereço, e não `localhost` — que só abriria na
   // máquina de quem copiou. Ver src/lib/url-publica.ts.
   const url = await urlDaVaga(vaga.publicToken);
+  const baseDoSite = await urlBase();
 
   const [qr, pendentes] = await Promise.all([
     QRCode.toDataURL(url, {
@@ -74,6 +75,24 @@ export default async function PaginaDaVaga({
       where: { jobId: vaga.id, status: { in: ["PENDING", "IN_PROGRESS"] } },
     }),
   ]);
+
+  // Quem já tem acesso mas ainda não terminou. O código precisa continuar
+  // visível DEPOIS que o diálogo de cadastro fecha: senão ele vira uso único e
+  // o RH não consegue repetir para quem perdeu.
+  const convidados = await prisma.invitation.findMany({
+    where: {
+      jobId: vaga.id,
+      assessment: { status: { in: ["PENDING", "IN_PROGRESS"] } },
+    },
+    select: {
+      id: true,
+      accessCode: true,
+      candidate: { select: { name: true } },
+      assessment: { select: { status: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -118,7 +137,7 @@ export default async function PaginaDaVaga({
                 compacto
                 icone={Inbox}
                 titulo="Nenhuma resposta ainda"
-                descricao="Compartilhe o link ao lado. Assim que alguém responder, o ranking aparece aqui."
+                descricao="Cadastre um candidato ou compartilhe o link, ao lado. Assim que alguém responder, o ranking aparece aqui."
               />
             </div>
           ) : (
@@ -182,8 +201,12 @@ export default async function PaginaDaVaga({
         <div className="space-y-4">
           <Painel>
             <PainelCabecalho
-              titulo="Link do questionário"
-              descricao="Quem abrir informa nome e e-mail e já começa a responder."
+              titulo="Acesso dos candidatos"
+              descricao={
+                vaga.publicEnabled
+                  ? "Link aberto para quem quiser responder, e cadastro individual quando você quiser controlar quem entra."
+                  : "Cadastre a pessoa e escolha como entregar o acesso: link, QR Code ou código de 4 dígitos."
+              }
             />
             <div className="mt-4">
               <CompartilharVaga
@@ -191,9 +214,45 @@ export default async function PaginaDaVaga({
                 qrDataUrl={qr}
                 titulo={vaga.title}
                 jobId={vaga.id}
+                aberta={vaga.publicEnabled}
+                baseDoSite={baseDoSite}
               />
             </div>
           </Painel>
+
+          {convidados.length > 0 && (
+            <Painel padding="nenhum">
+              <PainelCabecalho
+                comBorda
+                titulo="Aguardando resposta"
+                descricao="Quem já tem acesso e ainda não terminou."
+              />
+              <PainelLista>
+                {convidados.map((convidado) => (
+                  <li
+                    key={convidado.id}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm">
+                        {convidado.candidate?.name ?? "Candidato"}
+                      </p>
+                      <p className="t-legenda text-muted-foreground">
+                        {convidado.assessment?.status === "IN_PROGRESS"
+                          ? "respondendo agora"
+                          : "ainda não começou"}
+                      </p>
+                    </div>
+                    {convidado.accessCode && (
+                      <span className="leitura shrink-0 rounded bg-secondary/60 px-2 py-1 text-sm tabular-nums tracking-[0.2em]">
+                        {convidado.accessCode}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </PainelLista>
+            </Painel>
+          )}
 
           <Painel>
             <PainelCabecalho

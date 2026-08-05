@@ -203,6 +203,19 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
       </header>
 
       <main className="flex flex-1 flex-col justify-center py-10">
+        {/* Orientação só na PRIMEIRA pergunta, e só enquanto ela é a primeira
+            sem resposta. Repetir isso nas 52 telas viraria ruído; não dizer
+            nunca deixa a pessoa descobrir o teclado e o salvamento sozinha —
+            ou não descobrir. */}
+        {indice === 0 && respondidos.size === 0 && (
+          <p className="mb-6 rounded-lg border border-dashed px-3.5 py-2.5 t-legenda leading-relaxed text-muted-foreground">
+            Responda pelo que você <strong className="font-medium text-foreground">faz</strong>,
+            não pelo que seria melhor responder — o resultado só serve se for
+            seu. Dá para usar as teclas <kbd className="leitura">1</kbd> a{" "}
+            <kbd className="leitura">5</kbd>, e cada resposta é salva na hora.
+          </p>
+        )}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={indice}

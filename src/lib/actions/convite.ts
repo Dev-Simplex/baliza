@@ -15,12 +15,19 @@ export type EstadoDoConvite = {
   mensagem?: string;
   erro?: string;
   campos?: Record<string, string>;
+  /** Nome de quem foi cadastrado, para a tela confirmar de quem se trata. */
+  candidato?: string;
   /**
-   * Sem SMTP configurado o link não sai daqui sozinho. Devolvemos o link para a
-   * interface entregar o caminho manual (copiar / abrir o cliente de e-mail) em
-   * vez de dizer que enviou.
+   * As três vias de acesso da pessoa. Vêm sempre, e não só quando o e-mail
+   * falha: o cadastro é a hora em que o RH decide COMO vai entregar o acesso —
+   * por e-mail, mandando o link no WhatsApp, mostrando o QR ou ditando o código.
    */
-  linkParaEnvioManual?: string;
+  acesso?: {
+    link: string;
+    codigo: string | null;
+  };
+  /** O e-mail saiu de fato? Muda o texto e o que a tela oferece. */
+  enviado?: boolean;
 };
 
 const esquema = z.object({
@@ -107,6 +114,11 @@ export async function convidarPorEmail(
     }));
 
   const link = `${await urlBase()}/t/${token}`;
+  const convite = await prisma.invitation.findUnique({
+    where: { token },
+    select: { accessCode: true },
+  });
+  const acesso = { link, codigo: convite?.accessCode ?? null };
   const mensagem = convitePorEmail({
     nomeDoCandidato: nome,
     tituloDaVaga: vaga.title,
@@ -146,15 +158,23 @@ export async function convidarPorEmail(
   // diálogo (ver componente convidar-por-email.tsx).
 
   if (envio.enviado) {
-    return { ok: true, mensagem: `Convite enviado para ${email}.` };
+    return {
+      ok: true,
+      enviado: true,
+      candidato: nome,
+      acesso,
+      mensagem: `Convite enviado para ${email}.`,
+    };
   }
 
   return {
     ok: true,
-    linkParaEnvioManual: link,
+    enviado: false,
+    candidato: nome,
+    acesso,
     mensagem:
       envio.motivo === "sem-smtp"
-        ? "Convite criado, mas não há servidor de e-mail configurado. Use o link abaixo."
-        : "Convite criado, mas o envio falhou. Use o link abaixo.",
+        ? "Candidato cadastrado. Não há servidor de e-mail configurado — entregue o acesso por um dos caminhos abaixo."
+        : "Candidato cadastrado, mas o e-mail não saiu. Entregue o acesso por um dos caminhos abaixo.",
   };
 }

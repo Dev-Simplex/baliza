@@ -32,6 +32,9 @@ const esquema = z.object({
   departamento: z.string().optional(),
   local: z.string().optional(),
   preset: z.string().min(1, "Escolha um perfil-alvo"),
+  // "aberta": qualquer pessoa com o link responde e se cadastra sozinha.
+  // "fechada": só entra quem o RH cadastrou — o link público recusa.
+  entrada: z.enum(["aberta", "fechada"]).default("aberta"),
 });
 
 export async function criarVaga(
@@ -49,6 +52,7 @@ export async function criarVaga(
     departamento: dados.get("departamento"),
     local: dados.get("local"),
     preset: dados.get("preset"),
+    entrada: dados.get("entrada") ?? "aberta",
   });
 
   if (!analise.success) {
@@ -73,6 +77,9 @@ export async function criarVaga(
     department: analise.data.departamento?.trim() || null,
     location: analise.data.local?.trim() || null,
     status: "OPEN",
+    // `publicEnabled` é o modo de entrada: com ele desligado a página pública
+    // recusa e a vaga só recebe quem o RH cadastrou.
+    publicEnabled: analise.data.entrada === "aberta",
     presetId: preset?.id ?? null,
     targetProfile: perfil as never,
     createdById: contexto.userId,
@@ -90,6 +97,36 @@ export async function criarVaga(
 
   revalidatePath("/vagas");
   redirect(`/vagas/${vaga.id}`);
+}
+
+/**
+ * Troca o modo de entrada de uma vaga que já existe.
+ *
+ * Fechar não apaga nada: convites já emitidos continuam valendo. O que muda é a
+ * porta da rua — quem chegar pelo link público passa a ver "esta vaga é por
+ * convite" em vez do formulário.
+ */
+export async function alternarModoDaVaga(jobId: string, aberta: boolean) {
+  const contexto = await exigirPapel("RECRUITER");
+
+  const vaga = await prisma.job.updateMany({
+    where: { id: jobId, organizationId: contexto.organizationId },
+    data: { publicEnabled: aberta },
+  });
+
+  if (vaga.count === 0) return { ok: false as const, erro: "Vaga não encontrada." };
+
+  await registrarAuditoria({
+    categoria: "MUTATION",
+    acao: aberta ? "vaga_aberta_ao_publico" : "vaga_fechada_para_convite",
+    organizationId: contexto.organizationId,
+    userId: contexto.userId,
+    entidade: "Job",
+    entidadeId: jobId,
+  });
+
+  revalidatePath(`/vagas/${jobId}`);
+  return { ok: true as const };
 }
 
 /**

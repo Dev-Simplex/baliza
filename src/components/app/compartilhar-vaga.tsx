@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Check, Copy, Download, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
-import { ConvidarPorEmail } from "@/components/app/convidar-por-email";
+import { CadastrarCandidato } from "@/components/app/cadastrar-candidato";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,11 +29,16 @@ export function CompartilharVaga({
   qrDataUrl,
   titulo,
   jobId,
+  aberta,
+  baseDoSite,
 }: {
   url: string;
   qrDataUrl: string;
   titulo: string;
   jobId: string;
+  /** Aberta: o link público vale. Fechada: só quem o RH cadastrou entra. */
+  aberta: boolean;
+  baseDoSite: string;
 }) {
   const [copiado, setCopiado] = useState(false);
   const idDoLink = "link-publico-da-vaga";
@@ -94,6 +99,17 @@ export function CompartilharVaga({
 
   return (
     <div className="space-y-3">
+      {/* Vaga por convite não tem link público para mostrar: mostrar assim
+          mesmo faria o RH copiar um endereço que recusa quem abrir. */}
+      {!aberta && (
+        <p className="rounded-lg border border-dashed px-3 py-2.5 t-legenda leading-relaxed text-muted-foreground">
+          Esta vaga é <strong className="font-medium text-foreground">por convite</strong>:
+          só responde quem você cadastrar. Quem abrir o endereço público vê um
+          aviso e o caminho para entrar com o código.
+        </p>
+      )}
+
+      {aberta && (
       <div className="flex items-center gap-2 rounded-lg border bg-secondary/50 p-1.5">
         <code
           id={idDoLink}
@@ -112,8 +128,10 @@ export function CompartilharVaga({
           {copiado ? "Copiado" : "Copiar"}
         </Button>
       </div>
+      )}
 
       <div className="flex gap-2">
+        {aberta && (
         <Dialog>
           <DialogTrigger
             render={
@@ -157,8 +175,13 @@ export function CompartilharVaga({
             </div>
           </DialogContent>
         </Dialog>
+        )}
 
-        <ConvidarPorEmail jobId={jobId} tituloDaVaga={titulo} />
+        <CadastrarCandidato
+          jobId={jobId}
+          tituloDaVaga={titulo}
+          baseDoSite={baseDoSite}
+        />
       </div>
     </div>
   );

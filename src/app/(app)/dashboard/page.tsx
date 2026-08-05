@@ -29,19 +29,36 @@ import {
 } from "@/lib/dados/dashboard";
 import { duracao, numero } from "@/lib/formato";
 import { exigirTenant } from "@/lib/tenant";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { PrimeirosPassos } from "@/components/app/primeiros-passos";
 
 export const metadata: Metadata = { title: "Visão geral" };
 
 export default async function PaginaDoPainel() {
   const { organizationId } = await exigirTenant();
+  const sessao = await auth();
 
-  const [resumo, medias, melhores, volume, arquetipos] = await Promise.all([
-    resumoDoPainel(organizationId),
-    mediaPorFator(organizationId),
-    melhoresAderencias(organizationId),
-    volumePorSemana(organizationId),
-    distribuicaoDeArquetipos(organizationId),
-  ]);
+  const [resumo, medias, melhores, volume, arquetipos, usuario, convites] =
+    await Promise.all([
+      resumoDoPainel(organizationId),
+      mediaPorFator(organizationId),
+      melhoresAderencias(organizationId),
+      volumePorSemana(organizationId),
+      distribuicaoDeArquetipos(organizationId),
+      sessao?.user?.id
+        ? prisma.user.findUnique({
+            where: { id: sessao.user.id },
+            select: { onboardingDoneAt: true },
+          })
+        : null,
+      prisma.invitation.count({ where: { organizationId } }),
+    ]);
+
+  // Os passos se marcam sozinhos a partir do estado real da conta — nada de
+  // checklist que a pessoa precisa marcar na mão.
+  const mostrarPrimeirosPassos =
+    !usuario?.onboardingDoneAt && resumo.concluidas === 0;
 
   const criarVaga = (
     <BotaoLink href="/vagas/nova" className="gap-1.5">
@@ -53,6 +70,16 @@ export default async function PaginaDoPainel() {
   return (
     <div className="mx-auto max-w-7xl">
       <CabecalhoDePagina etiqueta="Painel" titulo="Visão geral" acoes={criarVaga} />
+
+      {mostrarPrimeirosPassos && (
+        <div className="mb-4">
+          <PrimeirosPassos
+            temVaga={resumo.vagasAbertas > 0}
+            temCandidato={convites > 0 || resumo.candidatos > 0}
+            temResposta={resumo.concluidas > 0}
+          />
+        </div>
+      )}
 
       {resumo.concluidas === 0 ? (
         <EstadoVazio

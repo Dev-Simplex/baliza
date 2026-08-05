@@ -70,6 +70,11 @@ model User {
   isPlatformAdmin Boolean   @default(false)
   isActive        Boolean   @default(true)
   lastLoginAt     DateTime?
+
+  // Primeiros passos do painel: guardado no usuário, e não no navegador, para
+  // que quem já aprendeu não veja o tutorial de novo ao trocar de máquina.
+  onboardingDoneAt DateTime?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -231,6 +236,17 @@ model Invitation {
   candidate      Candidate?        @relation(fields: [candidateId], references: [id], onDelete: SetNull)
   email          String?
   token          String            @unique @default(cuid())
+
+  // Terceira via de entrada, ao lado do link e do QR: 4 dígitos que dá para
+  // ditar no telefone ou mandar por WhatsApp. É a MESMA chave do link, não uma
+  // senha — quem tem o código entra, igual a quem tem o link.
+  //
+  // Único no sistema inteiro, e não por vaga, porque a tela `/acesso` não sabe
+  // de qual vaga a pessoa veio. Isso só cabe em 4 dígitos porque o código é
+  // DEVOLVIDO ao acervo quando a prova termina (volta a ser null): o que
+  // precisa ser único é o punhado de convites em aberto, nunca o histórico.
+  accessCode     String?           @unique
+
   channel        InvitationChannel @default(EMAIL)
   status         InvitationStatus  @default(PENDING)
   sentAt         DateTime?

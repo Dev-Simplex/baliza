@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { registrarAuditoria } from "@/lib/audit";
+import { normalizarCodigo, sortearCodigoLivre } from "@/lib/codigo-de-acesso";
 import { prisma } from "@/lib/prisma";
 import { limitarPorIp } from "@/lib/rate-limit";
 import { VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
@@ -155,12 +156,17 @@ export async function criarAvaliacao(opcoes: {
   const expiraEm = new Date();
   expiraEm.setDate(expiraEm.getDate() + (opcoes.validadeEmDias ?? 30));
 
+  // Terceira via de entrada (link, QR, código). Vem null quando o acervo de
+  // 4 dígitos está cheio: o convite continua valendo por link e QR.
+  const codigo = await sortearCodigoLivre();
+
   const convite = await prisma.invitation.create({
     data: {
       organizationId: opcoes.organizationId,
       jobId: opcoes.jobId,
       candidateId: opcoes.candidateId,
       email: opcoes.email ?? null,
+      accessCode: codigo,
       channel: opcoes.canal,
       status: opcoes.canal === "EMAIL" ? "PENDING" : "OPENED",
       expiresAt: expiraEm,
@@ -183,6 +189,46 @@ export async function criarAvaliacao(opcoes: {
   });
 
   return convite.token;
+}
+
+/**
+ * Entrada pelo CÓDIGO de 4 dígitos — a terceira via, ao lado do link e do QR.
+ *
+ * O código é a mesma chave do link, não uma senha. O que impede alguém de varrer
+ * as 10.000 combinações é o limite de tentativas por IP daqui: seis por hora
+ * transformam a varredura completa em quase dois anos.
+ */
+export async function entrarPeloCodigo(
+  _estado: EstadoDaEntrada,
+  dados: FormData,
+): Promise<EstadoDaEntrada> {
+  const limite = await limitarPorIp("acesso-por-codigo", {
+    max: 6,
+    janelaSegundos: 3600,
+  });
+  if (!limite.permitido)
+    return {
+      erro: "Muitas tentativas deste dispositivo. Tente daqui a pouco ou use o link que você recebeu.",
+    };
+
+  const codigo = normalizarCodigo(String(dados.get("codigo") ?? ""));
+  if (codigo.length !== 4) return { campos: { codigo: "Digite os 4 dígitos" } };
+
+  const convite = await prisma.invitation.findUnique({
+    where: { accessCode: codigo },
+    include: { assessment: { select: { status: true, resultToken: true } } },
+  });
+
+  // Mensagem única para código inexistente e para código expirado: dizer "esse
+  // código existe, mas venceu" já entrega informação para quem está tentando na
+  // sorte.
+  if (!convite || convite.expiresAt < new Date())
+    return { erro: "Código não encontrado. Confira os dígitos com quem te enviou." };
+
+  if (convite.assessment?.status === "COMPLETED")
+    redirect(`/r/${convite.assessment.resultToken}`);
+
+  redirect(`/t/${convite.token}`);
 }
 
 /** Marca o início. Idempotente: recarregar a página não zera o cronômetro. */
@@ -434,7 +480,10 @@ export async function concluirAvaliacao(token: string) {
     }),
     prisma.invitation.update({
       where: { id: convite.id },
-      data: { status: "COMPLETED" },
+      // O código volta ao acervo: são só 10.000, e é a reciclagem que permite
+      // que 4 dígitos bastem. Quem quiser rever o resultado usa o link de
+      // resultado, que é para sempre.
+      data: { status: "COMPLETED", accessCode: null },
     }),
   ]);
 
