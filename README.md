@@ -167,6 +167,21 @@ aponta para um endereço **não-local** (produção atrás de domínio, onde con
 cabeçalho `Host` deixaria alguém forjar o domínio de um link que vai por e-mail);
 fora isso vale o host da requisição, que é o que acerta sozinho em rede local.
 
+### Por que só o link da VAGA é legível
+
+`/vaga/executivo-de-vendas-prospeccao-u2587v` em vez de um `cuid`. Este é o
+único token que uma pessoa lê, digita e dita no telefone — ele vai colado no
+anúncio. O sufixo aleatório não é enfeite: sem ele, duas vagas de mesmo título
+colidiriam e o endereço seria adivinhável a partir do anúncio.
+
+Os outros continuam opacos **de propósito**: o do convite (`/t/…`) e o do
+resultado (`/r/…`) são credenciais — quem tem o token responde ou lê o relatório
+de alguém. Legível, ali, é adivinhável.
+
+Vagas criadas antes disso mantêm o endereço antigo. Para trocar,
+`prisma/tornar-links-legiveis.ts` — lembrando que **isso invalida link já
+distribuído**.
+
 ### O convite por e-mail entrega um link PESSOAL
 
 O link da vaga é público e pede nome e e-mail. O convite (`/t/<token>`) já sabe

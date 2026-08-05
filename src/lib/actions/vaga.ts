@@ -8,6 +8,7 @@ import { registrarAuditoria } from "@/lib/audit";
 import { PERFIL_NEUTRO, PRESET_POR_ID } from "@/lib/instrument/presets";
 import { prisma } from "@/lib/prisma";
 import { exigirPapel } from "@/lib/tenant";
+import { gerarTokenDeVaga } from "@/lib/token-de-vaga";
 
 export type EstadoDaVaga = {
   erro?: string;
@@ -62,21 +63,19 @@ export async function criarVaga(
   // editar o perfil de uma vaga não mexe em nenhuma outra.
   const perfil = preset ? preset.dimensoes : PERFIL_NEUTRO;
 
-  const vaga = await prisma.job.create({
-    data: {
-      organizationId: contexto.organizationId,
-      title: analise.data.titulo.trim(),
-      description: analise.data.descricao?.trim() || null,
-      requirements: analise.data.requisitos?.trim() || null,
-      seniority: analise.data.senioridade,
-      workModel: analise.data.modelo,
-      department: analise.data.departamento?.trim() || null,
-      location: analise.data.local?.trim() || null,
-      status: "OPEN",
-      presetId: preset?.id ?? null,
-      targetProfile: perfil as never,
-      createdById: contexto.userId,
-    },
+  const vaga = await criarComTokenLegivel({
+    organizationId: contexto.organizationId,
+    title: analise.data.titulo.trim(),
+    description: analise.data.descricao?.trim() || null,
+    requirements: analise.data.requisitos?.trim() || null,
+    seniority: analise.data.senioridade,
+    workModel: analise.data.modelo,
+    department: analise.data.departamento?.trim() || null,
+    location: analise.data.local?.trim() || null,
+    status: "OPEN",
+    presetId: preset?.id ?? null,
+    targetProfile: perfil as never,
+    createdById: contexto.userId,
   });
 
   await registrarAuditoria({
@@ -91,4 +90,37 @@ export async function criarVaga(
 
   revalidatePath("/vagas");
   redirect(`/vagas/${vaga.id}`);
+}
+
+/**
+ * Cria a vaga com o endereço público legível.
+ *
+ * O sufixo aleatório torna a colisão improvável, não impossível — duas vagas
+ * com o mesmo título no mesmo segundo existem. `publicToken` é UNIQUE no banco,
+ * então a colisão vira erro P2002 e a saída é tentar outro sufixo, nunca deixar
+ * o cadastro falhar por causa de um sorteio.
+ */
+async function criarComTokenLegivel(
+  dados: Parameters<typeof prisma.job.create>[0]["data"],
+) {
+  const titulo = typeof dados.title === "string" ? dados.title : "vaga";
+
+  for (let tentativa = 0; tentativa < 5; tentativa += 1) {
+    try {
+      return await prisma.job.create({
+        data: { ...dados, publicToken: gerarTokenDeVaga(titulo) },
+      });
+    } catch (erro) {
+      const colidiu =
+        typeof erro === "object" &&
+        erro !== null &&
+        "code" in erro &&
+        (erro as { code?: string }).code === "P2002";
+      if (!colidiu) throw erro;
+    }
+  }
+
+  // Cinco sorteios seguidos batendo é sinal de outra coisa; deixa o banco
+  // gerar o `cuid` do default em vez de recusar a vaga.
+  return prisma.job.create({ data: dados });
 }
