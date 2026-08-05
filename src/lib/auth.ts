@@ -13,6 +13,12 @@ const credenciais = z.object({
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Atrás de proxy (Cloudflare → nginx → aqui), o host que vale é o do
+  // `x-forwarded-host`, não o que este processo enxerga. Sem isto o NextAuth
+  // monta o callback com `localhost:3300` e o login volta para lugar nenhum.
+  // É seguro porque o único caminho até este processo é o proxy: nada chega
+  // aqui com um Host inventado por um cliente.
+  trustHost: true,
   ...authConfig,
   providers: [
     Credentials({
