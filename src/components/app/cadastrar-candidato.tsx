@@ -114,11 +114,19 @@ export function CadastrarCandidato({
         }
       />
       <DialogContent className="sm:max-w-md">
+        {/* O cabeçalho conta o passo em que a pessoa ESTÁ. Manter o texto do
+            cadastro depois de cadastrar deixava duas frases dizendo coisas
+            diferentes na mesma tela. */}
         <DialogHeader>
-          <DialogTitle>Cadastrar candidato</DialogTitle>
+          <DialogTitle>
+            {acesso ? `Acesso de ${estado.candidato}` : "Cadastrar candidato"}
+          </DialogTitle>
           <DialogDescription>
-            Assim que cadastrar, aparecem as três formas de entregar o acesso:
-            link, QR Code e código de 4 dígitos.
+            {acesso
+              ? estado.enviado
+                ? estado.mensagem
+                : "Escolha por onde entregar. As três formas abrem a mesma prova."
+              : "Depois de cadastrar, você escolhe como entregar o acesso: link, QR Code ou código de 4 dígitos."}
           </DialogDescription>
         </DialogHeader>
 
@@ -176,128 +184,141 @@ export function CadastrarCandidato({
           </form>
         ) : (
           <div className="space-y-4">
-            <p className="t-corpo-sm text-muted-foreground">{estado.mensagem}</p>
+            {/* Sem servidor de e-mail o aviso é informação de estado, não um
+                erro — mas precisa aparecer antes das opções, porque é ele que
+                explica por que elas estão ali. */}
+            {!estado.enviado && (
+              <p className="rounded-lg border border-dashed px-3 py-2 t-legenda leading-relaxed text-muted-foreground">
+                {estado.mensagem}
+              </p>
+            )}
 
-            <div className="space-y-3 rounded-lg border p-3">
-              <div>
-                <p className="etiqueta">1 · Link</p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <code className="leitura flex-1 truncate rounded bg-secondary/60 px-2 py-1.5 t-legenda text-muted-foreground">
-                    {acesso.link}
-                  </code>
+            {/* Cada via é uma linha com a mesma anatomia: rótulo à esquerda,
+                conteúdo à direita. Antes o QR e o código tinham cada um a sua
+                estrutura, e a lista parecia três coisas soltas. */}
+            <ul className="divide-y rounded-lg border">
+              <li className="flex items-center gap-3 p-3">
+                <span className="etiqueta w-16 shrink-0">Link</span>
+                <code
+                  className="leitura min-w-0 flex-1 truncate t-legenda text-muted-foreground"
+                  title={acesso.link}
+                >
+                  {acesso.link}
+                </code>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="shrink-0 gap-1.5"
+                  onClick={() => copiar(acesso.link, "Link")}
+                >
+                  {copiado === "Link" ? (
+                    <Check className="size-3.5 text-dentro" />
+                  ) : (
+                    <Copy className="size-3.5" />
+                  )}
+                  Copiar
+                </Button>
+              </li>
+
+              <li className="flex items-center gap-3 p-3">
+                <span className="etiqueta w-16 shrink-0">QR Code</span>
+                <div className="min-w-0 flex-1">
+                  {qr ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={qr}
+                      alt={`QR Code de acesso de ${estado.candidato}`}
+                      className="size-20 rounded-md border bg-white p-1"
+                    />
+                  ) : (
+                    <p className="t-legenda text-muted-foreground">Gerando…</p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="shrink-0 gap-1.5"
+                  disabled={!qr}
+                  nativeButton={false}
+                  render={
+                    <a
+                      href={qr ?? "#"}
+                      download={`acesso-${(estado.candidato ?? "candidato")
+                        .toLowerCase()
+                        .replace(/\s+/g, "-")}.png`}
+                    />
+                  }
+                >
+                  <QrCode className="size-3.5" />
+                  Baixar
+                </Button>
+              </li>
+
+              <li className="flex items-center gap-3 p-3">
+                <span className="etiqueta w-16 shrink-0">Código</span>
+                <div className="min-w-0 flex-1">
+                  {acesso.codigo ? (
+                    <>
+                      <span className="leitura text-xl tabular-nums tracking-[0.25em]">
+                        {acesso.codigo}
+                      </span>
+                      {/* A instrução mora COM o código: um código sem o
+                          endereço onde digitá-lo não serve para nada. */}
+                      <p className="mt-0.5 t-legenda text-muted-foreground">
+                        digite em{" "}
+                        <span className="leitura">{baseDoSite}/acesso</span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="t-legenda text-muted-foreground">
+                      Indisponível — use o link ou o QR.
+                    </p>
+                  )}
+                </div>
+                {acesso.codigo && (
                   <Button
                     size="sm"
                     variant="secondary"
-                    className="gap-1.5"
-                    onClick={() => copiar(acesso.link, "Link")}
+                    className="shrink-0 gap-1.5"
+                    onClick={() => copiar(acesso.codigo!, "Código")}
                   >
-                    {copiado === "Link" ? (
+                    {copiado === "Código" ? (
                       <Check className="size-3.5 text-dentro" />
                     ) : (
                       <Copy className="size-3.5" />
                     )}
                     Copiar
                   </Button>
-                </div>
-              </div>
+                )}
+              </li>
+            </ul>
 
-              <div className="border-t pt-3">
-                <p className="etiqueta">2 · QR Code</p>
-                {qr ? (
-                  <div className="mt-2 flex items-center gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={qr}
-                      alt={`QR Code de acesso de ${estado.candidato}`}
-                      className="size-24 rounded-lg border bg-white p-1.5"
+            {/* Uma ação principal e uma secundária, lado a lado. Dois botões
+                de largura total empilhados disputavam a mesma importância. */}
+            <div className="flex justify-end gap-2">
+              {!estado.enviado && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  nativeButton={false}
+                  render={
+                    <a
+                      href={`mailto:?subject=${encodeURIComponent(
+                        `${tituloDaVaga} — mapeamento comportamental`,
+                      )}&body=${encodeURIComponent(
+                        `Olá!\n\nPara seguir no processo da vaga de ${tituloDaVaga}, responda o mapeamento comportamental (leva cerca de 8 minutos):\n\n${acesso.link}\n\nSe preferir, entre em ${baseDoSite}/acesso com o código ${acesso.codigo ?? ""}.\n\nObrigado!`,
+                      )}`}
                     />
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5"
-                      nativeButton={false}
-                      render={
-                        <a
-                          href={qr}
-                          download={`acesso-${(estado.candidato ?? "candidato")
-                            .toLowerCase()
-                            .replace(/\s+/g, "-")}.png`}
-                        />
-                      }
-                    >
-                      <QrCode className="size-3.5" />
-                      Baixar
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="mt-1.5 t-legenda text-muted-foreground">
-                    Gerando…
-                  </p>
-                )}
-              </div>
+                  }
+                >
+                  Abrir no meu e-mail
+                </Button>
+              )}
 
-              <div className="border-t pt-3">
-                <p className="etiqueta">3 · Código</p>
-                {acesso.codigo ? (
-                  <>
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <span className="leitura rounded bg-secondary/60 px-3 py-1.5 text-xl tabular-nums tracking-[0.3em]">
-                        {acesso.codigo}
-                      </span>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="gap-1.5"
-                        onClick={() => copiar(acesso.codigo!, "Código")}
-                      >
-                        {copiado === "Código" ? (
-                          <Check className="size-3.5 text-dentro" />
-                        ) : (
-                          <Copy className="size-3.5" />
-                        )}
-                        Copiar
-                      </Button>
-                    </div>
-                    <p className="mt-1.5 t-legenda text-muted-foreground">
-                      Peça para digitar em{" "}
-                      <span className="leitura">{baseDoSite}/acesso</span>
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-1.5 t-legenda text-muted-foreground">
-                    Sem código disponível no momento — use o link ou o QR.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {!estado.enviado && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                nativeButton={false}
-                render={
-                  <a
-                    href={`mailto:?subject=${encodeURIComponent(
-                      `${tituloDaVaga} — mapeamento comportamental`,
-                    )}&body=${encodeURIComponent(
-                      `Olá!\n\nPara seguir no processo da vaga de ${tituloDaVaga}, responda o mapeamento comportamental (leva cerca de 8 minutos):\n\n${acesso.link}\n\nSe preferir, entre em ${baseDoSite}/acesso com o código ${acesso.codigo ?? ""}.\n\nObrigado!`,
-                    )}`}
-                  />
-                }
-              >
-                Abrir no meu e-mail
+              <Button size="sm" onClick={() => aoMudarAbertura(false)}>
+                Concluir
               </Button>
-            )}
-
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => aoMudarAbertura(false)}
-            >
-              Concluir
-            </Button>
+            </div>
           </div>
         )}
       </DialogContent>
