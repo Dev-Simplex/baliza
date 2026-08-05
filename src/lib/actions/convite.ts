@@ -6,6 +6,7 @@ import { criarAvaliacao } from "@/lib/actions/avaliacao";
 import { registrarAuditoria } from "@/lib/audit";
 import { convitePorEmail, enviarEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
+import { gerarQr } from "@/lib/qr";
 import { exigirPapel } from "@/lib/tenant";
 import { urlBase } from "@/lib/url-publica";
 
@@ -25,6 +26,13 @@ export type EstadoDoConvite = {
   acesso?: {
     link: string;
     codigo: string | null;
+    /**
+     * O QR do link pessoal, já desenhado. Vem daqui e não do navegador porque
+     * gerar no cliente custava um "Gerando…" eterno quando falhava — ver
+     * `src/lib/qr.ts`. `null` significa que o desenho não saiu; as outras duas
+     * vias continuam valendo, e a tela diz isso.
+     */
+    qrDataUrl: string | null;
   };
   /** O e-mail saiu de fato? Muda o texto e o que a tela oferece. */
   enviado?: boolean;
@@ -114,11 +122,14 @@ export async function convidarPorEmail(
     }));
 
   const link = `${await urlBase()}/t/${token}`;
-  const convite = await prisma.invitation.findUnique({
-    where: { token },
-    select: { accessCode: true },
-  });
-  const acesso = { link, codigo: convite?.accessCode ?? null };
+  const [convite, qrDataUrl] = await Promise.all([
+    prisma.invitation.findUnique({
+      where: { token },
+      select: { accessCode: true },
+    }),
+    gerarQr(link),
+  ]);
+  const acesso = { link, codigo: convite?.accessCode ?? null, qrDataUrl };
   const mensagem = convitePorEmail({
     nomeDoCandidato: nome,
     tituloDaVaga: vaga.title,

@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 export type MedidorMinimo = {
   fator: string;
+  /** Nome inteiro da dimensão, para a dica de quem lê a coluna pela letra. */
+  nome?: string;
   escore: number;
   faixa: [number, number];
   dentro: boolean;
@@ -52,10 +54,11 @@ export function LinhaDeCandidato({
       <Link href={href} className="linha-clicavel block px-5 py-3.5">
         <div className="flex items-center gap-3 sm:gap-4">
           {posicao !== undefined && (
-            <span
-              className="leitura w-5 shrink-0 text-sm text-muted-foreground"
-              aria-label={`Posição ${posicao}`}
-            >
+            /* `aria-label` num <span> sem papel é ignorado por leitor de tela —
+               o número era anunciado solto, no meio do nome. Texto oculto de
+               verdade entra no nome acessível do link. */
+            <span className="leitura w-5 shrink-0 text-sm text-muted-foreground">
+              <span className="sr-only">Posição </span>
               {posicao}
             </span>
           )}
@@ -74,6 +77,19 @@ export function LinhaDeCandidato({
             {detalhe && (
               <p className="t-legenda truncate text-muted-foreground">{detalhe}</p>
             )}
+            {/* No celular o selo não cabe na mesma linha do escore — e escondê-lo
+                era a saída antiga. Mas a regra §4.4 não tem versão mobile: o
+                número não aparece sem o selo. Aqui ele desce uma linha em vez de
+                desaparecer. */}
+            {confianca && (
+              <div className="mt-1.5 sm:hidden">
+                <SeloDeConfianca
+                  tamanho="sm"
+                  focavel={false}
+                  confianca={confianca}
+                />
+              </div>
+            )}
           </div>
 
           {meta && (
@@ -82,7 +98,7 @@ export function LinhaDeCandidato({
 
           {confianca && (
             <div className="hidden shrink-0 sm:block">
-              <SeloDeConfianca tamanho="sm" confianca={confianca} />
+              <SeloDeConfianca tamanho="sm" focavel={false} confianca={confianca} />
             </div>
           )}
 
@@ -103,7 +119,15 @@ export function LinhaDeCandidato({
           >
             {medidores.map((m) => (
               <div key={m.fator} className={cn(m.irrelevante && "opacity-25")}>
-                <p className="etiqueta mb-1">{m.fator}</p>
+                <p
+                  className="etiqueta mb-1"
+                  title={
+                    m.nome &&
+                    `${m.nome}${m.irrelevante ? " — não pesa nesta vaga" : ""}`
+                  }
+                >
+                  {m.fator}
+                </p>
                 {m.irrelevante ? (
                   <div className="h-1.5 rounded-full bg-muted" />
                 ) : (

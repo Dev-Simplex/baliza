@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, Minus } from "lucide-react";
+import { ArrowRight, Minus } from "lucide-react";
 
 import { AlternarTema } from "@/components/alternar-tema";
 import { Marca } from "@/components/marca";
 import { ComparacaoDeVisao } from "@/components/site/comparacao-de-visao";
 import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPOS } from "@/lib/instrument/archetypes";
+import { CENARIOS_POR_PROVA, TOTAL_DE_ITENS } from "@/lib/instrument/form";
 import { ITENS } from "@/lib/instrument/items";
 import { PRESETS } from "@/lib/instrument/presets";
 import { FATORES, NOMES_DE_FATOR } from "@/lib/instrument/types";
@@ -84,7 +85,7 @@ function Hero() {
           </h1>
 
           <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-muted-foreground">
-            Cole um link na sua vaga. Em oito minutos o candidato responde. Você
+            Cole um link na sua vaga. Em seis minutos o candidato responde. Você
             recebe o ranking com a aderência explicada — e as perguntas exatas
             para fazer a cada um.
           </p>
@@ -187,8 +188,8 @@ function FaixaDeMetricas() {
   // comprador de RH testa.
   const metricas = [
     { valor: `${ITENS.length}`, rotulo: "itens no banco" },
-    { valor: "44", rotulo: "itens por aplicação" },
-    { valor: "~8", rotulo: "minutos por candidato" },
+    { valor: `${TOTAL_DE_ITENS}`, rotulo: "itens por aplicação" },
+    { valor: "~6", rotulo: "minutos por candidato" },
     { valor: `${PRESETS.length}`, rotulo: "perfis-alvo prontos" },
     { valor: `${ARQUETIPOS.length}`, rotulo: "arquétipos de leitura" },
   ];
@@ -219,7 +220,7 @@ function ComoFunciona() {
     {
       titulo: "Mande o link",
       texto:
-        "Um link, um QR Code ou um e-mail. O candidato não cria conta, não instala nada e responde pelo celular em cerca de oito minutos.",
+        "Um link, um QR Code ou um e-mail. O candidato não cria conta, não instala nada e responde pelo celular em cerca de seis minutos.",
     },
     {
       titulo: "Receba o ranking e o roteiro",
@@ -286,7 +287,7 @@ function Beneficios() {
     {
       titulo: "O candidato recebe o resultado",
       texto:
-        "Sempre, integral, sem depender de a empresa liberar. Quem responde oito minutos merece levar algo de volta.",
+        "Sempre, integral, sem depender de a empresa liberar. Quem responde seis minutos merece levar algo de volta.",
     },
     {
       titulo: "Reaplicar mede mudança, não memória",
@@ -333,9 +334,9 @@ function OQueMedimos() {
           <p className="mt-6 t-corpo leading-relaxed text-muted-foreground">
             O instrumento é derivado do IPIP, que é de domínio público e mede o
             mesmo modelo de cinco fatores que o mercado vende como diferencial
-            proprietário. A prova tem duas partes: 44 afirmações que geram o
-            escore comparável entre pessoas, e oito situações de trabalho que
-            servem para conferir se as duas histórias batem.
+            proprietário. A prova tem duas partes: {TOTAL_DE_ITENS} afirmações que geram
+            o escore comparável entre pessoas, e {CENARIOS_POR_PROVA} situações
+            de trabalho que servem para conferir se as duas histórias batem.
           </p>
 
           <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
@@ -386,19 +387,19 @@ const DEPOIMENTOS_DE_EXEMPLO = [
   {
     texto:
       "A parte que mudou o processo não foi o ranking — foi chegar na entrevista já sabendo o que perguntar pra cada pessoa.",
-    autor: "Exemplo · Coordenação de RH",
+    autor: "Coordenação de RH",
     contexto: "indústria, 180 pessoas",
   },
   {
     texto:
       "O selo de confiança pegou dois candidatos que responderam o que achavam que a gente queria ouvir. Isso sozinho pagou a ferramenta.",
-    autor: "Exemplo · Gerência de Gente",
+    autor: "Gerência de Gente",
     contexto: "varejo, 40 lojas",
   },
   {
     texto:
       "Parei de contratar vendedor simpático que não fecha. A faixa de cooperação explicou uma coisa que eu sentia e não sabia nomear.",
-    autor: "Exemplo · Direção Comercial",
+    autor: "Direção Comercial",
     contexto: "serviços B2B",
   },
 ];
@@ -407,19 +408,38 @@ function Depoimentos() {
   return (
     <section className="border-b bg-superficie-2/60">
       <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <p className="etiqueta">Depoimentos</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="etiqueta">O que muda na prática</p>
+          <span className="rounded-full border border-fora/40 bg-fora/10 px-2.5 py-1 t-legenda font-medium text-fora">
+            Exemplos ilustrativos
+          </span>
+        </div>
+
         <h2 className="mt-4 max-w-2xl t-titulo">
-          O que muda na prática.
+          Três situações que o produto resolve.
         </h2>
+
+        {/* O aviso fica na tela, e não só no comentário do código, porque é a
+            tela que engana. Depoimento inventado numa página de vendas é
+            problema jurídico e de reputação — e o leitor não abre o fonte para
+            descobrir que a frase é nossa. */}
+        <p className="mt-4 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
+          As falas abaixo foram escritas por nós para mostrar o formato da
+          conversa que o produto muda. <strong className="font-medium text-foreground">
+            Não são clientes reais</strong> e não representam resultado de
+          ninguém. Quando houver depoimento de verdade, com autorização de quem
+          falou, ele entra aqui — com nome e empresa.
+        </p>
 
         <div className="mt-12 grid gap-5 md:grid-cols-3">
           {DEPOIMENTOS_DE_EXEMPLO.map((d) => (
-            <figure key={d.autor} className="rounded-xl border bg-card p-6">
+            <figure key={d.autor} className="rounded-xl border border-dashed bg-card p-6">
               <blockquote className="t-corpo leading-relaxed">
                 &ldquo;{d.texto}&rdquo;
               </blockquote>
               <figcaption className="mt-5 border-t pt-4">
-                <p className="t-corpo-sm font-medium">{d.autor}</p>
+                <p className="etiqueta text-fora">Exemplo escrito por nós</p>
+                <p className="mt-1.5 t-corpo-sm font-medium">{d.autor}</p>
                 <p className="etiqueta mt-1">{d.contexto}</p>
               </figcaption>
             </figure>
@@ -441,7 +461,7 @@ const PERGUNTAS_FREQUENTES = [
   },
   {
     p: "Quanto tempo o candidato leva?",
-    r: "Cerca de oito minutos: 44 afirmações rápidas e 8 situações de trabalho. Responde pelo celular, sem criar conta, e pode fechar e continuar depois pelo mesmo link — as respostas são salvas a cada clique.",
+    r: `Cerca de seis minutos: ${TOTAL_DE_ITENS} afirmações rápidas e ${CENARIOS_POR_PROVA} situações de trabalho. Responde pelo celular, sem criar conta, e pode fechar e continuar depois pelo mesmo link — as respostas são salvas a cada clique.`,
   },
   {
     p: "O que acontece com os dados de quem responde?",

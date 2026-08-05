@@ -17,15 +17,21 @@ export const metadata: Metadata = { title: "Candidatos" };
 export default async function PaginaDeCandidatos() {
   const { organizationId } = await exigirTenant();
 
+  const TETO = 100;
+
   const avaliacoes = await prisma.assessment.findMany({
     where: { organizationId, status: "COMPLETED" },
     orderBy: { completedAt: "desc" },
-    take: 100,
+    take: TETO,
     include: {
       candidate: { select: { id: true, name: true } },
       job: { select: { title: true } },
     },
   });
+
+  // A lista tem teto, e antes o texto dizia "100 respostas concluídas" para uma
+  // base de 250 — um número verdadeiro dizendo uma coisa falsa.
+  const truncada = avaliacoes.length === TETO;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -35,7 +41,10 @@ export default async function PaginaDeCandidatos() {
         descricao={
           avaliacoes.length === 0
             ? undefined
-            : `${numero(avaliacoes.length)} ${avaliacoes.length === 1 ? "resposta concluída" : "respostas concluídas"}, da mais recente para a mais antiga.`
+            : // O número à direita de cada linha aparece sem rótulo nesta tela —
+              // dizer o que ele é aqui custa uma frase e evita que a lista seja
+              // lida como "nota do candidato".
+              `${truncada ? `As ${numero(TETO)} respostas concluídas mais recentes` : `${numero(avaliacoes.length)} ${avaliacoes.length === 1 ? "resposta concluída" : "respostas concluídas"}`}, da mais recente para a mais antiga. O número à direita é a aderência daquela resposta à vaga em que ela foi dada.`
         }
       />
 

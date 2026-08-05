@@ -25,7 +25,12 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-header"
       className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
+        // `[&>*]:min-w-0`: com ação, a trilha do título é `1fr` — mas item de
+        // grid nasce com `min-width: auto`, então a trilha cresce até caber o
+        // conteúdo indivisível (um e-mail, um endereço de vaga) e empurra a
+        // ação para fora do cartão. Zerar o mínimo devolve o `truncate` dos
+        // filhos e faz o `1fr` significar o que diz.
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) [&>*]:min-w-0 has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
         className
       )}
       {...props}

@@ -4,10 +4,8 @@ import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import { Painel, PainelCabecalho } from "@/components/ui/painel";
 import { usoDoMes } from "@/lib/dados/dashboard";
 import { ROTULO_DE_PAPEL, iniciais, numero } from "@/lib/formato";
-import { VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
-import { TOTAL_DE_ITENS } from "@/lib/instrument/form";
-import { ITENS } from "@/lib/instrument/items";
-import { CENARIOS } from "@/lib/instrument/scenarios";
+import { CENARIOS_POR_PROVA, TOTAL_DE_ITENS } from "@/lib/instrument/form";
+import { ITENS, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
 import { prisma } from "@/lib/prisma";
 import { exigirTenant } from "@/lib/tenant";
 
@@ -44,9 +42,12 @@ export default async function PaginaDeConfiguracoes() {
 
       <div className="space-y-4">
         <Painel>
+          {/* Dito na cara: uma tela chamada "Configurações" que só mostra
+              valores faz a pessoa procurar o botão de editar por minutos. Não
+              existe — e admitir isso custa uma linha. */}
           <PainelCabecalho
             titulo="Empresa"
-            descricao="Aparece para o candidato no convite e no relatório."
+            descricao="Aparece para o candidato no convite e no relatório. Vem do cadastro e ainda não é editável por aqui."
           />
           <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
             <Campo rotulo="Nome" valor={empresa.name} />
@@ -57,9 +58,15 @@ export default async function PaginaDeConfiguracoes() {
               valor={`${empresa.retentionMonths} meses`}
             />
           </dl>
-          <p className="t-legenda mt-5 border-t pt-4 text-muted-foreground">
-            Passado o prazo de retenção, a resposta bruta do candidato é
-            apagada. O candidato pode pedir a exclusão antes disso.
+          {/* O que a rotina de manutenção apaga e o que ela preserva, dito aqui
+              porque é a única tela onde o prazo aparece — e porque "apagar as
+              respostas" soa como apagar o resultado, que é justamente o que não
+              acontece (regra nº 7: o resultado é do candidato). */}
+          <p className="t-legenda mt-5 border-t pt-4 leading-relaxed text-muted-foreground">
+            Passado o prazo, a manutenção apaga a resposta bruta — o que a pessoa
+            marcou item por item. O resultado consolidado fica, porque o link de
+            resultado do candidato continua valendo. Exclusão antes do prazo é a
+            pedido, e passa por decisão de alguém.
           </p>
         </Painel>
 
@@ -87,7 +94,7 @@ export default async function PaginaDeConfiguracoes() {
             <Medida rotulo="Versão" valor={VERSAO_DO_INSTRUMENTO} />
             <Medida
               rotulo="Itens por aplicação"
-              valor={`${TOTAL_DE_ITENS} + ${CENARIOS.length} cenários`}
+              valor={`${TOTAL_DE_ITENS} + ${CENARIOS_POR_PROVA} cenários`}
             />
             <Medida rotulo="Itens no banco" valor={numero(ITENS.length)} />
           </dl>
@@ -102,7 +109,7 @@ export default async function PaginaDeConfiguracoes() {
           <PainelCabecalho
             comBorda
             titulo="Equipe"
-            descricao={`${numero(equipe.length)} ${equipe.length === 1 ? "pessoa com acesso" : "pessoas com acesso"}.`}
+            descricao={`${numero(equipe.length)} ${equipe.length === 1 ? "pessoa com acesso" : "pessoas com acesso"}. Novos acessos ainda são criados fora do painel.`}
           />
           <ul className="divide-y">
             {equipe.map((pessoa) => (

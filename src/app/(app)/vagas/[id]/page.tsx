@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import QRCode from "qrcode";
 import { Inbox } from "lucide-react";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
+import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
 import { CompartilharVaga } from "@/components/app/compartilhar-vaga";
+import { EditarPerfilAlvo } from "@/components/app/editar-perfil-alvo";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import {
   LinhaDeCandidato,
@@ -29,8 +30,10 @@ import {
   duracao,
   haQuantoTempo,
 } from "@/lib/formato";
+import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant } from "@/lib/tenant";
+import { gerarQr } from "@/lib/qr";
+import { exigirTenant, podeAoMenos } from "@/lib/tenant";
 import { urlBase, urlDaVaga } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Vaga" };
@@ -41,7 +44,13 @@ export default async function PaginaDaVaga({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { organizationId } = await exigirTenant();
+  const { organizationId, role } = await exigirTenant();
+
+  // Quem só lê não pode cadastrar candidato nem mexer no perfil-alvo: as duas
+  // ações exigem RECRUITER e, do outro lado, `exigirPapel` responde com um
+  // redirecionamento para o painel. Oferecer o botão e depois expulsar a pessoa
+  // é pior que não oferecer.
+  const podeEditar = podeAoMenos(role, "RECRUITER");
 
   // O escopo por empresa vai no WHERE, não numa checagem depois da leitura:
   // trocar o id na URL simplesmente não encontra nada.
@@ -66,11 +75,7 @@ export default async function PaginaDaVaga({
   const baseDoSite = await urlBase();
 
   const [qr, pendentes] = await Promise.all([
-    QRCode.toDataURL(url, {
-      width: 440,
-      margin: 1,
-      color: { dark: "#0b0e14", light: "#ffffff" },
-    }),
+    gerarQr(url),
     prisma.assessment.count({
       where: { jobId: vaga.id, status: { in: ["PENDING", "IN_PROGRESS"] } },
     }),
@@ -131,6 +136,37 @@ export default async function PaginaDaVaga({
             descricao="A ordem é sugestão de prioridade de conversa. Nenhum candidato é descartado automaticamente."
           />
 
+          {/* A legenda das colunas.
+              Sem ela o ranking mostra cinco medidores rotulados C, E, X, A e O —
+              e é justamente lado a lado, na mesma coluna, que dá para comparar
+              duas pessoas. Coluna que não se lê não compara nada. */}
+          {vaga.assessments.length > 0 && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-superficie-2/40 px-5 py-2">
+              {FATORES.map((f) => {
+                const cfg = perfil[f];
+                const naoPesa = !cfg || cfg.peso === 0;
+                return (
+                  <span
+                    key={f}
+                    className={cn(
+                      "t-legenda text-muted-foreground",
+                      naoPesa && "opacity-50",
+                    )}
+                  >
+                    <span className="leitura font-semibold">{f}</span>{" "}
+                    {NOMES_DE_FATOR[f].curto}
+                    {naoPesa && " (não pesa)"}
+                  </span>
+                );
+              })}
+              {/* Descrito por forma e posição, não por cor: quem não distingue
+                  argila de latão continua conseguindo ler o medidor. */}
+              <span className="t-legenda ml-auto text-muted-foreground">
+                o trecho marcado é o que a vaga pede; o losango é o candidato
+              </span>
+            </div>
+          )}
+
           {vaga.assessments.length === 0 ? (
             <div className="p-5">
               <EstadoVazio
@@ -154,6 +190,7 @@ export default async function PaginaDaVaga({
                   const irrelevante = !cfg || cfg.peso === 0;
                   return {
                     fator: f,
+                    nome: NOMES_DE_FATOR[f].ui,
                     escore: escores[f],
                     faixa: cfg?.faixa ?? [0, 100],
                     dentro:
@@ -216,6 +253,7 @@ export default async function PaginaDaVaga({
                 jobId={vaga.id}
                 aberta={vaga.publicEnabled}
                 baseDoSite={baseDoSite}
+                podeCadastrar={podeEditar}
               />
             </div>
           </Painel>
@@ -225,7 +263,11 @@ export default async function PaginaDaVaga({
               <PainelCabecalho
                 comBorda
                 titulo="Aguardando resposta"
-                descricao="Quem já tem acesso e ainda não terminou."
+                descricao={
+                  convidados.length === 20
+                    ? "Os 20 acessos mais recentes que ainda não viraram resposta."
+                    : "Quem já tem acesso e ainda não terminou."
+                }
               />
               <PainelLista>
                 {convidados.map((convidado) => (
@@ -244,9 +286,12 @@ export default async function PaginaDaVaga({
                       </p>
                     </div>
                     {convidado.accessCode && (
-                      <span className="leitura shrink-0 rounded bg-secondary/60 px-2 py-1 text-sm tabular-nums tracking-[0.2em]">
-                        {convidado.accessCode}
-                      </span>
+                      <CodigoDeAcesso
+                        variante="linha"
+                        codigo={convidado.accessCode}
+                        baseDoSite={baseDoSite}
+                        de={convidado.candidate?.name ?? undefined}
+                      />
                     )}
                   </li>
                 ))}
@@ -258,6 +303,15 @@ export default async function PaginaDaVaga({
             <PainelCabecalho
               titulo="Perfil-alvo"
               descricao="As faixas que esta vaga pede. É contra elas que a aderência é calculada."
+              acao={
+                podeEditar && (
+                  <EditarPerfilAlvo
+                    jobId={vaga.id}
+                    perfil={perfil}
+                    respostasConcluidas={vaga.assessments.length}
+                  />
+                )
+              }
             />
 
             <div className="mt-5 space-y-5">

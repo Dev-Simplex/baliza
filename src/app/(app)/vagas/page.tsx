@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { BriefcaseBusiness, Plus } from "lucide-react";
 
+import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
+import { EstadoVazio } from "@/components/app/estado-vazio";
 import { BotaoLink } from "@/components/ui/botao-link";
 import { Badge } from "@/components/ui/badge";
 import { prisma } from "@/lib/prisma";
@@ -12,10 +14,14 @@ import {
   haQuantoTempo,
   numero,
 } from "@/lib/formato";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirTenant, podeAoMenos } from "@/lib/tenant";
 
 export const metadata: Metadata = { title: "Vagas" };
 
+/**
+ * Cor do status. `DRAFT` e `CLOSED` compartilham o cinza de propósito: nenhum
+ * dos dois recebe resposta, e o que os diferencia está escrito no rótulo.
+ */
 const COR_DO_STATUS: Record<string, string> = {
   OPEN: "border-dentro/40 bg-dentro/10 text-dentro",
   DRAFT: "border-border bg-secondary text-muted-foreground",
@@ -23,14 +29,32 @@ const COR_DO_STATUS: Record<string, string> = {
   CLOSED: "border-border bg-secondary text-muted-foreground",
 };
 
-export default async function PaginaDeVagas() {
-  const { organizationId } = await exigirTenant();
+/**
+ * A ordem em que as vagas aparecem.
+ *
+ * Ordenar por `status` no banco parece resolver e não resolve: o Postgres ordena
+ * enum pela ordem de declaração, e ali `DRAFT` vem antes de `OPEN` — rascunho na
+ * frente do que está recebendo gente. Quem abre esta tela quer ver primeiro o
+ * que está em andamento, e encerrada por último.
+ */
+const ORDEM_DO_STATUS: Record<string, number> = {
+  OPEN: 0,
+  PAUSED: 1,
+  DRAFT: 2,
+  CLOSED: 3,
+};
 
-  const vagas = await prisma.job.findMany({
+export default async function PaginaDeVagas() {
+  const { organizationId, role } = await exigirTenant();
+  // Criar vaga exige RECRUITER; para quem só lê o botão levava a um
+  // redirecionamento com "erro=permissao" depois de preencher o formulário.
+  const podeCriar = podeAoMenos(role, "RECRUITER");
+
+  const encontradas = await prisma.job.findMany({
     where: { organizationId },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    orderBy: { createdAt: "desc" },
     include: {
-      _count: { select: { assessments: true, invitations: true } },
+      _count: { select: { assessments: true } },
       assessments: {
         where: { status: "COMPLETED" },
         select: { fitScore: true },
@@ -38,32 +62,46 @@ export default async function PaginaDeVagas() {
     },
   });
 
+  // Ordenação estável: mantém a mais recente na frente dentro de cada situação.
+  const vagas = [...encontradas].sort(
+    (a, b) =>
+      (ORDEM_DO_STATUS[a.status] ?? 9) - (ORDEM_DO_STATUS[b.status] ?? 9),
+  );
+
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="etiqueta">Processos</p>
-          <h1 className="mt-1.5 t-titulo">Vagas</h1>
-        </div>
-        <BotaoLink href="/vagas/nova" className="gap-2">
-          <Plus className="size-4" />
-          Criar vaga
-        </BotaoLink>
-      </header>
+    <div className="mx-auto max-w-6xl">
+      <CabecalhoDePagina
+        etiqueta="Processos"
+        titulo="Vagas"
+        descricao={
+          vagas.length === 0
+            ? undefined
+            : `${numero(vagas.length)} ${vagas.length === 1 ? "vaga" : "vagas"} — abertas primeiro, encerradas no fim.`
+        }
+        acoes={
+          podeCriar && (
+            <BotaoLink href="/vagas/nova" className="gap-2">
+              <Plus className="size-4" />
+              Criar vaga
+            </BotaoLink>
+          )
+        }
+      />
 
       {vagas.length === 0 ? (
-        <div className="rounded-xl border border-dashed px-6 py-16 text-center">
-          <h2 className="text-lg font-semibold">Nenhuma vaga ainda</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-            Uma vaga define o perfil-alvo: as faixas de cada dimensão que aquele
-            trabalho pede. É contra ele que a aderência de cada candidato é
-            calculada.
-          </p>
-          <BotaoLink href="/vagas/nova" className="mt-6 gap-2">
-            <Plus className="size-4" />
-            Criar a primeira vaga
-          </BotaoLink>
-        </div>
+        <EstadoVazio
+          icone={BriefcaseBusiness}
+          titulo="Nenhuma vaga ainda"
+          descricao="Uma vaga define o perfil-alvo: as faixas de cada dimensão que aquele trabalho pede. É contra ele que a aderência de cada candidato é calculada."
+          acao={
+            podeCriar && (
+              <BotaoLink href="/vagas/nova" className="gap-2">
+                <Plus className="size-4" />
+                Criar a primeira vaga
+              </BotaoLink>
+            )
+          }
+        />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {vagas.map((vaga) => {
@@ -101,8 +139,16 @@ export default async function PaginaDeVagas() {
                       .join(" · ")}
                   </p>
 
+                  {/* Os mesmos três números, com os mesmos nomes, que a linha
+                      desta vaga mostra em Relatórios. "Receberam" conta
+                      AVALIAÇÕES, não convites: em vaga aberta o candidato entra
+                      pelo link e nunca passa por convite — contar convite fazia
+                      o cartão dizer "0 convites · 5 respostas". */}
                   <div className="mt-5 grid grid-cols-3 gap-3 border-t pt-4">
-                    <Indicador rotulo="Convites" valor={numero(vaga._count.invitations)} />
+                    <Indicador
+                      rotulo="Receberam"
+                      valor={numero(vaga._count.assessments)}
+                    />
                     <Indicador rotulo="Respostas" valor={numero(concluidas)} />
                     <Indicador
                       rotulo="Aderência"

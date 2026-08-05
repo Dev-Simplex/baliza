@@ -61,6 +61,7 @@ export function montarRoteiro(entrada: {
     const nome = NOMES_DE_FATOR[contribuicao.fator].ui;
 
     for (const pergunta of lista.slice(0, 2)) {
+      if (perguntas.some((p) => p.pergunta === pergunta)) continue;
       perguntas.push({
         pergunta,
         origem: "dimensao",
@@ -109,8 +110,15 @@ export function montarRoteiro(entrada: {
       .filter((c) => c.peso > 0)
       .sort((a, b) => b.peso - a.peso)[0];
 
-    if (maisPesada) {
-      const banco = PERGUNTAS_POR_DIMENSAO[maisPesada.fator];
+    // `banco` pode não existir se um fator novo entrar no modelo antes de
+    // entrar no banco de perguntas. Aqui não dá pra `continue`: é a última
+    // parada antes do piso absoluto, e derrubar a página com um TypeError
+    // seria a pior forma possível de o roteiro "não sair vazio".
+    const banco = maisPesada
+      ? PERGUNTAS_POR_DIMENSAO[maisPesada.fator]
+      : undefined;
+
+    if (maisPesada && banco) {
       const nome = NOMES_DE_FATOR[maisPesada.fator].ui;
       for (const pergunta of banco.acima.slice(0, 2)) {
         if (perguntas.some((p) => p.pergunta === pergunta)) continue;
@@ -125,12 +133,54 @@ export function montarRoteiro(entrada: {
     }
   }
 
+  // 5. Piso absoluto — a regra nº 6 do produto, garantida por construção.
+  //
+  //    Os passos 1 a 4 dependem todos de haver ALGUMA dimensão com peso e de o
+  //    arquétipo ter sido atribuído. Nenhuma das duas coisas é garantida: um
+  //    perfil-alvo com todos os pesos em zero (o recrutador pode montá-lo) e
+  //    uma avaliação sem `archetypeId` gravado deixam os quatro passos mudos —
+  //    e a tela de roteiro sai em branco. Roteiro em branco diz "não precisa
+  //    conversar", que é o oposto exato do que o produto defende.
+  //
+  //    Estas perguntas não dependem de escore nenhum: valem para qualquer
+  //    pessoa, e é justamente por isso que servem de piso.
+  if (perguntas.length === 0) {
+    for (const { pergunta, motivo } of PERGUNTAS_DE_PISO) {
+      perguntas.push({ pergunta, motivo, origem: "base", prioridade: 10 });
+    }
+  }
+
   const ordenadas = perguntas
     .sort((a, b) => b.prioridade - a.prioridade)
     .slice(0, LIMITE_DE_PERGUNTAS);
 
   return { perguntas: ordenadas, resumoDoGap: resumirGap(foraDaFaixa) };
 }
+
+/**
+ * O que se pergunta quando o instrumento não apontou nada — porque continua
+ * havendo o que perguntar. Comportamentais, como todas as outras.
+ */
+const PERGUNTAS_DE_PISO: Array<{ pergunta: string; motivo: string }> = [
+  {
+    pergunta:
+      "Me conta da entrega da qual você mais se orgulha nos últimos dois anos. Qual foi exatamente a sua parte nela?",
+    motivo:
+      "Nenhuma dimensão desta vaga ficou fora da faixa. A conversa começa pelo que a pessoa fez, não pelo que ela pontuou.",
+  },
+  {
+    pergunta:
+      "E a vez em que deu errado — o que aconteceu, e o que você faria diferente hoje?",
+    motivo:
+      "O contraponto da pergunta anterior. Quem só tem acerto pra contar ainda não foi testado, ou não está contando.",
+  },
+  {
+    pergunta:
+      "Descreve o melhor gestor que você teve. O que ele fazia que te fazia render?",
+    motivo:
+      "Diz mais sobre o que a pessoa precisa para funcionar do que qualquer autoavaliação — e é o que o gestor dela vai ter que dar.",
+  },
+];
 
 const MOTIVO_DO_SINAL: Record<string, string> = {
   desejabilidade:

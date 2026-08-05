@@ -37,9 +37,20 @@ export async function enviarEmail(mensagem: {
   html?: string;
 }): Promise<ResultadoDoEnvio> {
   if (!temEmail()) {
-    console.info(
-      `[email] SMTP não configurado — mensagem não enviada.\n  para: ${mensagem.para}\n  assunto: ${mensagem.assunto}\n${mensagem.texto}`,
-    );
+    // O corpo do convite carrega o link pessoal `/t/<token>`, que é
+    // CREDENCIAL: quem tem o link responde no lugar da pessoa. Despejar isso no
+    // log de produção — que costuma ir para arquivo, agregador e backup — é
+    // vazar o acesso para todo mundo que lê log. Em desenvolvimento o corpo
+    // inteiro sai, porque ali ele é o caminho para testar sem SMTP.
+    if (process.env.NODE_ENV === "production") {
+      console.info(
+        `[email] SMTP não configurado — mensagem não enviada para ${ocultarEmail(mensagem.para)}. Quem chamou recebeu o link para entrega manual.`,
+      );
+    } else {
+      console.info(
+        `[email] SMTP não configurado — mensagem não enviada.\n  para: ${mensagem.para}\n  assunto: ${mensagem.assunto}\n${mensagem.texto}`,
+      );
+    }
     return { enviado: false, motivo: "sem-smtp" };
   }
 
@@ -99,6 +110,13 @@ export function convitePorEmail(dados: {
   `.trim();
 
   return { assunto, texto, html };
+}
+
+/** "maria.silva@acme.com" → "ma***@acme.com". Identifica no log sem expor. */
+function ocultarEmail(email: string) {
+  const [usuario, dominio] = email.split("@");
+  if (!dominio) return "***";
+  return `${usuario.slice(0, 2)}***@${dominio}`;
 }
 
 function escapar(texto: string) {

@@ -1,12 +1,14 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Clock, Loader2, Lock, Save } from "lucide-react";
+import { AlertCircle, ArrowRight, Clock, Loader2, Lock, Save } from "lucide-react";
 
 import { Marca } from "@/components/marca";
+import { minutosEstimados } from "@/components/teste/tempo-estimado";
 import { Button } from "@/components/ui/button";
 import { iniciarAvaliacao } from "@/lib/actions/avaliacao";
+import { cn } from "@/lib/utils";
 
 /**
  * Tela de abertura.
@@ -33,16 +35,28 @@ export function TelaDeAbertura({
 }) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
+  const [erro, setErro] = useState<string | null>(null);
 
-  const minutos = Math.max(
-    6,
-    Math.round((totalDeItens * 6 + totalDeCenarios * 25) / 60),
-  );
+  const minutos = minutosEstimados(totalDeItens, totalDeCenarios, 6);
 
   function comecar() {
+    setErro(null);
     iniciarTransicao(async () => {
-      await iniciarAvaliacao(token);
-      router.refresh();
+      // Antes, qualquer falha aqui era silenciosa: o botão voltava ao normal e
+      // a tela continuava a mesma, o que é indistinguível de um toque que não
+      // pegou. A pessoa toca de novo, de novo, e desiste.
+      try {
+        const r = await iniciarAvaliacao(token);
+        if (!r.ok) {
+          setErro(r.erro ?? "Não foi possível abrir o questionário.");
+          return;
+        }
+        router.refresh();
+      } catch {
+        setErro(
+          "Não conseguimos abrir agora — verifique sua conexão e toque de novo.",
+        );
+      }
     });
   }
 
@@ -82,11 +96,21 @@ export function TelaDeAbertura({
           </Linha>
         </ul>
 
+        {erro && (
+          <p
+            role="alert"
+            className="mt-8 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm leading-relaxed text-destructive"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
+            {erro}
+          </p>
+        )}
+
         <Button
           onClick={comecar}
           disabled={pendente}
           size="lg"
-          className="mt-9 h-11 w-full gap-2 t-corpo"
+          className={cn("h-11 w-full gap-2 t-corpo", erro ? "mt-4" : "mt-9")}
         >
           {pendente ? (
             <>
@@ -100,6 +124,16 @@ export function TelaDeAbertura({
             </>
           )}
         </Button>
+
+        {/* Quem entra por convite nunca marcou caixa nenhuma: o cadastro foi
+            feito pela empresa. É este toque que é o aceite, então ele precisa
+            dizer a que se está concordando — e o carimbo de consentimento é
+            gravado aqui, não na hora em que o RH criou o convite. */}
+        <p className="mt-3 t-legenda leading-relaxed text-muted-foreground">
+          Ao começar, você concorda que suas respostas sejam usadas por{" "}
+          {empresa} para avaliar sua aderência a esta vaga. Nenhum dado sensível
+          é pedido, e você pode solicitar a exclusão a qualquer momento.
+        </p>
       </main>
 
       <footer className="t-legenda leading-relaxed text-muted-foreground">

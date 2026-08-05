@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { FATORES, type Fator } from "@/lib/instrument/types";
 
@@ -70,7 +71,17 @@ export async function resumoDoPainel(organizationId: string) {
 /** Média por fator da empresa — o "perfil médio" que o painel executivo mostra. */
 export async function mediaPorFator(organizationId: string) {
   const avaliacoes = await prisma.assessment.findMany({
-    where: { organizationId, status: "COMPLETED", scores: { not: undefined } },
+    // `scores` é coluna JSON, e nela o "não é nulo" tem nome próprio:
+    // `Prisma.DbNull`. Escrito como `{ not: undefined }`, o Prisma trata o
+    // filtro inteiro como ausente — não é um filtro que sempre passa, é um
+    // filtro que não existe. A consulta voltava com as avaliações sem escore
+    // junto, e o único motivo de o painel não ter mostrado média errada é o
+    // `if (!e) continue` lá embaixo, que segurava a conta por acidente.
+    where: {
+      organizationId,
+      status: "COMPLETED",
+      scores: { not: Prisma.DbNull },
+    },
     select: { scores: true },
   });
 

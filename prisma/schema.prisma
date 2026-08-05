@@ -41,7 +41,6 @@ model Organization {
   apiKeys         ApiKey[]
   auditLogs       AuditLog[]
 
-  @@index([slug])
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -85,7 +84,6 @@ model User {
   auditLogs   AuditLog[]
 
   @@index([organizationId])
-  @@index([email])
 }
 
 model Account {
@@ -184,7 +182,6 @@ model Job {
   assessments Assessment[]
 
   @@index([organizationId, status])
-  @@index([publicToken])
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -259,7 +256,7 @@ model Invitation {
   assessment Assessment?
 
   @@index([organizationId, jobId])
-  @@index([token])
+  @@index([organizationId, status])
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -329,8 +326,10 @@ model Assessment {
   aiAnalysis        AiAnalysis?
 
   @@index([organizationId, jobId, status])
+  // O painel conta por (empresa, status) o tempo todo; com `jobId` no meio, o
+  // índice acima só serve até `organizationId`.
+  @@index([organizationId, status, completedAt])
   @@index([candidateId, completedAt])
-  @@index([resultToken])
 }
 
 model ItemResponse {
@@ -343,7 +342,6 @@ model ItemResponse {
   answeredAt   DateTime   @default(now())
 
   @@unique([assessmentId, itemId])
-  @@index([assessmentId])
 }
 
 model ScenarioResponse {
@@ -357,7 +355,6 @@ model ScenarioResponse {
   answeredAt    DateTime   @default(now())
 
   @@unique([assessmentId, blockId])
-  @@index([assessmentId])
 }
 
 // ══════════════════════════════════════════════════════════════════════════

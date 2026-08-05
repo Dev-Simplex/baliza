@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import type { AuditCategory } from "@/generated/prisma/enums";
+import { ipDaRequisicao } from "@/lib/ip";
 import { prisma } from "@/lib/prisma";
 
 type Entrada = {
@@ -12,17 +13,17 @@ type Entrada = {
   metadados?: Record<string, unknown>;
 };
 
-/** IP e user-agent da requisição atual, quando houver contexto de requisição. */
+/**
+ * IP e user-agent da requisição atual, quando houver contexto de requisição.
+ *
+ * O endereço vem de `ip.ts` e não de `x-forwarded-for` cru: sem proxy declarado
+ * o cabeçalho é escrito pelo cliente, e trilha de auditoria com endereço
+ * forjado é pior que trilha sem endereço — a primeira convence.
+ */
 async function contextoDaRequisicao() {
   try {
     const h = await headers();
-    return {
-      ip:
-        h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-        h.get("x-real-ip") ??
-        null,
-      userAgent: h.get("user-agent"),
-    };
+    return { ip: await ipDaRequisicao(), userAgent: h.get("user-agent") };
   } catch {
     // Fora de um ciclo de requisição (job, seed, cron).
     return { ip: null, userAgent: null };

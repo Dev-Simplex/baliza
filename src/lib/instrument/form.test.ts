@@ -2,12 +2,16 @@ import { describe, expect, it } from "vitest";
 
 import { ITENS, PARES_DE_CONSISTENCIA } from "./items";
 import {
+  CENARIOS_POR_PROVA,
+  ITENS_POR_FATOR,
   TOTAL_DE_ITENS,
+  TOTAL_DE_TELAS,
   montarForma,
   ordenarSobRestricao,
   sortearItens,
   verificarForma,
 } from "./form";
+import { CENARIOS } from "./scenarios";
 import { FATORES } from "./types";
 
 const VERSAO = "2.0.0";
@@ -84,7 +88,7 @@ describe("sorteio da forma", () => {
     expect(falhas.slice(0, 5)).toEqual([]);
   });
 
-  it("entrega sempre 44 itens", () => {
+  it("entrega sempre a mesma quantidade de itens", () => {
     for (const semente of sementes.slice(0, 40)) {
       const forma = montarForma({ semente, versao: VERSAO });
       expect(forma.itens.length).toBe(TOTAL_DE_ITENS);
@@ -111,8 +115,10 @@ describe("sorteio da forma", () => {
         contagem.set(id, (contagem.get(id) ?? 0) + 1);
       }
     }
-    // Com 200 provas de 44 itens sobre um banco de 128, todo item deveria
-    // aparecer pelo menos uma vez. Item que nunca sai é item morto.
+    // Com 200 provas de 34 itens sobre um banco de 128, todo item deveria
+    // aparecer pelo menos uma vez. Item que nunca sai é item morto — e a prova
+    // encurtada dá menos oportunidade por rodada, que é justamente quando esta
+    // verificação começa a valer alguma coisa.
     const nuncaSorteados = ITENS.filter((i) => !contagem.has(i.id));
     expect(nuncaSorteados.map((i) => i.id)).toEqual([]);
   });
@@ -127,9 +133,10 @@ describe("sorteio da forma", () => {
 
     const repetidos = segunda.itens.filter((id) => primeira.itens.includes(id));
 
-    // O banco tem 128 itens e a prova usa 44: a segunda aplicação deveria ser
-    // quase toda nova. Sobra pouca repetição só onde o banco aperta (as facetas
-    // com 8 itens e a proporção de inversão obrigatória).
+    // O banco tem 128 itens e a prova usa 34: a segunda aplicação deveria ser
+    // quase toda nova. A repetição que sobra vem dos pares de consistência, que
+    // são escolhidos antes da exclusão — o par vale mais inteiro e repetido que
+    // pela metade e novo.
     expect(repetidos.length).toBeLessThan(12);
     expect(verificarForma(segunda)).toEqual([]);
   });
@@ -170,11 +177,11 @@ describe("ordenação sob restrição", () => {
       }
     }
 
-    // O alvo é 20; o afrouxamento progressivo pode descer até 6 em casos raros.
+    // O alvo é 15; o afrouxamento progressivo pode descer até 6 em casos raros.
     // O que não pode existir é par colado, que zera o sinal de consistência.
     expect(Math.min(...distancias)).toBeGreaterThanOrEqual(6);
     const media = distancias.reduce((a, b) => a + b, 0) / distancias.length;
-    expect(media).toBeGreaterThan(15);
+    expect(media).toBeGreaterThan(12);
   });
 
   it("espalha os itens de desejabilidade social", () => {
@@ -201,23 +208,69 @@ describe("ordenação sob restrição", () => {
 });
 
 describe("cenários", () => {
-  it("embaralha os 8 blocos sem perder nenhum", () => {
+  it("entrega os blocos da prova, sem repetir", () => {
     const forma = montarForma({ semente: "cen", versao: VERSAO });
-    expect(forma.cenarios.length).toBe(8);
-    expect(new Set(forma.cenarios).size).toBe(8);
+    expect(forma.cenarios.length).toBe(CENARIOS_POR_PROVA);
+    expect(new Set(forma.cenarios).size).toBe(CENARIOS_POR_PROVA);
+  });
+
+  it("mantém todo fator com presença suficiente para o vetor ipsativo", () => {
+    // Um fator que cai em um bloco só produz ±1, que é ruído dentro do Índice
+    // de Confiança. Este é o teste que segura o corte de 8 para 5 blocos.
+    for (let i = 0; i < 200; i++) {
+      const forma = montarForma({ semente: `cen-cob-${i}`, versao: VERSAO });
+      const aparicoes = new Map(FATORES.map((f) => [f, 0]));
+
+      for (const id of forma.cenarios) {
+        const bloco = CENARIOS.find((c) => c.id === id)!;
+        for (const o of bloco.opcoes)
+          aparicoes.set(o.fator, (aparicoes.get(o.fator) ?? 0) + 1);
+      }
+
+      for (const [fator, n] of aparicoes)
+        expect(n, `fator ${fator} na semente cen-cob-${i}`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("sorteia conjuntos diferentes de blocos para pessoas diferentes", () => {
+    const conjuntos = new Set(
+      Array.from({ length: 40 }, (_, i) =>
+        [...montarForma({ semente: `cen-var-${i}`, versao: VERSAO }).cenarios]
+          .sort()
+          .join(","),
+      ),
+    );
+    // Se o guloso de cobertura fosse cego à semente, todo mundo receberia os
+    // mesmos 5 blocos e a Parte B viraria gabarito compartilhável.
+    expect(conjuntos.size).toBeGreaterThan(1);
+  });
+
+  it("ainda ultrapassa o mínimo que o sinal de convergência exige", () => {
+    // `calcularConfianca` só calcula a convergência com 4+ blocos respondidos.
+    expect(CENARIOS_POR_PROVA).toBeGreaterThan(4);
   });
 });
 
-describe("cobertura por fator", () => {
-  it("cada fator recebe exatamente 8 itens em toda prova", () => {
+describe("tamanho da prova", () => {
+  it("cada fator recebe exatamente ITENS_POR_FATOR itens em toda prova", () => {
     for (let i = 0; i < 50; i++) {
       const forma = montarForma({ semente: `cob-${i}`, versao: VERSAO });
       for (const fator of FATORES) {
         const n = forma.itens.filter(
           (id) => ITENS.find((it) => it.id === id)!.fator === fator,
         ).length;
-        expect(n, `fator ${fator} na semente cob-${i}`).toBe(8);
+        expect(n, `fator ${fator} na semente cob-${i}`).toBe(ITENS_POR_FATOR);
       }
     }
+  });
+
+  it("são 39 telas de ponta a ponta", () => {
+    // Número fixado de propósito: a promessa de tempo do site, da tela de
+    // abertura e da régua de progresso é derivada daqui. Se alguém mexer nos
+    // parâmetros da forma sem revisar a cópia, este teste avisa antes do
+    // candidato descobrir sozinho que "8 minutos" virou outra coisa.
+    const forma = montarForma({ semente: "telas", versao: VERSAO });
+    expect(forma.itens.length + forma.cenarios.length).toBe(TOTAL_DE_TELAS);
+    expect(TOTAL_DE_TELAS).toBe(39);
   });
 });

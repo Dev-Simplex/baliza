@@ -34,8 +34,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command Palette",
-  description = "Search for a command to run...",
+  title = "Busca de comandos",
+  description = "Digite para encontrar um comando.",
   children,
   className,
   showCloseButton = false,
@@ -49,10 +49,6 @@ function CommandDialog({
 }) {
   return (
     <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
       <DialogContent
         className={cn(
           "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
@@ -60,6 +56,14 @@ function CommandDialog({
         )}
         showCloseButton={showCloseButton}
       >
+        {/* O cabeçalho invisível fica DENTRO do conteúdo, não ao lado dele:
+            fora do popup ele não é o rótulo acessível de nada — o diálogo abre
+            sem nome nem descrição para o leitor de tela, e o bloco ainda sobra
+            solto na página. */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
         {children}
       </DialogContent>
     </Dialog>

@@ -4,6 +4,7 @@ import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import { CartaoIndicador } from "@/components/app/cartao-indicador";
 import { Painel, PainelCabecalho, NotaDeRodape } from "@/components/ui/painel";
 import { data, dataHora, haQuantoTempo, numero } from "@/lib/formato";
+import { TOTAL_DE_ITENS } from "@/lib/instrument/form";
 import { prisma } from "@/lib/prisma";
 import { exigirAdminPlataforma } from "@/lib/tenant";
 
@@ -145,11 +146,11 @@ export default async function PaginaDeAdministracao() {
             <dl className="mt-5 space-y-3">
               <Linha rotulo="Itens ativos" valor={numero(itens)} />
               <Linha rotulo="Blocos de cenário" valor={numero(cenarios)} />
-              <Linha rotulo="Itens por aplicação" valor="44" />
+              <Linha rotulo="Itens por aplicação" valor={`${TOTAL_DE_ITENS}`} />
             </dl>
             <p className="t-legenda mt-5 border-t pt-4 text-muted-foreground">
-              Aposentar um item é seguro: a prova continua com 44 porque o
-              sorteio tem folga no banco.
+              Aposentar um item é seguro: a prova continua com {TOTAL_DE_ITENS} porque
+              o sorteio tem folga no banco.
             </p>
           </Painel>
 

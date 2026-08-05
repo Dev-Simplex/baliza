@@ -36,15 +36,28 @@ const NOME_DO_SINAL: Record<string, string> = {
 export function SeloDeConfianca({
   confianca,
   tamanho = "md",
+  focavel = true,
 }: {
   confianca: Confianca;
   tamanho?: "sm" | "md";
+  /**
+   * Desligue dentro de um link: elemento focável dentro de link é HTML inválido
+   * e, numa lista de vinte candidatos, vira vinte paradas de tabulação a mais.
+   */
+  focavel?: boolean;
 }) {
   return (
     <Tooltip>
+      {/* `tabIndex` porque o gatilho é um <span>: sem ele a explicação do selo
+          só existia para quem usa mouse. E a explicação não é enfeite — a regra
+          §4.4 põe o selo ao lado do número justamente para que ninguém leia a
+          aderência sem saber o quanto confiar nela. Na lista ele fica sem foco
+          (ver `focavel`); lá o caminho é abrir o candidato, onde o selo é
+          alcançável pelo teclado. */}
       <TooltipTrigger
         render={
           <span
+            tabIndex={focavel ? 0 : undefined}
             className={cn(
               "inline-flex cursor-help items-center gap-1.5 rounded-full border font-medium",
               ESTILO[confianca.selo],

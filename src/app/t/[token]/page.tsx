@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 
+import { AvisoDeLink } from "@/components/teste/aviso-de-link";
 import { FluxoDoTeste, type DadosDoTeste } from "@/components/teste/fluxo-do-teste";
 import { TelaDeAbertura } from "@/components/teste/tela-de-abertura";
 import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
@@ -44,7 +45,15 @@ export default async function PaginaDoTeste({
 
   if (avaliacao.status === "COMPLETED") redirect(`/r/${avaliacao.resultToken}`);
 
-  if (convite.expiresAt < new Date() || convite.status === "REVOKED") {
+  // Vencido e cancelado NÃO são a mesma coisa para quem está do outro lado:
+  // num caso a pessoa perdeu o prazo, no outro a empresa desfez o convite. A
+  // tela dizia "o prazo terminou" nos dois, e quem tinha sido cancelado ficava
+  // procurando um prazo que nunca existiu.
+  if (convite.status === "REVOKED") {
+    return <ConviteCancelado empresa={convite.organization.name} />;
+  }
+
+  if (convite.expiresAt < new Date()) {
     return <ConviteVencido empresa={convite.organization.name} />;
   }
 
@@ -110,14 +119,29 @@ export default async function PaginaDoTeste({
 
 function ConviteVencido({ empresa }: { empresa: string }) {
   return (
-    <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-6 text-center">
-      <h1 className="t-titulo">
-        Este link não vale mais
-      </h1>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        O prazo para responder terminou. Fale com quem enviou o convite na{" "}
-        {empresa} para receber um link novo.
+    <AvisoDeLink titulo="O prazo deste convite terminou." mostrarCaminhoDoCodigo={false}>
+      <p>
+        O link tem validade, e a desta vez passou. Nada do que você respondeu se
+        perdeu — mas para continuar é preciso um convite novo.
       </p>
-    </div>
+      <p>
+        Fale com quem te enviou o convite na {empresa}: reenviar leva alguns
+        segundos, e o novo link cai exatamente onde você parou.
+      </p>
+    </AvisoDeLink>
+  );
+}
+
+function ConviteCancelado({ empresa }: { empresa: string }) {
+  return (
+    <AvisoDeLink titulo="Este convite foi cancelado." mostrarCaminhoDoCodigo={false}>
+      <p>
+        Quem enviou o convite o desfez — isso costuma acontecer quando a vaga
+        muda de forma ou quando o convite foi enviado duas vezes por engano.
+      </p>
+      <p>
+        Se você acha que não deveria ter sido cancelado, fale com a {empresa}.
+      </p>
+    </AvisoDeLink>
   );
 }

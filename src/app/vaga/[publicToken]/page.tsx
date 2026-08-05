@@ -83,9 +83,18 @@ export default async function PaginaPublicaDaVaga({
               Comece pelo mapeamento comportamental
             </h2>
             <p className="mt-1.5 t-corpo-sm leading-relaxed text-muted-foreground">
-              Leva cerca de 8 minutos. No fim você recebe seu próprio resultado.
+              Leva cerca de 6 minutos e responde pelo celular. Não é prova, não
+              precisa criar conta, e no fim você recebe o seu próprio resultado.
             </p>
             <FormularioDeEntrada publicToken={publicToken} />
+
+            {/* Quem já começou volta por este mesmo endereço achando que vai
+                recomeçar do zero. Vai cair de onde parou — mas só descobre isso
+                se alguém disser. */}
+            <p className="mt-4 t-legenda leading-relaxed text-muted-foreground">
+              Já começou antes? Use o mesmo e-mail: você volta exatamente de onde
+              parou, sem repetir nada.
+            </p>
           </div>
         ) : porConvite ? (
           // Vaga fechada não é vaga encerrada, e a diferença importa muito para
@@ -107,9 +116,14 @@ export default async function PaginaPublicaDaVaga({
             </Button>
           </div>
         ) : (
-          <p className="mt-9 rounded-xl border border-dashed px-5 py-6 text-center text-sm text-muted-foreground">
-            Esta vaga não está recebendo respostas no momento.
-          </p>
+          <div className="mt-9 rounded-xl border border-dashed px-5 py-6 text-center">
+            <p className="text-sm font-medium">Esta vaga já foi encerrada</p>
+            <p className="mt-1.5 t-corpo-sm leading-relaxed text-muted-foreground">
+              A empresa não está mais recebendo respostas por aqui. Se você
+              respondeu antes do encerramento, o seu link de resultado continua
+              funcionando.
+            </p>
+          </div>
         )}
       </main>
 

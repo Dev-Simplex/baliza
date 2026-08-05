@@ -1,11 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
-import { Check, Copy, Loader2, QrCode, UserPlus } from "lucide-react";
-import { toast } from "sonner";
+import { Loader2, QrCode, UserPlus } from "lucide-react";
 
+import { BotaoCopiar } from "@/components/app/copiar";
+import {
+  CodigoDeAcesso,
+  mensagemDeAcesso,
+} from "@/components/app/codigo-de-acesso";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,65 +47,24 @@ export function CadastrarCandidato({
     convidarPorEmail.bind(null, jobId),
     {} as EstadoDoConvite,
   );
-  const [qr, setQr] = useState<string | null>(null);
-  const [copiado, setCopiado] = useState<string | null>(null);
   const router = useRouter();
+  const painelDoAcesso = useRef<HTMLDivElement>(null);
 
   const acesso = estado.acesso;
-  /** Endereço do código sem o esquema: é para ser ditado, não clicado. */
-  const enderecoDeAcesso = `${baseDoSite.replace(/^https?:\/\//, "")}/acesso`;
 
-  // O QR é o link desenhado. Gerado aqui, no cliente, porque só existe depois
-  // que a ação responde — e é por pessoa, não da vaga.
+  // Quando o resultado chega, o botão que tinha o foco deixa de existir e o
+  // foco cai no <body> — o diálogo perde a navegação por teclado e o leitor de
+  // tela não anuncia nada. Mover o foco para o painel do acesso resolve as duas
+  // coisas e ainda é o lugar certo: é o que a pessoa veio buscar.
   useEffect(() => {
-    const link = acesso?.link;
-    // Sem `setQr(null)` aqui: zerar de forma síncrona dentro do efeito dispara
-    // renderização em cascata. A limpeza acontece ao fechar o diálogo.
-    if (!link) return;
-    let valido = true;
-    QRCode.toDataURL(link, {
-      width: 440,
-      margin: 1,
-      color: { dark: "#0b0e14", light: "#ffffff" },
-    })
-      .then((url) => {
-        if (valido) setQr(url);
-      })
-      .catch(() => setQr(null));
-    return () => {
-      valido = false;
-    };
-  }, [acesso?.link]);
+    if (acesso) painelDoAcesso.current?.focus();
+  }, [acesso]);
 
   function aoMudarAbertura(proximo: boolean) {
     setAberto(proximo);
-    if (!proximo) setQr(null);
     // Atualiza a lista de candidatos só ao FECHAR: revalidar com o diálogo
     // aberto troca a árvore por baixo dele e o resultado nunca aparece.
     if (!proximo && estado.ok) router.refresh();
-  }
-
-  async function copiar(texto: string, rotulo: string) {
-    try {
-      if (window.isSecureContext && navigator.clipboard) {
-        await navigator.clipboard.writeText(texto);
-      } else {
-        // `navigator.clipboard` não existe fora de origem segura (http por IP).
-        const campo = document.createElement("textarea");
-        campo.value = texto;
-        campo.style.position = "fixed";
-        campo.style.top = "-1000px";
-        document.body.appendChild(campo);
-        campo.select();
-        document.execCommand("copy");
-        document.body.removeChild(campo);
-      }
-      setCopiado(rotulo);
-      toast.success(`${rotulo} copiado`);
-      window.setTimeout(() => setCopiado(null), 2000);
-    } catch {
-      toast.error("Não foi possível copiar. Selecione e copie manualmente.");
-    }
   }
 
   return (
@@ -115,7 +77,10 @@ export function CadastrarCandidato({
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-md">
+      {/* `lg` e não `md`: a linha do código passou a ter duas saídas ("copiar
+          mensagem" e "só o código") e, na largura anterior, elas empurravam os
+          quatro dígitos para uma segunda linha. */}
+      <DialogContent className="sm:max-w-lg">
         {/* O cabeçalho conta o passo em que a pessoa ESTÁ. Manter o texto do
             cadastro depois de cadastrar deixava duas frases dizendo coisas
             diferentes na mesma tela. */}
@@ -142,9 +107,14 @@ export function CadastrarCandidato({
                 required
                 autoComplete="off"
                 aria-invalid={Boolean(estado.campos?.nome)}
+                aria-describedby={
+                  estado.campos?.nome ? "convite-nome-erro" : undefined
+                }
               />
               {estado.campos?.nome && (
-                <p className="text-xs text-destructive">{estado.campos.nome}</p>
+                <p id="convite-nome-erro" className="text-xs text-destructive">
+                  {estado.campos.nome}
+                </p>
               )}
             </div>
 
@@ -157,14 +127,22 @@ export function CadastrarCandidato({
                 required
                 autoComplete="off"
                 aria-invalid={Boolean(estado.campos?.email)}
+                aria-describedby={
+                  estado.campos?.email ? "convite-email-erro" : undefined
+                }
               />
               {estado.campos?.email && (
-                <p className="text-xs text-destructive">{estado.campos.email}</p>
+                <p id="convite-email-erro" className="text-xs text-destructive">
+                  {estado.campos.email}
+                </p>
               )}
             </div>
 
             {estado.erro && (
-              <p className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <p
+                role="alert"
+                className="rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive"
+              >
                 {estado.erro}
               </p>
             )}
@@ -185,7 +163,11 @@ export function CadastrarCandidato({
             </div>
           </form>
         ) : (
-          <div className="space-y-4">
+          <div
+            ref={painelDoAcesso}
+            tabIndex={-1}
+            className="space-y-4 outline-none"
+          >
             {/* Sem servidor de e-mail o aviso é informação de estado, não um
                 erro — mas precisa aparecer antes das opções, porque é ele que
                 explica por que elas estão ali. */}
@@ -207,93 +189,70 @@ export function CadastrarCandidato({
                 >
                   {acesso.link}
                 </code>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="shrink-0 gap-1.5"
-                  onClick={() => copiar(acesso.link, "Link")}
+                <BotaoCopiar
+                  texto={acesso.link}
+                  confirmacao="Link copiado"
+                  className="shrink-0"
+                  rotuloAcessivel="Copiar o link pessoal do candidato"
                 >
-                  {copiado === "Link" ? (
-                    <Check className="size-3.5 text-dentro" />
-                  ) : (
-                    <Copy className="size-3.5" />
-                  )}
                   Copiar
-                </Button>
+                </BotaoCopiar>
               </li>
 
               <li className="flex items-center gap-3 p-3">
                 <span className="etiqueta w-16 shrink-0">QR Code</span>
                 <div className="min-w-0 flex-1">
-                  {qr ? (
+                  {acesso.qrDataUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={qr}
+                      src={acesso.qrDataUrl}
                       alt={`QR Code de acesso de ${estado.candidato}`}
                       className="size-20 rounded-md border bg-white p-1"
                     />
                   ) : (
-                    <p className="t-legenda text-muted-foreground">Gerando…</p>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="shrink-0 gap-1.5"
-                  disabled={!qr}
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={qr ?? "#"}
-                      download={`acesso-${(estado.candidato ?? "candidato")
-                        .toLowerCase()
-                        .replace(/\s+/g, "-")}.png`}
-                    />
-                  }
-                >
-                  <QrCode className="size-3.5" />
-                  Baixar
-                </Button>
-              </li>
-
-              <li className="flex items-center gap-3 p-3">
-                <span className="etiqueta w-16 shrink-0">Código</span>
-                <div className="min-w-0 flex-1">
-                  {acesso.codigo ? (
-                    <>
-                      <span className="leitura text-xl tabular-nums tracking-[0.25em]">
-                        {acesso.codigo}
-                      </span>
-                      {/* A instrução mora COM o código: um código sem o
-                          endereço onde digitá-lo não serve para nada.
-                          Sem o `http://` porque este endereço é para ser DITO
-                          em voz alta junto com o código — ninguém dita
-                          "agá-tê-tê-pê-dois-pontos-barra-barra". */}
-                      <p className="mt-0.5 t-legenda break-words text-muted-foreground">
-                        digite em{" "}
-                        <span className="leitura">{enderecoDeAcesso}</span>
-                      </p>
-                    </>
-                  ) : (
-                    <p className="t-legenda text-muted-foreground">
-                      Indisponível — use o link ou o QR.
+                    /* O QR é desenhado no servidor junto com o link, então não
+                       existe estado "gerando". Se não veio, não vem — e dizer o
+                       que fazer no lugar é mais útil que um rótulo eterno. */
+                    <p className="t-legenda leading-relaxed text-muted-foreground">
+                      Não foi possível gerar o QR Code. Use o link ou o código —
+                      abrem a mesma prova.
                     </p>
                   )}
                 </div>
-                {acesso.codigo && (
+                {acesso.qrDataUrl && (
                   <Button
                     size="sm"
                     variant="secondary"
                     className="shrink-0 gap-1.5"
-                    onClick={() => copiar(acesso.codigo!, "Código")}
+                    nativeButton={false}
+                    render={
+                      <a
+                        href={acesso.qrDataUrl}
+                        download={`acesso-${(estado.candidato ?? "candidato")
+                          .toLowerCase()
+                          .replace(/\s+/g, "-")}.png`}
+                      />
+                    }
                   >
-                    {copiado === "Código" ? (
-                      <Check className="size-3.5 text-dentro" />
-                    ) : (
-                      <Copy className="size-3.5" />
-                    )}
-                    Copiar
+                    <QrCode className="size-3.5" />
+                    Baixar
                   </Button>
+                )}
+              </li>
+
+              <li className="p-3">
+                {acesso.codigo ? (
+                  <CodigoDeAcesso
+                    codigo={acesso.codigo}
+                    baseDoSite={baseDoSite}
+                  />
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <span className="etiqueta w-16 shrink-0">Código</span>
+                    <p className="t-legenda text-muted-foreground">
+                      Indisponível — use o link ou o QR.
+                    </p>
+                  </div>
                 )}
               </li>
             </ul>
@@ -311,7 +270,11 @@ export function CadastrarCandidato({
                       href={`mailto:?subject=${encodeURIComponent(
                         `${tituloDaVaga} — mapeamento comportamental`,
                       )}&body=${encodeURIComponent(
-                        `Olá!\n\nPara seguir no processo da vaga de ${tituloDaVaga}, responda o mapeamento comportamental (leva cerca de 8 minutos):\n\n${acesso.link}\n\nSe preferir, entre em ${baseDoSite}/acesso com o código ${acesso.codigo ?? ""}.\n\nObrigado!`,
+                        `Olá!\n\nPara seguir no processo da vaga de ${tituloDaVaga}, responda o mapeamento comportamental (leva cerca de 8 minutos):\n\n${acesso.link}\n\n${
+                          acesso.codigo
+                            ? `Se preferir: ${mensagemDeAcesso(baseDoSite, acesso.codigo)}.\n\n`
+                            : ""
+                        }Obrigado!`,
                       )}`}
                     />
                   }

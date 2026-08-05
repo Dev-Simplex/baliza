@@ -29,6 +29,17 @@ pnpm dev                                 # http://localhost:3300
 
 O banco esperado é PostgreSQL. Configure `DATABASE_URL` no `.env`.
 
+**Atrás de proxy?** Declare quantos em `TRUSTED_PROXIES`. É o que decide se
+`x-forwarded-for` é a origem de verdade ou um campo que o cliente preencheu — e
+o limite de tentativas do código de 4 dígitos depende disso. Ver `src/lib/ip.ts`.
+
+**Manutenção** (expurgo por retenção, devolução de códigos, faxina de contadores):
+
+```bash
+pnpm exec tsx prisma/manutencao.ts             # mostra o que faria
+pnpm exec tsx prisma/manutencao.ts --aplicar   # aplica — no cron, 1x por dia
+```
+
 **Acessos criados pelo seed de demonstração:**
 
 | Perfil | E-mail | Senha |
@@ -180,6 +191,26 @@ A vaga tem **modo**, escolhido na criação e trocável depois:
 
 É o `publicEnabled`, que já existia no banco e não tinha interface.
 
+### Editar o perfil-alvo recalcula o que já entrou
+
+O preset é copiado na criação para que a vaga tenha vida própria, e a tela de
+criação sempre prometeu "depois você ajusta cada faixa". Agora ajusta — em
+"Perfil-alvo", na página da vaga.
+
+O que não é óbvio é o efeito colateral: mudar o perfil muda a régua. A aderência
+das respostas que já chegaram foi calculada contra as faixas antigas, e deixar as
+duas conviverem daria um ranking que mistura duas réguas — o pior tipo de erro,
+porque nada na tela denuncia. Por isso salvar recalcula `fitScore` e `fitDetail`
+de todas as respostas concluídas da vaga, na mesma transação. É seguro porque
+`calcularFit` é pura e depende só de `scores` (que ficam gravados) e do perfil:
+nenhuma resposta bruta é lida ou reescrita. A tela avisa quantas serão
+recalculadas antes de salvar.
+
+A validação recusa duas coisas: faixa com menos de 10 pontos de largura numa
+dimensão que pesa (abaixo do erro de medida, ela separa ruído em vez de pessoas)
+e perfil em que nenhuma dimensão pesa (o peso total iria a zero e a aderência de
+todo mundo com ele). Ver `src/lib/perfil-alvo.ts` e seus testes.
+
 ### Três vias para a mesma prova
 
 Escolhidas no momento do cadastro, porque cadastrar e entregar o acesso são o
@@ -239,9 +270,8 @@ Escopo declarado que ainda não foi construído:
 - Painel administrativo da plataforma
 - API pública para ATS/ERP
 - Perfil de cultura organizacional e matching
-- Expurgo automático por retenção (o prazo está na interface; o job não existe)
-- Edição do perfil-alvo depois que a vaga é criada (hoje o preset é copiado e
-  fica fixo)
+- Agendamento do `prisma/manutencao.ts` — a rotina existe e roda à mão; falta
+  entrar no cron do servidor
 
 **Não há planos, cobrança nem limite de uso.** O produto é a ferramenta de
 mapeamento, não um SaaS para vender assinatura: nenhuma vaga ou resposta é

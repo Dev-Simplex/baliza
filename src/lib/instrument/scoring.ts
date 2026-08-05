@@ -150,6 +150,29 @@ export function notasDeFaceta(
 
 // ─── §5 Índice de Confiança ────────────────────────────────────────────────
 
+/**
+ * Respostas idênticas seguidas que valem como sinal de "respondeu no
+ * automático" (§5.3).
+ *
+ * ─── Por que NÃO escala com o tamanho da prova ─────────────────────────────
+ * Quando a prova encolheu de 44 para 34 telas, a tentação foi proporcionalizar
+ * o limiar (8 eram 18% de 44; 6 são 18% de 34). Tentei, e o teste do selo alto
+ * caiu na hora: o candidato simulado com perfil 60 em tudo — mediano honesto,
+ * nada de errado com ele — passou a ser acusado de linha reta.
+ *
+ * O erro estava no modelo. A chance de uma sequência longa POR ACASO depende de
+ * quanto a pessoa repete a mesma tecla, não de quantas telas a prova tem. E o
+ * mediano é justamente quem não tem defesa: nos itens invertidos, quem responde
+ * 5 num item direto responde 1 no gêmeo, o que quebra a sequência sozinho — mas
+ * quem responde 3 continua em 3 (6 − 3 = 3). Baixar o limiar mira exatamente
+ * em quem responde com sinceridade e por acaso é comum.
+ *
+ * Do outro lado, encurtar a prova quase não custa sensibilidade: quem clica
+ * tudo igual sem ler produz uma sequência de ~34, não de 8. O limiar absoluto
+ * continua pegando o comportamento que interessa.
+ */
+export const LINHA_RETA_MINIMA = 8;
+
 export type SinalDeConfianca =
   | "desejabilidade"
   | "inconsistencia"
@@ -296,7 +319,7 @@ export function calcularConfianca(opcoes: {
   const sinais: SinalDeConfianca[] = [];
   if (desejabilidade >= 3) sinais.push("desejabilidade");
   if (inconsistencia >= 2.0) sinais.push("inconsistencia");
-  if (maiorSequencia >= 8) sinais.push("linha_reta");
+  if (maiorSequencia >= LINHA_RETA_MINIMA) sinais.push("linha_reta");
   if (segundosPorItem > 0 && segundosPorItem < 1.8) sinais.push("velocidade");
   if (
     convergencia !== null &&

@@ -28,7 +28,7 @@ import {
   volumePorSemana,
 } from "@/lib/dados/dashboard";
 import { duracao, numero } from "@/lib/formato";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirTenant, podeAoMenos } from "@/lib/tenant";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PrimeirosPassos } from "@/components/app/primeiros-passos";
@@ -36,7 +36,7 @@ import { PrimeirosPassos } from "@/components/app/primeiros-passos";
 export const metadata: Metadata = { title: "Visão geral" };
 
 export default async function PaginaDoPainel() {
-  const { organizationId } = await exigirTenant();
+  const { organizationId, role } = await exigirTenant();
   const sessao = await auth();
 
   const [resumo, medias, melhores, volume, arquetipos, usuario, convites] =
@@ -60,12 +60,14 @@ export default async function PaginaDoPainel() {
   const mostrarPrimeirosPassos =
     !usuario?.onboardingDoneAt && resumo.concluidas === 0;
 
-  const criarVaga = (
+  // Quem só lê não cria vaga: o botão existia e terminava num redirecionamento
+  // com "erro=permissao".
+  const criarVaga = podeAoMenos(role, "RECRUITER") ? (
     <BotaoLink href="/vagas/nova" className="gap-1.5">
       <Plus className="size-4" />
       Criar vaga
     </BotaoLink>
-  );
+  ) : undefined;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -147,6 +149,18 @@ export default async function PaginaDoPainel() {
                 }
               />
 
+              {/* Há respostas na conta, mas nenhuma em vaga aberta ou pausada:
+                  o painel ficava com a lista vazia sem dizer por quê. */}
+              {melhores.length === 0 ? (
+                <div className="p-5">
+                  <EstadoVazio
+                    compacto
+                    titulo="Nenhuma resposta em vaga em andamento"
+                    descricao="As respostas que você tem estão em vagas encerradas. Elas continuam em Candidatos, com o resultado completo."
+                    acao={<BotaoLink href="/candidatos">Ver candidatos</BotaoLink>}
+                  />
+                </div>
+              ) : (
               <PainelLista>
                 {melhores.map((avaliacao, indice) => (
                   <LinhaDeCandidato
@@ -167,6 +181,7 @@ export default async function PaginaDoPainel() {
                   />
                 ))}
               </PainelLista>
+              )}
             </Painel>
 
             <Painel>

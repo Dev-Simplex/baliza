@@ -1,19 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageSquareQuote } from "lucide-react";
+import { ArrowLeft, Hourglass, MessageSquareQuote } from "lucide-react";
 
+import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
+import { BotaoCopiar } from "@/components/app/copiar";
+import { EstadoVazio } from "@/components/app/estado-vazio";
 import { RadarComportamental } from "@/components/app/graficos";
 import { SeloDeConfianca, type Confianca } from "@/components/app/selo-de-confianca";
 import { Faixa, type DadosDaFaixa } from "@/components/faixa";
+import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
 import { faixaQualitativa } from "@/lib/instrument/scoring";
 import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
-import { data, duracao, numero } from "@/lib/formato";
+import {
+  ROTULO_DE_STATUS_DE_AVALIACAO,
+  data,
+  duracao,
+  haQuantoTempo,
+  numero,
+} from "@/lib/formato";
 import { prisma } from "@/lib/prisma";
 import { exigirTenant } from "@/lib/tenant";
+import { urlBase } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Candidato" };
 
@@ -41,7 +52,19 @@ export default async function PaginaDoCandidato({
     },
   });
 
-  if (!candidato || candidato.assessments.length === 0) notFound();
+  if (!candidato) notFound();
+
+  // Pessoa cadastrada que ainda não terminou caía num 404 — que diz "não
+  // existe" de alguém que existe e está no meio do processo. O que o RH precisa
+  // saber aqui é em que pé está e como reenviar o acesso.
+  if (candidato.assessments.length === 0) {
+    return (
+      <AguardandoResposta
+        candidatoId={candidato.id}
+        organizationId={organizationId}
+      />
+    );
+  }
 
   const avaliacao =
     candidato.assessments.find((a) => a.id === avaliacaoId) ??
@@ -188,16 +211,35 @@ export default async function PaginaDoCandidato({
 
           {/* ─── O roteiro: o produto entrega decisão, não rótulo ──────── */}
           <section className="rounded-xl border border-marca/30 bg-marca-forte/[0.03] p-5">
-            <div className="flex items-center gap-2">
-              <MessageSquareQuote className="size-4 text-marca" />
-              <h2 className="text-sm font-semibold">Roteiro de entrevista</h2>
-            </div>
-            <p className="mt-1 mb-5 text-xs text-muted-foreground">
-              Perguntas comportamentais — a pessoa conta um fato que aconteceu.
-              Cada uma sonda um ponto específico deste perfil.
-            </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MessageSquareQuote className="size-4 text-marca" />
+                  <h2 className="text-sm font-semibold">Roteiro de entrevista</h2>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Perguntas comportamentais — a pessoa conta um fato que
+                  aconteceu. Cada uma sonda um ponto específico deste perfil.
+                </p>
+              </div>
 
-            <ol className="space-y-4">
+              {/* O roteiro é o que o recrutador leva PARA a entrevista, e a
+                  entrevista não acontece nesta tela: sem uma saída, ele era
+                  copiado pergunta por pergunta na mão. */}
+              <BotaoCopiar
+                texto={roteiroEmTexto(
+                  candidato.name,
+                  avaliacao.job.title,
+                  roteiro,
+                )}
+                confirmacao="Roteiro copiado"
+                variant="outline"
+                rotuloAcessivel="Copiar o roteiro de entrevista em texto"
+              >
+                Copiar roteiro
+              </BotaoCopiar>
+            </div>
+            <ol className="mt-5 space-y-4">
               {roteiro.perguntas.map((p, i) => (
                 <li key={i} className="flex gap-3">
                   <span className="leitura mt-0.5 w-5 shrink-0 text-sm text-marca">
@@ -313,6 +355,137 @@ export default async function PaginaDoCandidato({
         Este resultado é um insumo para a entrevista. Ele não substitui a conversa
         com a pessoa e não deve ser o único critério de decisão.
       </p>
+    </div>
+  );
+}
+
+/**
+ * O roteiro em texto puro, para colar no bloco de notas ou no ATS.
+ *
+ * Leva o motivo de cada pergunta junto: sem ele o entrevistador tem uma lista
+ * de perguntas soltas e volta a improvisar — o motivo é o que faz a pergunta
+ * valer a pena. E leva o aviso do rodapé, porque um roteiro que sai da tela sem
+ * ele vira "o sistema disse que a pessoa é assim".
+ */
+function roteiroEmTexto(
+  nome: string,
+  vaga: string,
+  roteiro: { perguntas: Array<{ pergunta: string; motivo: string }> },
+) {
+  const linhas = roteiro.perguntas.map(
+    (p, i) => `${i + 1}. ${p.pergunta}\n   (por que: ${p.motivo})`,
+  );
+
+  return [
+    `Roteiro de entrevista — ${nome}`,
+    `Vaga: ${vaga}`,
+    "",
+    ...linhas,
+    "",
+    "Insumo para a conversa. Não substitui a entrevista e não deve ser o único critério de decisão.",
+  ].join("\n");
+}
+
+/**
+ * O candidato que ainda não respondeu.
+ *
+ * Não é uma tela de erro: é o mesmo endereço de sempre, contando em que passo a
+ * pessoa está e oferecendo o que resolve — o acesso de novo. Sem isso, o RH que
+ * chegasse aqui via histórico ou link salvo via só "página não encontrada".
+ */
+async function AguardandoResposta({
+  candidatoId,
+  organizationId,
+}: {
+  candidatoId: string;
+  organizationId: string;
+}) {
+  const [candidato, baseDoSite] = await Promise.all([
+    prisma.candidate.findFirst({
+      where: { id: candidatoId, organizationId },
+      select: {
+        name: true,
+        email: true,
+        assessments: {
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            job: { select: { id: true, title: true } },
+            invitation: { select: { accessCode: true } },
+          },
+        },
+      },
+    }),
+    urlBase(),
+  ]);
+
+  if (!candidato) notFound();
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <Link
+        href="/candidatos"
+        className="etiqueta inline-flex items-center gap-1.5 hover:text-foreground"
+      >
+        <ArrowLeft className="size-3" />
+        Candidatos
+      </Link>
+
+      <header className="mt-3 mb-6">
+        <h1 className="t-titulo">{candidato.name}</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">{candidato.email}</p>
+      </header>
+
+      {candidato.assessments.length === 0 ? (
+        <EstadoVazio
+          icone={Hourglass}
+          titulo="Nenhum mapeamento nesta pessoa"
+          descricao="Ela está na sua base, mas não foi convidada para nenhuma vaga ainda. O acesso é gerado na página da vaga, em “Cadastrar candidato”."
+          acao={<BotaoLink href="/vagas">Ver as vagas</BotaoLink>}
+        />
+      ) : (
+        <div className="space-y-3">
+          <EstadoVazio
+            compacto
+            icone={Hourglass}
+            titulo="Ainda não respondeu"
+            descricao="O resultado, o roteiro de entrevista e a aderência aparecem aqui assim que a pessoa terminar — leva cerca de 6 minutos do lado dela."
+          />
+
+          <ul className="divide-y rounded-xl border bg-card">
+            {candidato.assessments.map((avaliacao) => (
+              <li
+                key={avaliacao.id}
+                className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={`/vagas/${avaliacao.job.id}`}
+                    className="truncate text-sm font-medium hover:text-marca"
+                  >
+                    {avaliacao.job.title}
+                  </Link>
+                  <p className="t-legenda text-muted-foreground">
+                    {ROTULO_DE_STATUS_DE_AVALIACAO[avaliacao.status]} · acesso
+                    criado {haQuantoTempo(avaliacao.createdAt)}
+                  </p>
+                </div>
+
+                {avaliacao.invitation?.accessCode && (
+                  <CodigoDeAcesso
+                    variante="linha"
+                    codigo={avaliacao.invitation.accessCode}
+                    baseDoSite={baseDoSite}
+                    de={candidato.name}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

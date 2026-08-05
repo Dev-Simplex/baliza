@@ -1,6 +1,6 @@
 import { ITENS, ITEM_POR_ID, PARES_DE_CONSISTENCIA } from "./items";
-import { CENARIOS } from "./scenarios";
-import { FATORES, type Fator, type Item } from "./types";
+import { CENARIOS, CENARIO_POR_ID } from "./scenarios";
+import { FATORES, type BlocoDeCenario, type Fator, type Item } from "./types";
 
 /**
  * Montagem da forma — qual prova ESTA pessoa recebe, e em que ordem.
@@ -19,7 +19,7 @@ import { FATORES, type Fator, type Item } from "./types";
  * Embaralhar de qualquer jeito destrói as três. A saída é separar SORTEIO de
  * ORDENAÇÃO:
  *
- *   1. SORTEIO  — quais 44 itens, dos 128 do banco, esta pessoa recebe.
+ *   1. SORTEIO  — quais 34 itens, dos 128 do banco, esta pessoa recebe.
  *      Balanceado por fator, por faceta e por proporção de inversão.
  *   2. ORDENAÇÃO — a ordem é GERADA sob as mesmas restrições da ordem original,
  *      não embaralhada. Aleatória de verdade dentro do que o instrumento exige.
@@ -30,35 +30,84 @@ import { FATORES, type Fator, type Item } from "./types";
 
 // ─── Parâmetros da forma ───────────────────────────────────────────────────
 
-/** Itens de conteúdo por fator. 8 é o que sustenta o alfa de 0,78–0,85 (§4.2). */
-export const ITENS_POR_FATOR = 8;
+/**
+ * Itens de conteúdo por fator.
+ *
+ * ─── Por que 6, e não os 8 originais ───────────────────────────────────────
+ * A prova tinha 52 telas (44 afirmações + 8 situações) e ~8 minutos. Prova
+ * longa não é só desconforto: quem desiste no meio não vira relatório nenhum,
+ * então cada minuto a mais custa RESPOSTA, que é o insumo do produto inteiro.
+ *
+ * O que dá para cortar tem limite, e o limite é a confiabilidade. Pela profecia
+ * de Spearman-Brown, α = k·r̄ / (1 + (k−1)·r̄). Os 8 itens sustentavam α ≈ 0,80,
+ * o que implica correlação média entre itens r̄ ≈ 0,33. Com essa mesma r̄:
+ *
+ *   k = 8 → α ≈ 0,80   (forma original)
+ *   k = 6 → α ≈ 0,75   ← escolhido
+ *   k = 5 → α ≈ 0,71
+ *   k = 4 → α ≈ 0,66   (abaixo do piso de 0,70 para uso individual)
+ *
+ * 6 é o último degrau que fica com folga acima de 0,70 — o piso aceito para
+ * decisão sobre uma pessoa. Descer a 5 economiza 30 segundos e gasta metade da
+ * folga; a 4 o instrumento deixa de sustentar o que o relatório afirma.
+ *
+ * O que NÃO foi cortado, de propósito: os 4 itens de desejabilidade (o detector
+ * de "respondi o que soa bonito" dispara em 3 de 4 — com 3 itens o limiar vira
+ * 3 de 3 e o detector cala) e os 3 pares de consistência (são o outro sinal do
+ * Índice de Confiança). Cortar sinal de qualidade para ganhar 24 segundos seria
+ * economizar no lugar errado.
+ */
+export const ITENS_POR_FATOR = 6;
 
-/** Itens de desejabilidade social por prova (§5.1). */
+/** Itens de desejabilidade social por prova (§5.1). Ver acima: não encolhem. */
 export const ITENS_DE_DESEJABILIDADE = 4;
 
 /**
- * Invertidos por fator. Soma = 18 de 40 = 45%, igual à forma original.
- * Não é uniforme de propósito: 50% exato deixaria a proporção mecânica.
+ * Invertidos por fator. Soma = 13 de 30 = 43%, na mesma faixa dos 45% da forma
+ * original. Não é uniforme de propósito: 50% exato deixaria a proporção
+ * mecânica. C e O seguem mais baixos que E/X/A, como eram com 8 itens.
  */
 const REVERSOS_POR_FATOR: Record<Fator, number> = {
-  C: 3,
-  E: 4,
-  X: 4,
-  A: 4,
-  O: 3,
+  C: 2,
+  E: 3,
+  X: 3,
+  A: 3,
+  O: 2,
 };
 
 /** Pares de consistência incluídos em toda prova. */
 const PARES_POR_PROVA = 3;
 
-/** Distância mínima entre os dois itens de um par de consistência. */
-const DISTANCIA_MINIMA_DO_PAR = 20;
+/**
+ * Distância mínima entre os dois itens de um par de consistência.
+ *
+ * Escala com o tamanho da prova, senão o corte a estreitaria sozinha: 20 em 44
+ * itens é 45% do caminho; 15 em 34 é a mesma proporção. O que importa não é o
+ * número absoluto e sim a pessoa não LEMBRAR do gêmeo quando ele reaparece.
+ */
+const DISTANCIA_MINIMA_DO_PAR = 15;
 
 /** Distância mínima entre dois itens de desejabilidade. */
-const DISTANCIA_MINIMA_DE_D = 7;
+const DISTANCIA_MINIMA_DE_D = 6;
 
 export const TOTAL_DE_ITENS =
-  ITENS_POR_FATOR * FATORES.length + ITENS_DE_DESEJABILIDADE; // 44
+  ITENS_POR_FATOR * FATORES.length + ITENS_DE_DESEJABILIDADE; // 34
+
+/**
+ * Blocos de cenário por prova, de 8 disponíveis.
+ *
+ * Cenário custa ~25 segundos contra ~6 de uma afirmação: os 8 blocos eram 43%
+ * do tempo total e só 15% das telas. Cortar aqui é o que devolve mais minuto
+ * por pergunta removida.
+ *
+ * O piso é 4, que é onde `calcularConfianca` ainda calcula o sinal de
+ * convergência Parte A × Parte B. Ficamos em 5 para sobrar um bloco de margem:
+ * em 4, um único bloco perdido derrubaria o sinal em vez de apenas enfraquecê-lo.
+ */
+export const CENARIOS_POR_PROVA = 5;
+
+/** Telas que o candidato percorre de ponta a ponta. */
+export const TOTAL_DE_TELAS = TOTAL_DE_ITENS + CENARIOS_POR_PROVA; // 39
 
 // ─── Aleatoriedade determinística ──────────────────────────────────────────
 
@@ -168,7 +217,7 @@ function sortearDeUmFator(
   return escolhidos;
 }
 
-/** Sorteia os 44 itens desta aplicação. */
+/** Sorteia os itens desta aplicação (`TOTAL_DE_ITENS`). */
 export function sortearItens(opcoes: OpcoesDeSorteio): string[] {
   const aleatorio = criarAleatorio(`${opcoes.semente}:itens`);
   const excluir = new Set(opcoes.excluir ?? []);
@@ -190,7 +239,7 @@ export function sortearItens(opcoes: OpcoesDeSorteio): string[] {
     for (const i of itens) escolhidos.add(i.id);
   }
 
-  // 2. Completa cada fator até 8.
+  // 2. Completa cada fator até `ITENS_POR_FATOR`.
   const porFator = FATORES.map((f) =>
     sortearDeUmFator(f, aleatorio, escolhidos, excluir),
   );
@@ -252,9 +301,10 @@ function cabe(
  *
  * Guloso com reinício: a cada posição sorteia entre os itens que cabem. Se
  * travar (nenhum item serve), recomeça com outra semente derivada. Converge em
- * poucas tentativas — as restrições são folgadas para 44 itens em 5 fatores.
- * Se ainda assim não fechar, afrouxa as distâncias em vez de falhar: prova
- * entregue com par a 18 posições é muito melhor que prova não entregue.
+ * poucas tentativas — as restrições escalam com o tamanho da prova, então
+ * seguem folgadas para os 34 itens em 5 fatores. Se ainda assim não fechar,
+ * afrouxa as distâncias em vez de falhar: prova entregue com par a 13 posições
+ * é muito melhor que prova não entregue.
  */
 export function ordenarSobRestricao(
   ids: string[],
@@ -314,19 +364,68 @@ export type Forma = {
   cenarios: string[];
 };
 
+/**
+ * Escolhe os blocos de cenário desta prova.
+ *
+ * Enquanto os 8 blocos entravam inteiros, embaralhar bastava. Agora que só 5
+ * entram, sortear e cortar os 3 primeiros não serve: cada bloco cobre 4 dos 5
+ * fatores, e o fator que sobra de fora não é o mesmo em todos. Um corte cego
+ * pode deixar um fator com uma única aparição — e o vetor ipsativo daquele
+ * fator vira ±1, ruído puro dentro do Índice de Confiança.
+ *
+ * Então o sorteio é guloso por COBERTURA: a cada rodada entra o bloco que mais
+ * atende os fatores ainda vazios. O embaralhamento inicial é o que faz duas
+ * pessoas receberem conjuntos diferentes; o guloso só impede que a diferença
+ * saia torta.
+ */
+function sortearCenarios(semente: string): string[] {
+  const aleatorio = criarAleatorio(`${semente}:cenarios`);
+  const restantes = embaralhar(CENARIOS, aleatorio);
+  const escolhidos: typeof CENARIOS = [];
+  const cobertura = new Map<Fator, number>(FATORES.map((f) => [f, 0]));
+
+  // Peso 1/(1+n): o primeiro bloco a cobrir um fator vale muito, o quarto vale
+  // pouco. É o que empurra a seleção para o equilíbrio sem exigir que ele seja
+  // perfeito — nem todo conjunto de 5 blocos consegue 4 aparições por fator.
+  while (escolhidos.length < Math.min(CENARIOS_POR_PROVA, CENARIOS.length)) {
+    let melhor = 0;
+    let melhorGanho = -Infinity;
+
+    restantes.forEach((bloco, i) => {
+      const ganho = bloco.opcoes.reduce(
+        (soma, o) => soma + 1 / (1 + (cobertura.get(o.fator) ?? 0)),
+        0,
+      );
+      if (ganho > melhorGanho) {
+        melhorGanho = ganho;
+        melhor = i;
+      }
+    });
+
+    const [bloco] = restantes.splice(melhor, 1);
+    escolhidos.push(bloco);
+    for (const o of bloco.opcoes)
+      cobertura.set(o.fator, (cobertura.get(o.fator) ?? 0) + 1);
+  }
+
+  // A ORDEM de apresentação é sorteada à parte da SELEÇÃO: senão os blocos
+  // apareceriam sempre na ordem em que o guloso os escolheu, e o primeiro seria
+  // quase sempre o de cobertura mais larga.
+  return embaralhar(
+    escolhidos.map((c) => c.id),
+    criarAleatorio(`${semente}:ordem-dos-cenarios`),
+  );
+}
+
 export function montarForma(opcoes: OpcoesDeSorteio & { versao: string }): Forma {
   const sorteados = sortearItens(opcoes);
   const ordenados = ordenarSobRestricao(sorteados, opcoes.semente);
-  const cenarios = embaralhar(
-    CENARIOS.map((c) => c.id),
-    criarAleatorio(`${opcoes.semente}:cenarios`),
-  );
 
   return {
     semente: opcoes.semente,
     versao: opcoes.versao,
     itens: ordenados,
-    cenarios,
+    cenarios: sortearCenarios(opcoes.semente),
   };
 }
 
@@ -415,6 +514,46 @@ export function verificarForma(forma: Forma): Violacao[] {
       });
       break;
     }
+  }
+
+  // ─── Parte B ──────────────────────────────────────────────────────────────
+  // Passou a ser verificada aqui quando os cenários deixaram de entrar
+  // inteiros: com 8 de 8 não havia o que dar errado, com 5 de 8 há.
+  if (forma.cenarios.length !== CENARIOS_POR_PROVA)
+    violacoes.push({
+      regra: "quantidade_de_cenarios",
+      detalhe: `${forma.cenarios.length} blocos, esperado ${CENARIOS_POR_PROVA}`,
+    });
+
+  if (new Set(forma.cenarios).size !== forma.cenarios.length)
+    violacoes.push({
+      regra: "cenario_repetido",
+      detalhe: "o mesmo bloco de cenário aparece duas vezes",
+    });
+
+  const blocos = forma.cenarios
+    .map((id) => CENARIO_POR_ID.get(id))
+    .filter((b): b is BlocoDeCenario => Boolean(b));
+
+  if (blocos.length !== forma.cenarios.length)
+    violacoes.push({
+      regra: "cenarios_existem",
+      detalhe: "a forma referencia bloco de cenário que não existe",
+    });
+
+  // Um fator que aparece uma vez só produz vetor ipsativo ±1 — ruído, não
+  // sinal. 2 é o mínimo que ainda diz alguma coisa sobre a preferência.
+  const aparicoes = new Map<Fator, number>(FATORES.map((f) => [f, 0]));
+  for (const bloco of blocos)
+    for (const o of bloco.opcoes)
+      aparicoes.set(o.fator, (aparicoes.get(o.fator) ?? 0) + 1);
+
+  for (const [fator, n] of aparicoes) {
+    if (n < 2)
+      violacoes.push({
+        regra: "cobertura_de_cenario",
+        detalhe: `fator ${fator} aparece em ${n} bloco(s), esperado ao menos 2`,
+      });
   }
 
   return violacoes;

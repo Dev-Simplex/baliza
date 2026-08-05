@@ -1,15 +1,16 @@
 "use server";
 
-import { createHash } from "node:crypto";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { registrarAuditoria } from "@/lib/audit";
 import { normalizarCodigo, sortearCodigoLivre } from "@/lib/codigo-de-acesso";
+import { ipAnonimoDaRequisicao } from "@/lib/ip";
+import { pendenciasDaProva } from "@/lib/actions/pendencias-da-prova";
 import { prisma } from "@/lib/prisma";
 import { limitarPorIp } from "@/lib/rate-limit";
-import { VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
+import { ITEM_POR_ID, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
+import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
 import { montarForma } from "@/lib/instrument/form";
 import { escorar } from "@/lib/instrument/scoring";
 import type { PerfilAlvo, RespostaDeCenario, Respostas } from "@/lib/instrument/types";
@@ -36,15 +37,17 @@ export type EstadoDaEntrada = {
   campos?: Record<string, string>;
 };
 
+/**
+ * `ipHash` é a evidência de que o consentimento partiu de algum lugar — e
+ * evidência forjável é pior que evidência nenhuma, porque convence.
+ *
+ * A resolução do endereço mora em `@/lib/ip`, num lugar só: ler
+ * `x-forwarded-for` na mão pegava o PRIMEIRO item da cadeia, que é justamente
+ * o que o cliente escreveu. Esta era a terceira cópia do mesmo engano no
+ * código.
+ */
 async function hashDoIp() {
-  const h = await headers();
-  const bruto =
-    h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "";
-  if (!bruto) return null;
-  return createHash("sha256")
-    .update(`${bruto}:${process.env.AUTH_SECRET ?? ""}`)
-    .digest("hex")
-    .slice(0, 32);
+  return ipAnonimoDaRequisicao(32);
 }
 
 /** Entrada pelo link público da vaga. */
@@ -58,7 +61,12 @@ export async function entrarPeloLinkDaVaga(
     janelaSegundos: 3600,
   });
   if (!limite.permitido)
-    return { erro: "Muitas tentativas deste dispositivo. Tente mais tarde." };
+    return {
+      // O limite é por IP, e IP de empresa, escola ou wi-fi de evento é
+      // compartilhado por muita gente: sem o caminho alternativo, o candidato
+      // legítimo lê "tente mais tarde" e some.
+      erro: "Muitas tentativas vindas desta rede. Tente daqui a pouco ou peça à empresa um link pessoal ou um código de 4 dígitos.",
+    };
 
   const analise = esquemaDeEntrada.safeParse({
     nome: dados.get("nome"),
@@ -181,7 +189,12 @@ export async function criarAvaliacao(opcoes: {
           seed: semente,
           itemOrder: forma.itens as never,
           scenarioOrder: forma.cenarios as never,
-          consentAt: new Date(),
+          // Consentimento é registro do que a PESSOA fez, não do que o RH fez.
+          // Pelo link público ela marcou a caixa segundos atrás; por convite,
+          // quem criou foi a empresa, e carimbar consentimento ali seria
+          // inventar um aceite que nunca houve. Nesse caso o carimbo sai no
+          // "Começar", que é onde o aviso é lido e o aceite acontece de fato.
+          consentAt: opcoes.canal === "LINK" ? new Date() : null,
           ipHash: await hashDoIp(),
         },
       },
@@ -194,9 +207,13 @@ export async function criarAvaliacao(opcoes: {
 /**
  * Entrada pelo CÓDIGO de 4 dígitos — a terceira via, ao lado do link e do QR.
  *
- * O código é a mesma chave do link, não uma senha. O que impede alguém de varrer
- * as 10.000 combinações é o limite de tentativas por IP daqui: seis por hora
- * transformam a varredura completa em quase dois anos.
+ * O código é a mesma chave do link, não uma senha. Quem segura a varredura das
+ * 10.000 combinações é o `limitarPorIp` — mas atenção ao que ele consegue
+ * prometer: as "seis por hora" só valem quando o endereço é confiável
+ * (`TRUSTED_PROXIES >= 1`). Sem proxy na frente, o cabeçalho é do cliente e
+ * quem segura é o TETO GLOBAL por ação. A conta real está documentada em
+ * `rate-limit.ts`; não repita número aqui, que foi assim que a promessa
+ * antiga passou meses errada.
  */
 export async function entrarPeloCodigo(
   _estado: EstadoDaEntrada,
@@ -211,7 +228,10 @@ export async function entrarPeloCodigo(
       erro: "Muitas tentativas deste dispositivo. Tente daqui a pouco ou use o link que você recebeu.",
     };
 
-  const codigo = normalizarCodigo(String(dados.get("codigo") ?? ""));
+  // Os quatro campos da tela mandam o mesmo nome; juntos, na ordem do
+  // documento, formam o código. `getAll` também aceita o campo único de quem
+  // digitou tudo numa caixa só.
+  const codigo = normalizarCodigo(dados.getAll("codigo").join(""));
   if (codigo.length !== 4) return { campos: { codigo: "Digite os 4 dígitos" } };
 
   const convite = await prisma.invitation.findUnique({
@@ -221,9 +241,14 @@ export async function entrarPeloCodigo(
 
   // Mensagem única para código inexistente e para código expirado: dizer "esse
   // código existe, mas venceu" já entrega informação para quem está tentando na
-  // sorte.
+  // sorte. A menção ao código que já foi usado entra pelo mesmo motivo pelo
+  // qual ela é necessária — o código volta ao acervo quando a prova conclui,
+  // então quem já respondeu cai exatamente nesta mensagem e precisa entender
+  // que não errou a digitação.
   if (!convite || convite.expiresAt < new Date())
-    return { erro: "Código não encontrado. Confira os dígitos com quem te enviou." };
+    return {
+      erro: "Código não encontrado. Confira os dígitos com quem te enviou — e, se você já concluiu, o código deixa de valer: use o link do seu resultado.",
+    };
 
   if (convite.assessment?.status === "COMPLETED")
     redirect(`/r/${convite.assessment.resultToken}`);
@@ -231,37 +256,65 @@ export async function entrarPeloCodigo(
   redirect(`/t/${convite.token}`);
 }
 
-/** Marca o início. Idempotente: recarregar a página não zera o cronômetro. */
+/**
+ * Marca o início. Idempotente: recarregar a página não zera o cronômetro.
+ *
+ * Devolve `ok` porque a tela de abertura precisa saber quando não deu: antes,
+ * uma falha aqui era silenciosa e o botão "Começar" simplesmente não fazia
+ * nada, o que é indistinguível de um toque que não pegou.
+ */
 export async function iniciarAvaliacao(token: string) {
   const convite = await prisma.invitation.findUnique({
     where: { token },
     include: { assessment: true },
   });
-  if (!convite?.assessment) return;
+  if (!convite?.assessment) return { ok: false as const, erro: "Convite não encontrado" };
 
   if (convite.assessment.status === "PENDING") {
+    const agora = new Date();
     await prisma.$transaction([
       prisma.assessment.update({
         where: { id: convite.assessment.id },
         data: {
           status: "IN_PROGRESS",
-          startedAt: new Date(),
-          lastSeenAt: new Date(),
+          startedAt: agora,
+          lastSeenAt: agora,
+          // O aceite de quem foi convidado acontece aqui, ao começar depois de
+          // ler o aviso — e não quando o RH criou o convite.
+          consentAt: convite.assessment.consentAt ?? agora,
         },
       }),
       prisma.invitation.update({
         where: { id: convite.id },
-        data: { status: "STARTED", openedAt: convite.openedAt ?? new Date() },
+        data: { status: "STARTED", openedAt: convite.openedAt ?? agora },
       }),
     ]);
   }
+
+  return { ok: true as const };
 }
+
+const TEMPO_MAXIMO_POR_PERGUNTA_MS = 600_000;
 
 const esquemaDeResposta = z.object({
   itemId: z.string().min(1),
   valor: z.number().int().min(1).max(5),
-  tempoMs: z.number().int().min(0).max(600000).optional(),
+  tempoMs: z.number().int().min(0).max(TEMPO_MAXIMO_POR_PERGUNTA_MS).optional(),
 });
+
+/**
+ * O cronômetro nunca pode derrubar a resposta.
+ *
+ * Quem deixa a aba aberta durante o almoço voltava com um `tempoMs` acima do
+ * teto, e a gravação inteira era recusada como "resposta inválida" — a resposta
+ * de quem pensou mais era exatamente a que se perdia. O tempo é sinal
+ * acessório do selo de confiança, e o selo só olha para tempo CURTO demais:
+ * aparar o longo não custa nada a ele.
+ */
+function tempoDentroDoTeto(tempoMs?: number) {
+  if (tempoMs == null || !Number.isFinite(tempoMs)) return undefined;
+  return Math.min(TEMPO_MAXIMO_POR_PERGUNTA_MS, Math.max(0, Math.round(tempoMs)));
+}
 
 /**
  * Salvamento automático de uma resposta.
@@ -273,7 +326,10 @@ export async function salvarResposta(
   token: string,
   entrada: { itemId: string; valor: number; tempoMs?: number },
 ) {
-  const analise = esquemaDeResposta.safeParse(entrada);
+  const analise = esquemaDeResposta.safeParse({
+    ...entrada,
+    tempoMs: tempoDentroDoTeto(entrada.tempoMs),
+  });
   if (!analise.success) return { ok: false, erro: "Resposta inválida" };
 
   const convite = await prisma.invitation.findUnique({
@@ -345,6 +401,14 @@ export async function salvarCenario(
   if (!daForma.includes(entrada.blocoId))
     return { ok: false, erro: "Cenário fora desta avaliação" };
 
+  // As duas ações precisam ser opções DESTE bloco. A conferência espelha a que
+  // o item já tinha: sem ela dá pra gravar um par de ids inventados, e o escore
+  // ipsativo passa a ler ação que não existe em cenário nenhum.
+  const bloco = CENARIO_POR_ID.get(entrada.blocoId);
+  const opcoes = new Set(bloco?.opcoes.map((o) => o.id) ?? []);
+  if (!opcoes.has(entrada.primeiraId) || !opcoes.has(entrada.ultimaId))
+    return { ok: false, erro: "Escolha fora deste cenário" };
+
   await prisma.scenarioResponse.upsert({
     where: {
       assessmentId_blockId: {
@@ -357,12 +421,12 @@ export async function salvarCenario(
       blockId: entrada.blocoId,
       firstActionId: entrada.primeiraId,
       lastActionId: entrada.ultimaId,
-      elapsedMs: entrada.tempoMs ?? null,
+      elapsedMs: tempoDentroDoTeto(entrada.tempoMs) ?? null,
     },
     update: {
       firstActionId: entrada.primeiraId,
       lastActionId: entrada.ultimaId,
-      elapsedMs: entrada.tempoMs ?? null,
+      elapsedMs: tempoDentroDoTeto(entrada.tempoMs) ?? null,
     },
   });
 
@@ -401,23 +465,23 @@ export async function concluirAvaliacao(token: string) {
     return { ok: true as const, resultToken: avaliacao.resultToken };
 
   const itensDaForma = (avaliacao.itemOrder as string[]) ?? [];
-  const respondidos = new Set(avaliacao.responses.map((r) => r.itemId));
-  const faltando = itensDaForma.filter((id) => !respondidos.has(id));
+  const cenariosDaForma = (avaliacao.scenarioOrder as string[]) ?? [];
 
   // Os cenários entram na mesma conferência que as afirmações. Eles não entram
   // no ranking (§5: escore ipsativo compara dimensões dentro da pessoa, não
   // pessoas entre si), mas alimentam a leitura qualitativa — e a prova que a
   // tela exige é de 52 telas, não 44. Concluir com um bloco a menos entregaria
   // um relatório mais pobre sem ninguém perceber.
-  const cenariosDaForma = (avaliacao.scenarioOrder as string[]) ?? [];
-  const cenariosRespondidos = new Set(
-    avaliacao.scenarioResponses.map((r) => r.blockId),
-  );
-  const cenariosFaltando = cenariosDaForma.filter(
-    (id) => !cenariosRespondidos.has(id),
-  );
+  const pendencias = pendenciasDaProva({
+    itensDaForma,
+    cenariosDaForma,
+    itensRespondidos: avaliacao.responses.map((r) => r.itemId),
+    cenariosRespondidos: avaliacao.scenarioResponses.map((r) => r.blockId),
+    itemVisivel: (id) => ITEM_POR_ID.has(id),
+    cenarioVisivel: (id) => CENARIO_POR_ID.has(id),
+  });
 
-  const totalFaltando = faltando.length + cenariosFaltando.length;
+  const totalFaltando = pendencias.total;
 
   if (totalFaltando > 0)
     return {

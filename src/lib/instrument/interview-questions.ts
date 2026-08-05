@@ -87,8 +87,11 @@ export const PERGUNTAS_DE_CONFIANCA: Record<string, string[]> = {
   inconsistencia: [
     "Se eu ligasse pro seu último gestor hoje, o que ele diria que é o seu ponto mais fraco?",
   ],
+  // `linha_reta` herdava a pergunta de `velocidade` ("levou pouco tempo"), que
+  // é sobre outro sinal: dá pra marcar tudo igual devagar. A pergunta tem que
+  // sondar o que o sinal viu — respostas iguais em afirmações que se opõem.
   linha_reta: [
-    "O questionário levou pouco tempo. Teve alguma pergunta que você achou difícil de responder? Qual?",
+    "No questionário tinha afirmação e o contrário dela. Teve alguma em que você ficou em dúvida sobre o que estava sendo perguntado? Qual?",
   ],
   velocidade: [
     "O questionário levou pouco tempo. Teve alguma pergunta que você achou difícil de responder? Qual?",

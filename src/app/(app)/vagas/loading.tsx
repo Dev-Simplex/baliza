@@ -9,6 +9,7 @@ export default function CarregandoVagas() {
         <div>
           <Esqueleto className="h-2.5 w-20" />
           <Esqueleto className="mt-2 h-8 w-28" />
+          <Esqueleto className="mt-3 h-3 w-64" />
         </div>
         <Esqueleto className="h-8 w-28 rounded-lg" />
       </div>

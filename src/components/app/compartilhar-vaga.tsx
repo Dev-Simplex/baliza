@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
-import { Check, Copy, Download, QrCode } from "lucide-react";
-import { toast } from "sonner";
+import { Download, QrCode } from "lucide-react";
 
 import { CadastrarCandidato } from "@/components/app/cadastrar-candidato";
+import { BotaoCopiar } from "@/components/app/copiar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -31,60 +30,23 @@ export function CompartilharVaga({
   jobId,
   aberta,
   baseDoSite,
+  podeCadastrar = true,
 }: {
   url: string;
-  qrDataUrl: string;
+  /** `null` quando o desenho do QR falhou — ver `src/lib/qr.ts`. */
+  qrDataUrl: string | null;
   titulo: string;
   jobId: string;
   /** Aberta: o link público vale. Fechada: só quem o RH cadastrou entra. */
   aberta: boolean;
   baseDoSite: string;
-}) {
-  const [copiado, setCopiado] = useState(false);
-  const idDoLink = "link-publico-da-vaga";
-
   /**
-   * `navigator.clipboard` só existe em origem SEGURA — https ou localhost. Quem
-   * abre o painel pelo IP da rede (`http://192.168.0.10:3300`) não tem a API, e
-   * o botão principal do produto caía direto no erro. O caminho antigo do
-   * `execCommand` continua valendo em http e é o que salva esse caso.
+   * Copiar o link e ver o QR é leitura; cadastrar candidato é escrita e exige
+   * RECRUITER. Quem só lê continua conseguindo compartilhar a vaga.
    */
-  async function copiar() {
-    const marcarSucesso = () => {
-      setCopiado(true);
-      toast.success("Link copiado");
-      window.setTimeout(() => setCopiado(false), 2000);
-    };
-
-    if (window.isSecureContext && navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(url);
-        marcarSucesso();
-        return;
-      } catch {
-        // Permissão negada: ainda dá para tentar o caminho legado abaixo.
-      }
-    }
-
-    try {
-      const campo = document.createElement("textarea");
-      campo.value = url;
-      // Fora da tela, mas selecionável: `display:none` não copia.
-      campo.setAttribute("readonly", "");
-      campo.style.position = "fixed";
-      campo.style.top = "-1000px";
-      document.body.appendChild(campo);
-      campo.select();
-      const deuCerto = document.execCommand("copy");
-      document.body.removeChild(campo);
-      if (!deuCerto) throw new Error("execCommand recusou");
-      marcarSucesso();
-    } catch {
-      // Último recurso: deixa o link selecionado para o Ctrl+C do usuário.
-      selecionarLink();
-      toast.error("Não foi possível copiar sozinho. O link está selecionado — use Ctrl+C.");
-    }
-  }
+  podeCadastrar?: boolean;
+}) {
+  const idDoLink = "link-publico-da-vaga";
 
   /** Seleciona o texto do link, para copiar na mão. */
   function selecionarLink() {
@@ -119,14 +81,16 @@ export function CompartilharVaga({
         >
           {url}
         </code>
-        <Button size="sm" variant="secondary" onClick={copiar} className="gap-1.5">
-          {copiado ? (
-            <Check className="size-3.5 text-dentro" />
-          ) : (
-            <Copy className="size-3.5" />
-          )}
-          {copiado ? "Copiado" : "Copiar"}
-        </Button>
+        {/* Se nem o `execCommand` funcionar, sobra deixar o link selecionado
+            para o Ctrl+C — melhor que um erro sem saída. */}
+        <BotaoCopiar
+          texto={url}
+          confirmacao="Link copiado"
+          rotuloAcessivel="Copiar o link público da vaga"
+          aoFalhar={selecionarLink}
+        >
+          Copiar
+        </BotaoCopiar>
       </div>
       )}
 
@@ -150,38 +114,50 @@ export function CompartilharVaga({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="flex flex-col items-center gap-4 py-2">
-              <div className="rounded-xl border bg-white p-4">
-                <Image
-                  src={qrDataUrl}
-                  alt={`QR Code da vaga ${titulo}`}
-                  width={220}
-                  height={220}
-                  unoptimized
-                />
+            {/* O QR pode não ter saído (ver `src/lib/qr.ts`). Dizer isso é
+                melhor que mostrar uma imagem quebrada — e o link ali em cima
+                continua sendo a via que sempre funciona. */}
+            {qrDataUrl ? (
+              <div className="flex flex-col items-center gap-4 py-2">
+                <div className="rounded-xl border bg-white p-4">
+                  <Image
+                    src={qrDataUrl}
+                    alt={`QR Code da vaga ${titulo}`}
+                    width={220}
+                    height={220}
+                    unoptimized
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5"
+                  nativeButton={false}
+                  render={
+                    <a href={qrDataUrl} download={`qrcode-${titulo.slice(0, 30)}.png`} />
+                  }
+                >
+                  <Download className="size-3.5" />
+                  Baixar imagem
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                nativeButton={false}
-                render={
-                  <a href={qrDataUrl} download={`qrcode-${titulo.slice(0, 30)}.png`} />
-                }
-              >
-                <Download className="size-3.5" />
-                Baixar imagem
-              </Button>
-            </div>
+            ) : (
+              <p className="py-2 t-corpo-sm leading-relaxed text-muted-foreground">
+                Não foi possível gerar o QR Code desta vaga. Use o link acima —
+                é o mesmo destino.
+              </p>
+            )}
           </DialogContent>
         </Dialog>
         )}
 
-        <CadastrarCandidato
-          jobId={jobId}
-          tituloDaVaga={titulo}
-          baseDoSite={baseDoSite}
-        />
+        {podeCadastrar && (
+          <CadastrarCandidato
+            jobId={jobId}
+            tituloDaVaga={titulo}
+            baseDoSite={baseDoSite}
+          />
+        )}
       </div>
     </div>
   );

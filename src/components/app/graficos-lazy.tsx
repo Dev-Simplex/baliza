@@ -10,7 +10,7 @@ import { Esqueleto } from "@/components/ui/esqueleto";
  * O recharts é o maior pacote do cliente — 398 KB, mais que todo o resto da
  * aplicação somada. Importado direto, ele entra no caminho crítico de três
  * telas, incluindo `/r/[token]`: o relatório que o candidato abre no celular,
- * provavelmente em rede móvel, logo depois de responder oito minutos de
+ * provavelmente em rede móvel, logo depois de responder seis minutos de
  * questionário. Fazer essa pessoa esperar por uma biblioteca de gráfico antes
  * de ver o próprio nome é o pior lugar possível para gastar meio megabyte.
  *

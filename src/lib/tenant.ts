@@ -38,7 +38,12 @@ export async function exigirTenant(): Promise<Contexto> {
   if (!usuario.organizationId) {
     // Operador da plataforma não tem empresa: o lugar dele é o painel admin.
     if (usuario.isPlatformAdmin) redirect("/admin");
-    redirect("/onboarding");
+    // Sessão com usuário e sem empresa não tem o que abrir no painel — o
+    // cadastro cria as duas coisas juntas, então chegar aqui é conta montada
+    // por fora. Mandava para `/onboarding`, que nunca existiu: a pessoa caía
+    // num 404 em vez de numa explicação. O `proxy.ts` já intercepta antes; isto
+    // é a rede de baixo, para quem chamar `exigirTenant()` fora de rota privada.
+    redirect("/entrar?erro=sem-empresa");
   }
 
   return {

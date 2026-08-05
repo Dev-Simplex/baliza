@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Prumo — não contrate nunca mais com vendas nos olhos",
     description:
-      "Ranking com aderência explicada e roteiro de entrevista pronto. Oito minutos por candidato.",
+      "Ranking com aderência explicada e roteiro de entrevista pronto. Seis minutos por candidato.",
     type: "website",
     locale: "pt_BR",
   },

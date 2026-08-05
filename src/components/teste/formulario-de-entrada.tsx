@@ -19,6 +19,10 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
 
   return (
     <form action={acao} className="mt-5 space-y-4">
+      {/* `h-11` nos campos: a altura padrão do sistema de design é de painel,
+          onde se usa mouse. Aqui é o primeiro toque de um candidato no celular,
+          e campo de 32 px é alvo de dedo ruim — o custo de errar é a resposta
+          inteira. */}
       <div className="space-y-2">
         <Label htmlFor="nome">Nome completo</Label>
         <Input
@@ -26,10 +30,16 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
           name="nome"
           required
           autoComplete="name"
+          autoCapitalize="words"
+          enterKeyHint="next"
+          className="h-11"
           aria-invalid={Boolean(estado.campos?.nome)}
+          aria-describedby={estado.campos?.nome ? "erro-nome" : undefined}
         />
         {estado.campos?.nome && (
-          <p className="text-xs text-destructive">{estado.campos.nome}</p>
+          <p id="erro-nome" className="text-xs text-destructive">
+            {estado.campos.nome}
+          </p>
         )}
       </div>
 
@@ -41,10 +51,23 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
           type="email"
           required
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          enterKeyHint="go"
+          className="h-11"
           aria-invalid={Boolean(estado.campos?.email)}
+          aria-describedby={
+            estado.campos?.email ? "erro-email-candidato" : "ajuda-email"
+          }
         />
-        {estado.campos?.email && (
-          <p className="text-xs text-destructive">{estado.campos.email}</p>
+        {estado.campos?.email ? (
+          <p id="erro-email-candidato" className="text-xs text-destructive">
+            {estado.campos.email}
+          </p>
+        ) : (
+          <p id="ajuda-email" className="t-legenda text-muted-foreground">
+            É por ele que a empresa te identifica no processo.
+          </p>
         )}
       </div>
 

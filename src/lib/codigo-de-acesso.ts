@@ -31,17 +31,31 @@ function sortear() {
 /**
  * Um código livre, ou null se o acervo estiver cheio.
  *
- * A verificação prévia não elimina a corrida com outro convite criado no mesmo
- * instante — por isso quem grava também trata o erro de unicidade do banco.
+ * Os 25 candidatos vão numa consulta só, e não numa por vez: cadastrar
+ * candidato é caminho de tela, e 25 idas ao banco em série custam mais que a
+ * gravação inteira. Com o acervo em 50% de ocupação a chance de os 25 saírem
+ * todos ocupados é de 1 em 33 milhões — sortear mais não paga.
+ *
+ * A verificação não elimina a corrida com outro convite criado no mesmo
+ * instante (e nunca eliminaria: entre ler e gravar cabe outra transação) — por
+ * isso quem grava também trata o erro de unicidade do banco.
+ *
+ * Convite VENCIDO segura o código dele: a unicidade é sobre a tabela inteira,
+ * não sobre os convites em aberto. Quem devolve esses ao acervo é o
+ * `prisma/manutencao.ts`.
  */
 export async function sortearCodigoLivre(): Promise<string | null> {
-  for (let i = 0; i < TENTATIVAS; i += 1) {
-    const candidato = sortear();
-    const ocupado = await prisma.invitation.findUnique({
-      where: { accessCode: candidato },
-      select: { id: true },
-    });
-    if (!ocupado) return candidato;
+  const candidatos = new Set<string>();
+  while (candidatos.size < TENTATIVAS) candidatos.add(sortear());
+
+  const ocupados = await prisma.invitation.findMany({
+    where: { accessCode: { in: [...candidatos] } },
+    select: { accessCode: true },
+  });
+
+  const tomados = new Set(ocupados.map((o) => o.accessCode));
+  for (const candidato of candidatos) {
+    if (!tomados.has(candidato)) return candidato;
   }
   return null;
 }

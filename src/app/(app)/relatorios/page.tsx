@@ -55,6 +55,9 @@ export default async function PaginaDeRelatorios() {
     );
   }
 
+  // Uma vez, fora do map: dentro dele o total era recalculado a cada arquétipo.
+  const totalDeArquetipos = arquetipos.reduce((s, a) => s + a.total, 0);
+
   const etapasDoFunil = [
     { rotulo: "Receberam o link", valor: funil.convidados },
     { rotulo: "Começaram", valor: funil.iniciados },
@@ -111,11 +114,22 @@ export default async function PaginaDeRelatorios() {
             <PainelCabecalho
               comBorda
               titulo="Desempenho por vaga"
-              descricao="Quantos receberam o link, quantos responderam e qual a aderência média."
+              descricao={
+                // A consulta traz no máximo 20 vagas. Chegar exatamente em 20 é
+                // sinal de que pode haver mais — e uma tabela que corta sem
+                // dizer é lida como "estas são todas".
+                vagas.length === 20
+                  ? "As 20 vagas mais recentes: quantos receberam o link, quantos responderam e qual a aderência média."
+                  : "Quantos receberam o link, quantos responderam e qual a aderência média."
+              }
             />
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">
+                  Desempenho por vaga: quantas pessoas receberam o link, quantas
+                  responderam, a taxa de conclusão e a aderência média.
+                </caption>
                 <thead>
                   <tr className="border-b">
                     <th scope="col" className="etiqueta px-5 py-2.5 text-left">
@@ -287,10 +301,17 @@ export default async function PaginaDeRelatorios() {
               titulo="Arquétipos na base"
               descricao="Camada de leitura. Nunca entra em ranking nem em filtro."
             />
+            {arquetipos.length === 0 && (
+              <p className="mt-5 t-legenda leading-relaxed text-muted-foreground">
+                Nenhuma resposta com arquétipo atribuído ainda. O arquétipo sai
+                do perfil inteiro, e perfis muito próximos da média não recebem
+                nenhum — é leitura, não etiqueta obrigatória.
+              </p>
+            )}
             <ul className="mt-5 space-y-2.5">
               {arquetipos.map((a) => {
-                const total = arquetipos.reduce((s, x) => s + x.total, 0);
-                const proporcao = total > 0 ? (a.total / total) * 100 : 0;
+                const proporcao =
+                  totalDeArquetipos > 0 ? (a.total / totalDeArquetipos) * 100 : 0;
                 return (
                   <li key={a.id}>
                     <div className="flex items-baseline justify-between gap-3">

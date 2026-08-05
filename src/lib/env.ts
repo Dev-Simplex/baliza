@@ -13,6 +13,12 @@ const esquema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3300"),
   NEXT_PUBLIC_APP_NAME: z.string().default("Prumo"),
 
+  // Quantos proxies nossos existem entre o público e este processo. Decide se
+  // `x-forwarded-for` é origem ou é palpite — e, por tabela, se o limite por IP
+  // protege alguma coisa. O padrão é 0 (exposto direto) porque errar para mais
+  // devolve ao cliente o controle do próprio endereço. Ver `src/lib/ip.ts`.
+  TRUSTED_PROXIES: z.coerce.number().int().min(0).max(4).default(0),
+
   // Opcionais: a ausência degrada a funcionalidade, nunca derruba o sistema.
   OPENAI_API_KEY: z.string().optional().default(""),
   OPENAI_MODEL: z.string().optional().default("gpt-4o-mini"),
