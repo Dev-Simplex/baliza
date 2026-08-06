@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 import { AlertCircle, Check, Loader2 } from "lucide-react";
 
+import { SeletorDeBateria } from "@/components/app/seletor-de-bateria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { criarVaga, type EstadoDaVaga } from "@/lib/actions/vaga";
+import { BATERIA_PADRAO, type Teste } from "@/lib/instrument/baterias";
 import { ROTULO_DE_MODELO, ROTULO_DE_SENIORIDADE } from "@/lib/formato";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
   const [estado, acao, pendente] = useActionState(criarVaga, {} as EstadoDaVaga);
   const [escolhido, setEscolhido] = useState(presets[0]?.id ?? "");
   const [entrada, setEntrada] = useState<"aberta" | "fechada">("aberta");
+  const [bateria, setBateria] = useState<Teste[]>([...BATERIA_PADRAO]);
 
   const notaDoEscolhido = presets.find((p) => p.id === escolhido)?.nota;
 
@@ -166,6 +169,30 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
 
       <section className="space-y-4">
         <div>
+          <h2 className="text-sm font-semibold">Testes desta vaga</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cada teste vira uma etapa separada da prova. Dá para mudar depois,
+            na página da vaga — mas só vale para quem for convidado a partir
+            dali: quem já começou termina a prova com que começou.
+          </p>
+        </div>
+
+        {/* Uma caixa marcada = um campo `bateria` no envio. É `getAll` do outro
+            lado. Campo escondido em vez de <input type="checkbox"> visível
+            porque o cartão inteiro é a área de clique. */}
+        {bateria.map((teste) => (
+          <input key={teste} type="hidden" name="bateria" value={teste} />
+        ))}
+
+        <SeletorDeBateria valor={bateria} aoMudar={setBateria} />
+
+        {estado.campos?.bateria && (
+          <p className="text-xs text-destructive">{estado.campos.bateria}</p>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <div>
           <h2 className="text-sm font-semibold">Perfil-alvo</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Pontos de partida editáveis, não verdades. Depois de criar a vaga
@@ -229,7 +256,14 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
       )}
 
       <div className="flex justify-end gap-2 border-t pt-6">
-        <Button type="submit" disabled={pendente} className="gap-2">
+        {/* Bateria vazia trava aqui e no servidor. O botão desabilitado explica
+            na hora; a validação do servidor é a que vale, porque campo
+            escondido não é promessa de nada. */}
+        <Button
+          type="submit"
+          disabled={pendente || bateria.length === 0}
+          className="gap-2"
+        >
           {pendente ? (
             <>
               <Loader2 className="size-4 animate-spin" />

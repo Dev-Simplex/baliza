@@ -2,10 +2,17 @@ import { renderToBuffer } from "@react-pdf/renderer";
 
 import { RelatorioPdf, type DadosDoRelatorio } from "@/lib/pdf/relatorio";
 import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
+import { CATALOGO_DE_TESTES } from "@/lib/instrument/baterias";
+import { lerAvaliacao } from "@/lib/analise/modulos";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
 import { faixaQualitativa } from "@/lib/instrument/scoring";
-import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
+import {
+  FATORES,
+  NOMES_DE_FATOR,
+  type Fator,
+  type PerfilAlvo,
+} from "@/lib/instrument/types";
 import { data, duracao, numero } from "@/lib/formato";
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
@@ -47,7 +54,15 @@ export async function GET(
       assessments: {
         where: { status: "COMPLETED" },
         orderBy: { completedAt: "desc" },
-        include: { job: { select: { id: true, title: true } } },
+        include: {
+          job: { select: { id: true, title: true, targetProfile: true } },
+          // As respostas brutas alimentam os alertas do §6.3 do manual, que só
+          // existem para Big Five e DISC. Vêm sempre porque a rota é de
+          // exportação e roda uma vez por download — o custo de duas listas
+          // curtas aqui não se compara ao de duas consultas condicionais.
+          responses: { select: { itemId: true, value: true, elapsedMs: true } },
+          scenarioResponses: { select: { blockId: true, elapsedMs: true } },
+        },
       },
     },
   });
@@ -59,13 +74,24 @@ export async function GET(
     candidato.assessments.find((a) => a.id === avaliacaoId) ??
     candidato.assessments[0];
 
-  const escores = avaliacao.scores as Record<Fator, number>;
-  const confianca = avaliacao.confidence as unknown as {
-    selo: "alta" | "media" | "baixa";
-    rotulo: string;
-    texto: string;
-    sinais: string[];
-  } | null;
+  const leitura = lerAvaliacao(
+    avaliacao,
+    { itens: avaliacao.responses, blocos: avaliacao.scenarioResponses },
+    avaliacao.job.targetProfile as unknown as PerfilAlvo | null,
+  );
+
+  // Sem os cinco fatores E sem módulo do manual não sobrou o que desenhar: é a
+  // avaliação que concluiu sem resultado nenhum gravado. Antes o 409 pegava
+  // toda bateria sem os cinco fatores — inclusive a de DISC + SJT, que TEM
+  // relatório (as fichas do §5.2), só não tem aderência.
+  if (!leitura.escores && !leitura.ficha.temAlgum)
+    return new Response(
+      "Esta avaliação não tem resultado gravado para gerar relatório.",
+      { status: 409 },
+    );
+
+  const escores = leitura.escores;
+  const confianca = leitura.selo;
   const detalhe = avaliacao.fitDetail as {
     contribuicoes: ContribuicaoDeFit[];
     puxaramPraCima: ContribuicaoDeFit[];
@@ -79,7 +105,9 @@ export async function GET(
     contribuicoes: detalhe?.contribuicoes ?? [],
     sinaisDeConfianca: confianca?.sinais ?? [],
     arquetipoId: avaliacao.archetypeId,
-    escores,
+    escores: escores ?? undefined,
+    perguntasDeModulo: leitura.perguntasDeModulo,
+    semAderencia: !escores,
   });
 
   const arquetipo = avaliacao.archetypeId
@@ -114,10 +142,10 @@ export async function GET(
         tipo: c.tipo,
         dentro: c.dentro,
       })),
-      ...(detalhe?.ignoradas ?? []).map((f) => ({
+      ...(escores ? detalhe?.ignoradas ?? [] : []).map((f) => ({
         fator: f as string,
         nome: NOMES_DE_FATOR[f].ui,
-        escore: escores[f],
+        escore: escores![f],
         faixa: [0, 100] as [number, number],
         peso: 0,
         tipo: "irrelevante" as const,
@@ -150,10 +178,18 @@ export async function GET(
 
     facetas: facetas.map((f) => ({ texto: f.texto })),
 
-    faixasQualitativas: FATORES.map((f) => ({
-      nome: NOMES_DE_FATOR[f].ui,
-      rotulo: faixaQualitativa(escores[f]).rotulo,
-    })),
+    faixasQualitativas: escores
+      ? FATORES.map((f) => ({
+          nome: NOMES_DE_FATOR[f].ui,
+          rotulo: faixaQualitativa(escores[f]).rotulo,
+        }))
+      : [],
+
+    // A ficha dos módulos do manual. `temAlgum` falso — a vaga que só aplica o
+    // Prumo — deixa o documento exatamente como sempre foi.
+    modulos: leitura.ficha.temAlgum ? leitura.ficha : null,
+    qualidade: leitura.qualidade,
+    bateria: leitura.bateria.map((t) => CATALOGO_DE_TESTES[t].nome),
   };
 
   const buffer = await renderToBuffer(<RelatorioPdf d={dados} />);

@@ -106,10 +106,16 @@ export default async function PaginaDeVagas() {
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {vagas.map((vaga) => {
             const concluidas = vaga.assessments.length;
+            // A média é só de quem TEM aderência. Contar `?? 0` afundava a
+            // média da vaga a cada resposta de bateria que não mede os cinco
+            // fatores — e o número resultante não seria de ninguém.
+            const comAderencia = vaga.assessments.filter(
+              (a) => a.fitScore != null,
+            );
             const media =
-              concluidas > 0
-                ? vaga.assessments.reduce((a, b) => a + (b.fitScore ?? 0), 0) /
-                  concluidas
+              comAderencia.length > 0
+                ? comAderencia.reduce((a, b) => a + (b.fitScore ?? 0), 0) /
+                  comAderencia.length
                 : null;
 
             return (

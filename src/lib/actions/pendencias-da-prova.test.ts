@@ -8,10 +8,13 @@ function contar(entrada: Partial<Parameters<typeof pendenciasDaProva>[0]>) {
   return pendenciasDaProva({
     itensDaForma: [],
     cenariosDaForma: [],
+    escolhasDaForma: [],
     itensRespondidos: [],
     cenariosRespondidos: [],
+    escolhasRespondidas: [],
     itemVisivel: tudoVisivel,
     cenarioVisivel: tudoVisivel,
+    escolhaVisivel: tudoVisivel,
     ...entrada,
   });
 }
@@ -71,5 +74,36 @@ describe("pendências da prova", () => {
       itensRespondidos: ["intruso"],
     });
     expect(r.total).toBe(1);
+  });
+
+  it("a escolha única do SJT entra na mesma conta", () => {
+    // Se o SJT ficasse de fora, a bateria concluiria com o teste inteiro em
+    // branco — e o relatório sairia com um módulo faltando sem ninguém avisar.
+    const r = contar({
+      itensDaForma: ["bf01"],
+      escolhasDaForma: ["sjt-c01", "sjt-c02"],
+      itensRespondidos: ["bf01"],
+      escolhasRespondidas: ["sjt-c01"],
+    });
+    expect(r.escolhas).toEqual(["sjt-c02"]);
+    expect(r.total).toBe(1);
+  });
+
+  it("cenário do SJT aposentado do banco também não tranca", () => {
+    const r = contar({
+      escolhasDaForma: ["sjt-c01", "sumiu"],
+      escolhasRespondidas: ["sjt-c01"],
+      escolhaVisivel: (id) => id !== "sumiu",
+    });
+    expect(r.total).toBe(0);
+  });
+
+  it("soma as três famílias de pergunta num total só", () => {
+    const r = contar({
+      itensDaForma: ["a"],
+      cenariosDaForma: ["disc-b01"],
+      escolhasDaForma: ["sjt-c01"],
+    });
+    expect(r.total).toBe(3);
   });
 });

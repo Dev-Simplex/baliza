@@ -5,6 +5,7 @@ import {
 } from "@/lib/instrument/interview-questions";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
 import { NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
+import type { PerguntaDeModulo } from "@/lib/analise/ficha";
 
 /**
  * Roteiro de entrevista.
@@ -25,9 +26,18 @@ import { NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
 export type PerguntaDoRoteiro = {
   pergunta: string;
   motivo: string;
-  origem: "dimensao" | "confianca" | "arquetipo" | "base";
+  origem: "dimensao" | "confianca" | "arquetipo" | "base" | "modulo";
   fator?: Fator;
   prioridade: number;
+  /**
+   * Fora do teto de perguntas.
+   *
+   * Existe por causa do §4.6 do manual dos testes: toda alternativa [0]
+   * escolhida no SJT vai à entrevista "independentemente do score geral". Uma
+   * pergunta que o manual chama de obrigatória não pode cair no corte por ter
+   * chegado em oitavo lugar.
+   */
+  obrigatoria?: boolean;
 };
 
 export type Roteiro = {
@@ -37,11 +47,37 @@ export type Roteiro = {
 
 const LIMITE_DE_PERGUNTAS = 7;
 
+/**
+ * Prioridade das perguntas vindas dos módulos do manual (Big Five, DISC, SJT).
+ *
+ * Acima do topo da faixa das dimensões do Prumo (100 + perda × 100, teto 200)
+ * para as obrigatórias, e no meio dela para as demais: uma escolha [0] no SJT é
+ * o achado mais concreto que a bateria produz — a pessoa disse o que faria numa
+ * situação de trabalho, e escolheu a pior das quatro ações.
+ */
+const PRIORIDADE_DO_MODULO = { obrigatoria: 300, comum: 150 } as const;
+
 export function montarRoteiro(entrada: {
   contribuicoes: ContribuicaoDeFit[];
   sinaisDeConfianca: string[];
   arquetipoId: string | null;
-  escores: Record<Fator, number>;
+  /** Não é lido aqui; fica no contrato porque a chamada já o tem em mãos. */
+  escores?: Record<Fator, number>;
+  /**
+   * Perguntas dos módulos do manual (§5.3), já montadas por `analise/ficha.ts`.
+   *
+   * Entram no MESMO roteiro, e não numa lista ao lado, porque quem entrevista
+   * leva uma folha só. Duas listas de perguntas na mesma tela viram uma lista
+   * lida e outra esquecida.
+   */
+  perguntasDeModulo?: PerguntaDeModulo[];
+  /**
+   * A bateria não mede os cinco fatores (nem Prumo nem Big Five).
+   *
+   * Muda o resumo: sem aderência, "todas as dimensões ficaram dentro da faixa"
+   * seria uma afirmação sobre uma conta que não foi feita.
+   */
+  semAderencia?: boolean;
 }): Roteiro {
   const perguntas: PerguntaDoRoteiro[] = [];
 
@@ -87,6 +123,21 @@ export function montarRoteiro(entrada: {
         motivo: MOTIVO_DO_SINAL[sinal] ?? "O padrão de respostas pede confirmação.",
       });
     }
+  }
+
+  // 2.5. Os módulos do manual (§5.3): escolha [0] e competência fraca no SJT,
+  //      fator do Big Five ou dimensão do DISC em faixa Baixa.
+  for (const p of entrada.perguntasDeModulo ?? []) {
+    if (perguntas.some((q) => q.pergunta === p.pergunta)) continue;
+    perguntas.push({
+      pergunta: p.pergunta,
+      motivo: p.motivo,
+      origem: "modulo",
+      obrigatoria: p.obrigatoria,
+      prioridade: p.obrigatoria
+        ? PRIORIDADE_DO_MODULO.obrigatoria
+        : PRIORIDADE_DO_MODULO.comum,
+    });
   }
 
   // 3. A pergunta do arquétipo — sempre entra. É o piso do roteiro.
@@ -150,11 +201,18 @@ export function montarRoteiro(entrada: {
     }
   }
 
-  const ordenadas = perguntas
-    .sort((a, b) => b.prioridade - a.prioridade)
+  // O teto vale para as perguntas que o roteiro ESCOLHEU fazer. As obrigatórias
+  // não disputam vaga com elas: são sempre todas, e vêm na frente.
+  const ordenadas = perguntas.sort((a, b) => b.prioridade - a.prioridade);
+  const obrigatorias = ordenadas.filter((p) => p.obrigatoria);
+  const demais = ordenadas
+    .filter((p) => !p.obrigatoria)
     .slice(0, LIMITE_DE_PERGUNTAS);
 
-  return { perguntas: ordenadas, resumoDoGap: resumirGap(foraDaFaixa) };
+  return {
+    perguntas: [...obrigatorias, ...demais],
+    resumoDoGap: resumirGap(foraDaFaixa, entrada.semAderencia ?? false),
+  };
 }
 
 /**
@@ -195,7 +253,13 @@ const MOTIVO_DO_SINAL: Record<string, string> = {
     "As escolhas nos cenários não batem com o que as afirmações disseram.",
 };
 
-function resumirGap(foraDaFaixa: ContribuicaoDeFit[]) {
+function resumirGap(foraDaFaixa: ContribuicaoDeFit[], semAderencia: boolean) {
+  // Sem os cinco fatores não houve comparação com o perfil-alvo. Dizer que
+  // "todas as dimensões ficaram dentro da faixa" seria dar por aprovada uma
+  // conta que ninguém fez.
+  if (semAderencia)
+    return "Esta bateria não mede os cinco fatores, então não há comparação com o perfil-alvo da vaga. O roteiro abaixo vem do que os testes aplicados mostraram.";
+
   if (foraDaFaixa.length === 0)
     return "Todas as dimensões que pesam nesta vaga ficaram dentro da faixa alvo. O roteiro abaixo confirma se as forças se sustentam na prática.";
 

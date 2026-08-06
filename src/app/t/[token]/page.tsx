@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { AvisoDeLink } from "@/components/teste/aviso-de-link";
-import { FluxoDoTeste, type DadosDoTeste } from "@/components/teste/fluxo-do-teste";
+import { FluxoDoTeste } from "@/components/teste/fluxo-do-teste";
 import { TelaDeAbertura } from "@/components/teste/tela-de-abertura";
 import { TelaDeConclusao } from "@/components/teste/tela-de-conclusao";
-import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
-import { ITEM_POR_ID } from "@/lib/instrument/items";
-import { ordenarOpcoesDeCenario } from "@/lib/instrument/form";
+import type { DadosDoTeste } from "@/components/teste/tipos-da-prova";
+import {
+  lerProvaDaBateria,
+  montarEtapas,
+} from "@/lib/actions/forma-da-bateria";
+import { lerBateria } from "@/lib/instrument/baterias";
 import { prisma } from "@/lib/prisma";
 
 export const metadata: Metadata = {
@@ -33,6 +36,7 @@ export default async function PaginaDoTeste({
           scenarioResponses: {
             select: { blockId: true, firstActionId: true, lastActionId: true },
           },
+          choiceResponses: { select: { blockId: true, choiceId: true } },
         },
       },
       organization: { select: { name: true } },
@@ -68,8 +72,17 @@ export default async function PaginaDoTeste({
     return <ConviteVencido empresa={convite.organization.name} />;
   }
 
-  const idsDeItens = (avaliacao.itemOrder as string[]) ?? [];
-  const idsDeCenarios = (avaliacao.scenarioOrder as string[]) ?? [];
+  // A prova desta pessoa, teste a teste. A bateria é a CONGELADA na avaliação,
+  // nunca a da vaga: mexer na vaga hoje não muda o que ela já começou a
+  // responder.
+  const prova = lerProvaDaBateria({
+    semente: avaliacao.seed,
+    bateria: lerBateria(avaliacao.testBattery),
+    itensGuardados: (avaliacao.itemOrder as string[]) ?? [],
+    blocosGuardados: (avaliacao.scenarioOrder as string[]) ?? [],
+  });
+
+  const etapas = montarEtapas({ semente: avaliacao.seed, prova });
 
   // Ainda não começou: tela de abertura com o que esperar.
   if (avaliacao.status === "PENDING") {
@@ -79,50 +92,32 @@ export default async function PaginaDoTeste({
         empresa={convite.organization.name}
         vaga={convite.job.title}
         nome={convite.candidate?.name ?? null}
-        totalDeItens={idsDeItens.length}
-        totalDeCenarios={idsDeCenarios.length}
+        etapas={etapas.map((e) => ({
+          teste: e.teste,
+          nome: e.nome,
+          perguntas: e.perguntas.map((p) => ({ tipo: p.tipo })),
+        }))}
       />
     );
   }
 
   const dados: DadosDoTeste = {
     token,
-    itens: idsDeItens
-      .map((id) => ITEM_POR_ID.get(id))
-      .filter((i) => Boolean(i))
-      .map((i) => ({ id: i!.id, texto: i!.texto })),
-
-    cenarios: idsDeCenarios
-      .map((id) => CENARIO_POR_ID.get(id))
-      .filter((c) => Boolean(c))
-      .map((c) => {
-        // A ordem das opções também é sorteada, e derivada da semente: some a
-        // vantagem de quem recebe a lista sempre na mesma sequência.
-        const ordem = ordenarOpcoesDeCenario(
-          avaliacao.seed,
-          c!.id,
-          c!.opcoes.map((o) => o.id),
-        );
-        return {
-          id: c!.id,
-          titulo: c!.titulo,
-          situacao: c!.situacao,
-          opcoes: ordem.map((oid) => {
-            const o = c!.opcoes.find((x) => x.id === oid)!;
-            return { id: o.id, texto: o.texto };
-          }),
-        };
-      }),
-
-    respostasSalvas: Object.fromEntries(
-      avaliacao.responses.map((r) => [r.itemId, r.value]),
-    ),
-    cenariosSalvos: Object.fromEntries(
-      avaliacao.scenarioResponses.map((r) => [
-        r.blockId,
-        { primeiraId: r.firstActionId, ultimaId: r.lastActionId },
-      ]),
-    ),
+    etapas,
+    salvas: {
+      itens: Object.fromEntries(
+        avaliacao.responses.map((r) => [r.itemId, r.value]),
+      ),
+      blocos: Object.fromEntries(
+        avaliacao.scenarioResponses.map((r) => [
+          r.blockId,
+          { primeiraId: r.firstActionId, ultimaId: r.lastActionId },
+        ]),
+      ),
+      escolhas: Object.fromEntries(
+        avaliacao.choiceResponses.map((r) => [r.blockId, r.choiceId]),
+      ),
+    },
   };
 
   return <FluxoDoTeste dados={dados} />;

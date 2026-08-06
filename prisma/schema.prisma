@@ -150,6 +150,18 @@ enum JobStatus {
   CLOSED
 }
 
+/// Os testes que uma vaga pode aplicar. Ver src/lib/instrument/baterias.ts.
+///
+/// PRUMO é o instrumento da casa — 34 afirmações + 5 situações, cinco fatores —
+/// e continua existindo inteiro: virar "uma opção entre quatro" não fatiou nada
+/// dele. Os outros três vêm do manual de testes comportamentais.
+enum InstrumentoDeTeste {
+  PRUMO
+  BIG_FIVE
+  DISC
+  SJT
+}
+
 model Job {
   id             String       @id @default(cuid())
   organizationId String
@@ -167,6 +179,14 @@ model Job {
   // `targetProfile` é a verdade usada no cálculo e é editável pelo recrutador.
   presetId      String?
   targetProfile Json
+
+  // Quais testes esta vaga aplica, na ordem de aplicação. O default garante que
+  // toda vaga criada antes desta coluna existir continue se comportando
+  // exatamente como antes: só o Prumo.
+  //
+  // Enum e não Json de propósito — o banco recusa "BIGFIVE" digitado errado, e
+  // errar aqui não dá erro de tela: dá uma prova sem aquele teste.
+  testBattery InstrumentoDeTeste[] @default([PRUMO])
 
   // Link público único da vaga: qualquer pessoa com o link responde.
   publicToken   String  @unique @default(cuid())
@@ -291,6 +311,15 @@ model Assessment {
   itemOrder         Json
   scenarioOrder     Json
 
+  // Cópia CONGELADA da bateria da vaga, tirada quando o convite foi criado.
+  //
+  // Mesma razão de `itemOrder` ser congelado, um degrau acima: se a prova lesse
+  // a bateria da vaga a cada carregamento, o RH acrescentar o DISC no meio da
+  // tarde faria quem começou de manhã voltar e encontrar uma aba nova — e o
+  // relatório de dois candidatos da mesma vaga passaria a comparar provas
+  // diferentes sem nada na tela denunciando.
+  testBattery InstrumentoDeTeste[] @default([PRUMO])
+
   // Resultado consolidado, gravado no encerramento.
   scores             Json? // { C, E, X, A, O } na escala 0-100
   facetNotes         Json? // nuance qualitativa por faceta — nunca número exibido
@@ -300,6 +329,16 @@ model Assessment {
   archetypeId        String?
   archetypeMixedWith String?
   percentiles        Json? // só preenchido quando a amostra permite (N ≥ 200)
+
+  // Resultado POR MÓDULO — `ResultadosPorModulo` de src/lib/instrument/baterias.ts.
+  //
+  // As colunas acima (`scores`, `fitScore`, `archetypeId`…) são a leitura
+  // CONSOLIDADA, e continuam sendo: é nelas que o ranking e o painel batem, e
+  // reescrevê-las como JSON derrubaria índice, agregação e ordenação. Este
+  // campo é a camada de baixo — o que cada teste devolveu por si, incluindo o
+  // que não cabe em cinco fatores (o perfil D/I do DISC, a nota por competência
+  // do SJT). Nulo enquanto a prova não termina.
+  moduleResults Json?
 
   startedAt   DateTime?
   completedAt DateTime?
@@ -330,6 +369,7 @@ model Assessment {
 
   responses         ItemResponse[]
   scenarioResponses ScenarioResponse[]
+  choiceResponses   ChoiceResponse[]
   aiAnalysis        AiAnalysis?
 
   @@index([organizationId, jobId, status])
@@ -338,6 +378,20 @@ model Assessment {
   @@index([organizationId, status, completedAt])
   @@index([candidateId, completedAt])
 }
+
+// ─── Onde cada teste guarda a resposta bruta ───────────────────────────────
+//
+// Três formas de pergunta, três tabelas — e a divisão é pela FORMA da resposta,
+// nunca pelo teste que a fez. Tabela por teste seria quatro cópias da mesma
+// coluna e quatro caminhos de leitura para manter em pé.
+//
+//   · Likert 1..5, uma pergunta por vez  → ItemResponse   (Prumo, Big Five)
+//   · bloco com um MAIS e um MENOS       → ScenarioResponse (Prumo, DISC)
+//   · uma alternativa entre várias       → ChoiceResponse  (SJT)
+//
+// Os `id` de item e de bloco são globais e prefixados por teste (`bf_…`,
+// `disc_…`), então a chave única por avaliação segue valendo mesmo com dois
+// testes gravando na mesma tabela.
 
 model ItemResponse {
   id           String     @id @default(cuid())
@@ -351,6 +405,14 @@ model ItemResponse {
   @@unique([assessmentId, itemId])
 }
 
+/// Bloco de escolha forçada: uma opção "primeira/MAIS" e uma "última/MENOS".
+///
+/// O DISC entra aqui inteiro, sem adaptação: cada um dos 12 blocos exige
+/// exatamente 1 MAIS e 1 MENOS, em adjetivos diferentes — que é letra por letra
+/// o que estas colunas guardam e o que `salvarCenario` já valida (as duas
+/// escolhas precisam ser diferentes, e ambas precisam pertencer ao bloco).
+/// Criar uma `DiscResponse` idêntica ao lado seria duplicar tabela, validação e
+/// caminho de leitura para ganhar um nome.
 model ScenarioResponse {
   id            String     @id @default(cuid())
   assessmentId  String
@@ -360,6 +422,38 @@ model ScenarioResponse {
   lastActionId  String
   elapsedMs     Int?
   answeredAt    DateTime   @default(now())
+
+  @@unique([assessmentId, blockId])
+}
+
+/// Escolha única entre alternativas — hoje, o SJT.
+///
+/// ─── Por que tabela nova, e não uma das duas de cima ──────────────────────
+/// Foi a única forma que NÃO encaixou nas existentes, e as duas tentativas
+/// falham por motivo de integridade, não de estética:
+///
+///   · Em `ItemResponse`, `value Int` é documentado e tratado em todo o código
+///     como Likert 1..5 sem inversão — é o que `valorDoItem` e `calcularEscores`
+///     leem. Guardar ali o número da alternativa faria a resposta do SJT ser
+///     lida como afirmação e entrar na média de um fator. O tipo cabe; o
+///     significado, não.
+///   · Em `ScenarioResponse`, `lastActionId` é NOT NULL e o SJT não tem
+///     "MENOS". Só encaixaria escrevendo um valor de mentira ali — e aí toda
+///     leitura de MAIS/MENOS passaria a ver uma segunda escolha que a pessoa
+///     nunca fez. Afrouxar a coluna para nullable seria pior: tiraria do banco
+///     a invariante que sustenta o DISC e o Prumo.
+///
+/// Guarda só o id da alternativa escolhida. A pontuação ({2,1,1,0}) e a
+/// competência ficam no gabarito, no servidor: nunca vão ao front do candidato,
+/// nem depois de terminar — expor queima o banco de cenários (manual §4.2).
+model ChoiceResponse {
+  id           String     @id @default(cuid())
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  blockId      String
+  choiceId     String
+  elapsedMs    Int?
+  answeredAt   DateTime   @default(now())
 
   @@unique([assessmentId, blockId])
 }

@@ -12,45 +12,75 @@ import {
 } from "@/components/teste/fila-de-salvamento";
 import { ReguaDeProgresso } from "@/components/teste/regua-de-progresso";
 import { rotuloDoRestante } from "@/components/teste/tempo-estimado";
+import { TrilhaDeEtapas } from "@/components/teste/trilha-de-etapas";
+import {
+  perguntaRespondida,
+  type DadosDoTeste,
+  type EtapaDaProva,
+  type OpcaoDeEscala,
+  type OpcaoDePergunta,
+  type Pergunta,
+  type RespostasSalvas,
+} from "@/components/teste/tipos-da-prova";
 import { Button } from "@/components/ui/button";
 import {
   concluirAvaliacao,
   salvarCenario,
+  salvarEscolha,
   salvarResposta,
 } from "@/lib/actions/avaliacao";
-import { ESCALA_LIKERT } from "@/lib/instrument/types";
 import { cn } from "@/lib/utils";
 
-type ItemDaProva = { id: string; texto: string };
-type OpcaoDeCenario = { id: string; texto: string };
-type BlocoDaProva = {
-  id: string;
-  titulo: string;
-  situacao: string;
-  opcoes: OpcaoDeCenario[];
-};
-
-export type DadosDoTeste = {
-  token: string;
-  itens: ItemDaProva[];
-  cenarios: BlocoDaProva[];
-  respostasSalvas: Record<string, number>;
-  cenariosSalvos: Record<string, { primeiraId: string; ultimaId: string }>;
-};
+/**
+ * A prova do candidato, um teste por vez.
+ *
+ * ─── O que mudou, e por quê ────────────────────────────────────────────────
+ * Isto já foi uma fila única: um índice percorria as afirmações e depois os
+ * cenários, e um booleano decidia qual dos dois desenhar. Funcionava com um
+ * instrumento e um formato e meio. Com quatro testes — cada um com a sua
+ * instrução, o seu tipo de pergunta e o seu progresso —, aquele booleano teria
+ * virado três, e a tela deixaria de saber responder a pergunta mais simples de
+ * todas: "em que teste eu estou?".
+ *
+ * Agora a prova é uma lista de ETAPAS, uma por teste da bateria, e cada etapa
+ * tem as suas perguntas. Continua existindo um índice só, global, porque é ele
+ * que faz "voltar" atravessar a fronteira entre dois testes sem caso especial —
+ * mas ele é traduzido para (etapa, posição) na hora de mostrar qualquer coisa.
+ *
+ * O que NÃO mudou, de propósito: a fila de salvamento, o aviso de rede caída, o
+ * retomar de onde parou e a recusa de concluir prova incompleta. Cada um desses
+ * é cicatriz de um jeito específico de perder a resposta de alguém.
+ */
 
 /** O rótulo do heading da vez. Serve de nome acessível para a área da pergunta. */
 const ID_DA_PERGUNTA = "pergunta-atual";
+
+type Tela = { etapa: number; posicao: number; pergunta: Pergunta };
 
 export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   const router = useRouter();
   const semMovimento = useReducedMotion();
 
-  const totalDeItens = dados.itens.length;
-  const totalDeBlocos = dados.cenarios.length;
-  const total = totalDeItens + totalDeBlocos;
+  const etapas = dados.etapas;
 
-  const [respostas, setRespostas] = useState(dados.respostasSalvas);
-  const [cenarios, setCenarios] = useState(dados.cenariosSalvos);
+  // A prova inteira em fila, com a etapa carimbada em cada tela. É o que
+  // permite um índice global só — e "voltar" da primeira pergunta de um teste
+  // cair na última do anterior sem nenhum caso especial.
+  const telas = useMemo<Tela[]>(
+    () =>
+      etapas.flatMap((etapa, ie) =>
+        etapa.perguntas.map((pergunta, ip) => ({
+          etapa: ie,
+          posicao: ip,
+          pergunta,
+        })),
+      ),
+    [etapas],
+  );
+
+  const total = telas.length;
+
+  const [salvas, setSalvas] = useState<RespostasSalvas>(dados.salvas);
   const [concluindo, setConcluindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -67,18 +97,24 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     filaRef.current = criarFila({ aoMudar: setEstadoDaFila });
   }
 
-  // Retoma exatamente onde parou: a primeira pergunta ainda sem resposta.
+  const respondidos = useMemo(() => {
+    const marcados = new Set<number>();
+    telas.forEach((tela, i) => {
+      if (perguntaRespondida(tela.pergunta, salvas)) marcados.add(i);
+    });
+    return marcados;
+  }, [telas, salvas]);
+
+  // Retoma exatamente onde parou — inclusive no meio de um teste, e sabendo em
+  // qual teste era: a primeira pergunta ainda sem resposta da bateria inteira.
   const indiceInicial = useMemo(() => {
-    const primeiroItemVazio = dados.itens.findIndex(
-      (i) => dados.respostasSalvas[i.id] == null,
-    );
-    if (primeiroItemVazio >= 0) return primeiroItemVazio;
-    const primeiroBlocoVazio = dados.cenarios.findIndex(
-      (c) => !dados.cenariosSalvos[c.id],
-    );
-    if (primeiroBlocoVazio >= 0) return totalDeItens + primeiroBlocoVazio;
-    return total - 1;
-  }, [dados, totalDeItens, total]);
+    for (let i = 0; i < telas.length; i += 1) {
+      if (!perguntaRespondida(telas[i].pergunta, dados.salvas)) return i;
+    }
+    return Math.max(0, telas.length - 1);
+    // Só na abertura: depois disso quem manda no índice é a navegação.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [telas]);
 
   const [indice, setIndice] = useState(indiceInicial);
 
@@ -86,15 +122,41 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   // pessoa está VOLTANDO — e o medo dela é ter perdido o que já respondeu.
   const jaRespondidasAoAbrir = useMemo(
     () =>
-      Object.keys(dados.respostasSalvas).length +
-      Object.keys(dados.cenariosSalvos).length,
-    [dados],
+      Object.keys(dados.salvas.itens).length +
+      Object.keys(dados.salvas.blocos).length +
+      Object.keys(dados.salvas.escolhas).length,
+    [dados.salvas],
   );
 
   const inicioDaPergunta = useRef(0);
   const avancoAgendado = useRef<number | null>(null);
   const areaDaPergunta = useRef<HTMLDivElement | null>(null);
   const primeiraPintura = useRef(true);
+
+  const telaAtual = telas[indice];
+  const indiceDaEtapa = telaAtual?.etapa ?? 0;
+  const etapaAtual: EtapaDaProva | undefined = etapas[indiceDaEtapa];
+
+  // A capa da etapa: o teste se apresenta antes de perguntar qualquer coisa.
+  //
+  // Ela aparece uma vez por teste, e some assim que existe resposta ali dentro
+  // — quem retoma no meio do DISC não é obrigado a reler a instrução para voltar
+  // a responder. É também o único lugar onde a instrução exata do manual cabe
+  // inteira: repeti-la nas 79 telas viraria ruído.
+  const [capasVistas, setCapasVistas] = useState<number[]>([]);
+
+  const respondidasNaEtapa = useMemo(() => {
+    let n = 0;
+    telas.forEach((tela, i) => {
+      if (tela.etapa === indiceDaEtapa && respondidos.has(i)) n += 1;
+    });
+    return n;
+  }, [telas, respondidos, indiceDaEtapa]);
+
+  const mostrarCapa =
+    Boolean(etapaAtual) &&
+    !capasVistas.includes(indiceDaEtapa) &&
+    respondidasNaEtapa === 0;
 
   useEffect(() => {
     inicioDaPergunta.current = Date.now();
@@ -113,23 +175,6 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     if (!inicioDaPergunta.current) return undefined;
     return Math.min(600_000, Math.max(0, Date.now() - inicioDaPergunta.current));
   }, []);
-
-  const naParteDeCenarios = indice >= totalDeItens;
-  const item = naParteDeCenarios ? null : dados.itens[indice];
-  const bloco = naParteDeCenarios ? dados.cenarios[indice - totalDeItens] : null;
-
-  const respondidos = useMemo(
-    () =>
-      new Set<number>([
-        ...dados.itens
-          .map((i, idx) => (respostas[i.id] != null ? idx : -1))
-          .filter((n) => n >= 0),
-        ...dados.cenarios
-          .map((c, idx) => (cenarios[c.id] ? totalDeItens + idx : -1))
-          .filter((n) => n >= 0),
-      ]),
-    [dados, respostas, cenarios, totalDeItens],
-  );
 
   const cancelarAvanco = useCallback(() => {
     if (avancoAgendado.current !== null) {
@@ -172,7 +217,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   const responderItem = useCallback(
     (itemId: string, valor: number) => {
       const tempoMs = tempoNaPergunta();
-      setRespostas((r) => ({ ...r, [itemId]: valor }));
+      setSalvas((s) => ({ ...s, itens: { ...s.itens, [itemId]: valor } }));
       setErro(null);
       filaRef.current?.enfileirar(`item:${itemId}`, () =>
         salvarResposta(dados.token, { itemId, valor, tempoMs }),
@@ -182,21 +227,45 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     [agendarAvanco, dados.token, tempoNaPergunta],
   );
 
-  const responderCenario = useCallback(
-    (blocoId: string, primeiraId: string, ultimaId: string) => {
+  /**
+   * O par MAIS/MENOS — as situações do Prumo e os blocos de palavras do DISC.
+   *
+   * Os dois gravam pelo mesmo caminho porque a resposta tem a mesma forma. Só o
+   * avanço difere: o bloco de palavras anda sozinho quando o par fecha (são 12
+   * telas iguais em sequência, e parar em cada uma cansa), e a situação do Prumo
+   * continua esperando — ela é longa, e a pessoa costuma querer reler o que
+   * marcou antes de seguir.
+   */
+  const responderBloco = useCallback(
+    (blocoId: string, primeiraId: string, ultimaId: string, avancarDepois: boolean) => {
       const tempoMs = tempoNaPergunta();
-      setCenarios((c) => ({ ...c, [blocoId]: { primeiraId, ultimaId } }));
+      setSalvas((s) => ({
+        ...s,
+        blocos: { ...s.blocos, [blocoId]: { primeiraId, ultimaId } },
+      }));
       setErro(null);
-      filaRef.current?.enfileirar(`cenario:${blocoId}`, () =>
-        salvarCenario(dados.token, {
-          blocoId,
-          primeiraId,
-          ultimaId,
-          tempoMs,
-        }),
+      filaRef.current?.enfileirar(`bloco:${blocoId}`, () =>
+        salvarCenario(dados.token, { blocoId, primeiraId, ultimaId, tempoMs }),
       );
+      if (avancarDepois) agendarAvanco();
     },
-    [dados.token, tempoNaPergunta],
+    [agendarAvanco, dados.token, tempoNaPergunta],
+  );
+
+  const responderEscolha = useCallback(
+    (blocoId: string, escolhaId: string) => {
+      const tempoMs = tempoNaPergunta();
+      setSalvas((s) => ({
+        ...s,
+        escolhas: { ...s.escolhas, [blocoId]: escolhaId },
+      }));
+      setErro(null);
+      filaRef.current?.enfileirar(`escolha:${blocoId}`, () =>
+        salvarEscolha(dados.token, { blocoId, escolhaId, tempoMs }),
+      );
+      agendarAvanco();
+    },
+    [agendarAvanco, dados.token, tempoNaPergunta],
   );
 
   // Rede que volta, aba que volta ao primeiro plano: os dois são o momento de
@@ -264,17 +333,39 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     [semMovimento],
   );
 
-  // Teclado: 1 a 5 respondem, setas navegam. Quem responde 44 itens no
-  // computador não quer usar o mouse 44 vezes.
+  const pergunta = telaAtual?.pergunta;
+
+  /**
+   * Teclado: dígitos respondem, setas navegam. Quem responde 79 perguntas no
+   * computador não quer usar o mouse 79 vezes.
+   *
+   * O bloco de MAIS/MENOS fica de fora do atalho por dígito de propósito: um
+   * número sozinho não diz qual das duas colunas foi marcada, e um atalho que
+   * marca a coluna errada é pior que atalho nenhum. Ali a navegação é por Tab,
+   * que a grade de botões já atende.
+   */
   useEffect(() => {
+    if (mostrarCapa || !pergunta) return;
+
     function aoTeclar(evento: KeyboardEvent) {
       if (evento.metaKey || evento.ctrlKey || evento.altKey) return;
+      if (!pergunta) return;
 
-      if (item && /^[1-5]$/.test(evento.key)) {
+      if (pergunta.tipo === "likert" && /^[1-5]$/.test(evento.key)) {
         evento.preventDefault();
-        responderItem(item.id, Number(evento.key));
+        responderItem(pergunta.id, Number(evento.key));
         return;
       }
+
+      if (pergunta.tipo === "escolha") {
+        const n = Number(evento.key);
+        if (Number.isInteger(n) && n >= 1 && n <= pergunta.opcoes.length) {
+          evento.preventDefault();
+          responderEscolha(pergunta.id, pergunta.opcoes[n - 1].id);
+          return;
+        }
+      }
+
       if (evento.key === "ArrowLeft" && indice > 0) {
         evento.preventDefault();
         irPara(indice - 1);
@@ -287,7 +378,16 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
 
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
-  }, [item, indice, responderItem, avancar, irPara, respondidos]);
+  }, [
+    mostrarCapa,
+    pergunta,
+    indice,
+    responderItem,
+    responderEscolha,
+    avancar,
+    irPara,
+    respondidos,
+  ]);
 
   const tudoRespondido = respondidos.size === total;
   const naUltima = indice === total - 1;
@@ -299,20 +399,36 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   // resposta: fim de prova com cara de travamento. Trazer o rodapé à vista é o
   // que fecha o ciclo.
   useEffect(() => {
-    if (!naUltima || !tudoRespondido) return;
+    if (!naUltima || !tudoRespondido || mostrarCapa) return;
     window.scrollTo({
       top: document.documentElement.scrollHeight,
       behavior: semMovimento ? "auto" : "smooth",
     });
-  }, [naUltima, tudoRespondido, semMovimento]);
+  }, [naUltima, tudoRespondido, mostrarCapa, semMovimento]);
 
-  const itensQueFaltam = dados.itens.filter(
-    (i, idx) => idx > indice && respostas[i.id] == null,
-  ).length;
-  const cenariosQueFaltam = dados.cenarios.filter(
-    (c, idx) => totalDeItens + idx > indice && !cenarios[c.id],
-  ).length;
-  const restante = rotuloDoRestante(itensQueFaltam, cenariosQueFaltam);
+  // O que falta é da BATERIA inteira, não da etapa: a pergunta que decide se a
+  // pessoa continua agora ou fecha a aba é "quanto ainda falta disso tudo".
+  const restante = rotuloDoRestante(
+    telas.filter((_, i) => i > indice && !respondidos.has(i)).map((t) => t.pergunta),
+  );
+
+  const respondidosNaEtapa = useMemo(() => {
+    const marcados = new Set<number>();
+    telas.forEach((tela, i) => {
+      if (tela.etapa === indiceDaEtapa && respondidos.has(i))
+        marcados.add(tela.posicao);
+    });
+    return marcados;
+  }, [telas, respondidos, indiceDaEtapa]);
+
+  const etapasConcluidas = useMemo(
+    () =>
+      etapas.map((etapa, ie) =>
+        telas.every((tela, i) => tela.etapa !== ie || respondidos.has(i)) &&
+        etapa.perguntas.length > 0,
+      ),
+    [etapas, telas, respondidos],
+  );
 
   /**
    * Primeira pergunta ainda em branco.
@@ -353,8 +469,6 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     if (resultado.ok) {
       // `refresh()` e não `push()`: a mesma rota `/t/<token>` passa a renderizar
       // a tela de conclusão assim que o servidor vê a avaliação como concluída.
-      // Antes daqui saía um `push` para `/r/<resultToken>`, o relatório do
-      // candidato — que não existe mais.
       router.refresh();
       return;
     }
@@ -371,15 +485,44 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     }
   }, [cancelarAvanco, dados.token, router]);
 
+  // Bateria sem uma pergunta sequer. Não deveria acontecer — a vaga exige pelo
+  // menos um teste —, mas uma tela em branco com um botão morto seria o pior
+  // jeito de descobrir que aconteceu.
+  if (total === 0 || !etapaAtual || !telaAtual) {
+    return (
+      <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-6 text-center">
+        <h1 className="t-secao font-medium">Este questionário está vazio.</h1>
+        <p className="mt-3 t-corpo text-muted-foreground">
+          Nenhuma pergunta foi preparada para este convite. Avise quem te enviou
+          o link — não é nada que você tenha feito.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-svh max-w-2xl flex-col px-5 py-6 sm:px-8">
-      <header className="shrink-0">
+      <header className="shrink-0 space-y-3">
+        <TrilhaDeEtapas
+          etapas={etapas.map((e) => ({ curto: e.curto, teste: e.teste }))}
+          atual={indiceDaEtapa}
+          concluidas={etapasConcluidas}
+        />
+
         <ReguaDeProgresso
-          total={total}
-          atual={indice}
-          respondidos={respondidos}
-          etapa={naParteDeCenarios ? "Parte 2 · Situações" : "Parte 1 · Afirmações"}
-          etapaCurta={naParteDeCenarios ? "Situações" : "Afirmações"}
+          total={etapaAtual.perguntas.length}
+          atual={telaAtual.posicao}
+          respondidos={respondidosNaEtapa}
+          etapa={
+            etapas.length > 1
+              ? `Teste ${indiceDaEtapa + 1} de ${etapas.length} · ${etapaAtual.nome}`
+              : etapaAtual.nome
+          }
+          etapaCurta={
+            etapas.length > 1
+              ? `${indiceDaEtapa + 1}/${etapas.length} · ${etapaAtual.curto}`
+              : etapaAtual.curto
+          }
           restante={restante}
         />
       </header>
@@ -387,7 +530,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
       <main className="flex flex-1 flex-col justify-center py-8 sm:py-10">
         {/* Quem fecha a prova no meio volta com uma dúvida só: "perdi tudo?".
             Responder isso na hora custa uma linha e salva a resposta inteira. */}
-        {jaRespondidasAoAbrir > 0 && indice === indiceInicial && (
+        {jaRespondidasAoAbrir > 0 && indice === indiceInicial && !mostrarCapa && (
           <p className="mb-6 flex items-start gap-2 rounded-lg border border-dentro/30 bg-dentro/5 px-3.5 py-2.5 t-legenda leading-relaxed">
             <Check className="mt-px size-4 shrink-0 text-dentro" />
             <span>
@@ -403,26 +546,9 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
           </p>
         )}
 
-        {/* Orientação só na PRIMEIRA pergunta, e só enquanto ela é a primeira
-            sem resposta. Repetir isso nas 52 telas viraria ruído; não dizer
-            nunca deixa a pessoa descobrir o teclado e o salvamento sozinha —
-            ou não descobrir. */}
-        {indice === 0 && respondidos.size === 0 && (
-          <p className="mb-6 rounded-lg border border-dashed px-3.5 py-2.5 t-legenda leading-relaxed text-muted-foreground">
-            Responda pelo que você <strong className="font-medium text-foreground">faz</strong>,
-            não pelo que seria melhor responder — o resultado só serve se for
-            seu.{" "}
-            <span className="hidden sm:inline">
-              Dá para usar as teclas <kbd className="leitura">1</kbd> a{" "}
-              <kbd className="leitura">5</kbd>, e cada resposta é salva na hora.
-            </span>
-            <span className="sm:hidden">Cada resposta é salva na hora.</span>
-          </p>
-        )}
-
         <AnimatePresence mode="wait">
           <motion.div
-            key={indice}
+            key={mostrarCapa ? `capa-${indiceDaEtapa}` : indice}
             ref={conectarAreaDaPergunta}
             tabIndex={-1}
             aria-labelledby={ID_DA_PERGUNTA}
@@ -432,21 +558,28 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
             exit={semMovimento ? undefined : { opacity: 0, y: -8 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
-            {item && (
-              <PerguntaLikert
-                texto={item.texto}
-                valor={respostas[item.id] ?? null}
-                aoResponder={(v) => responderItem(item.id, v)}
-              />
-            )}
-
-            {bloco && (
-              <PerguntaDeCenario
-                bloco={bloco}
-                escolha={cenarios[bloco.id] ?? null}
-                aoResponder={(primeira, ultima) =>
-                  responderCenario(bloco.id, primeira, ultima)
+            {mostrarCapa ? (
+              <CapaDaEtapa
+                etapa={etapaAtual}
+                numero={indiceDaEtapa + 1}
+                de={etapas.length}
+                primeira={indiceDaEtapa === 0}
+                aoComecar={() =>
+                  setCapasVistas((vistas) =>
+                    vistas.includes(indiceDaEtapa)
+                      ? vistas
+                      : [...vistas, indiceDaEtapa],
+                  )
                 }
+              />
+            ) : (
+              <PerguntaDaVez
+                pergunta={telaAtual.pergunta}
+                etapa={etapaAtual}
+                salvas={salvas}
+                aoResponderItem={responderItem}
+                aoResponderBloco={responderBloco}
+                aoResponderEscolha={responderEscolha}
               />
             )}
           </motion.div>
@@ -454,7 +587,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
       </main>
 
       <footer className="shrink-0 space-y-3">
-        {/* Leitor de tela: só o que é problema. Anunciar "salvo" 52 vezes
+        {/* Leitor de tela: só o que é problema. Anunciar "salvo" 79 vezes
             atrapalharia justamente quem depende do anúncio. */}
         <p role="status" aria-live="polite" className="sr-only">
           {estadoDaFila.situacao === "aguardando-rede"
@@ -499,7 +632,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
         {/* `fora` é a cor de ATENÇÃO do produto (argila), nunca de alarme — a
             mesma regra do medidor de faixa. Aqui vale igual: falta resposta,
             não deu erro. */}
-        {naUltima && !tudoRespondido && (
+        {naUltima && !tudoRespondido && !mostrarCapa && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5">
             <p className="text-sm text-foreground">
               {quantasFaltam === 1
@@ -518,48 +651,53 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
           </div>
         )}
 
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => irPara(indice - 1)}
-            disabled={indice === 0}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-0 sm:min-h-9"
-          >
-            <ArrowLeft className="size-4" />
-            Voltar
-          </button>
-
-          <IndicadorDeSalvamento estado={estadoDaFila} />
-
-          {naUltima || tudoRespondido ? (
-            <Button
-              onClick={concluir}
-              disabled={!tudoRespondido || concluindo || temPendencia}
-              className="h-11 gap-2 px-5 sm:h-9"
+        {!mostrarCapa && (
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => irPara(indice - 1)}
+              disabled={indice === 0}
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-0 sm:min-h-9"
             >
-              {concluindo ? (
-                <>
-                  <Loader2 className="size-4 animate-spin" />
-                  Enviando
-                </>
-              ) : (
-                <>
-                  Concluir
-                  <Check className="size-4" />
-                </>
-              )}
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              onClick={avancar}
-              disabled={!respondidos.has(indice)}
-              className="h-11 px-4 text-muted-foreground sm:h-9"
-            >
-              Próxima
-            </Button>
-          )}
-        </div>
+              <ArrowLeft className="size-4" />
+              Voltar
+            </button>
+
+            <IndicadorDeSalvamento estado={estadoDaFila} />
+
+            {/* O "Concluir" só existe no fim da BATERIA. Entre um teste e outro
+                o botão continua sendo "Próxima": a prova só vira relatório
+                inteira, e oferecer saída antes disso seria oferecer um beco. */}
+            {naUltima || tudoRespondido ? (
+              <Button
+                onClick={concluir}
+                disabled={!tudoRespondido || concluindo || temPendencia}
+                className="h-11 gap-2 px-5 sm:h-9"
+              >
+                {concluindo ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Enviando
+                  </>
+                ) : (
+                  <>
+                    Concluir
+                    <Check className="size-4" />
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={avancar}
+                disabled={!respondidos.has(indice)}
+                className="h-11 px-4 text-muted-foreground sm:h-9"
+              >
+                Próxima
+              </Button>
+            )}
+          </div>
+        )}
 
         {/* Sem conexão, esta linha calaria por cima do aviso de cima: prometer
             "salva sozinho, pode fechar" no exato momento em que fechar perde
@@ -572,6 +710,129 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
           </p>
         )}
       </footer>
+    </div>
+  );
+}
+
+/** Despacha para a tela do tipo certo. Um `switch` só, e ele mora aqui. */
+function PerguntaDaVez({
+  pergunta,
+  etapa,
+  salvas,
+  aoResponderItem,
+  aoResponderBloco,
+  aoResponderEscolha,
+}: {
+  pergunta: Pergunta;
+  etapa: EtapaDaProva;
+  salvas: RespostasSalvas;
+  aoResponderItem: (id: string, valor: number) => void;
+  aoResponderBloco: (
+    id: string,
+    primeiraId: string,
+    ultimaId: string,
+    avancarDepois: boolean,
+  ) => void;
+  aoResponderEscolha: (id: string, escolhaId: string) => void;
+}) {
+  switch (pergunta.tipo) {
+    case "likert":
+      return (
+        <PerguntaLikert
+          texto={pergunta.texto}
+          enunciado={etapa.enunciado ?? "O quanto isso combina com você?"}
+          escala={etapa.escala ?? []}
+          valor={salvas.itens[pergunta.id] ?? null}
+          aoResponder={(v) => aoResponderItem(pergunta.id, v)}
+        />
+      );
+
+    case "ordenar":
+      return (
+        <PerguntaDeCenario
+          titulo={pergunta.titulo}
+          situacao={pergunta.situacao}
+          opcoes={pergunta.opcoes}
+          escolha={salvas.blocos[pergunta.id] ?? null}
+          aoResponder={(primeira, ultima) =>
+            aoResponderBloco(pergunta.id, primeira, ultima, false)
+          }
+        />
+      );
+
+    case "mais-menos":
+      return (
+        <PerguntaDeMaisMenos
+          key={pergunta.id}
+          opcoes={pergunta.opcoes}
+          escolha={salvas.blocos[pergunta.id] ?? null}
+          aoResponder={(mais, menos) =>
+            aoResponderBloco(pergunta.id, mais, menos, true)
+          }
+        />
+      );
+
+    case "escolha":
+      return (
+        <PerguntaDeEscolhaUnica
+          situacao={pergunta.situacao}
+          opcoes={pergunta.opcoes}
+          escolha={salvas.escolhas[pergunta.id] ?? null}
+          aoResponder={(id) => aoResponderEscolha(pergunta.id, id)}
+        />
+      );
+  }
+}
+
+/**
+ * A capa de um teste: nome, instrução exata do manual e o tamanho da coisa.
+ *
+ * Ela existe porque "abas diferentes" não é layout, é contrato: cada teste
+ * pergunta de um jeito e pede uma atitude diferente de quem responde. Entrar no
+ * SJT achando que ainda é a escala de 1 a 5 é o caminho mais curto para uma
+ * resposta que não mede nada.
+ */
+function CapaDaEtapa({
+  etapa,
+  numero,
+  de,
+  primeira,
+  aoComecar,
+}: {
+  etapa: EtapaDaProva;
+  numero: number;
+  de: number;
+  primeira: boolean;
+  aoComecar: () => void;
+}) {
+  return (
+    <div>
+      {de > 1 && (
+        <p className="etiqueta mb-3">
+          Teste {numero} de {de}
+        </p>
+      )}
+
+      <h1
+        id={ID_DA_PERGUNTA}
+        className="text-balance t-titulo leading-[1.2] font-semibold tracking-tight"
+      >
+        {etapa.nome}
+      </h1>
+
+      <p className="mt-5 text-balance t-corpo leading-relaxed text-muted-foreground">
+        {etapa.instrucao}
+      </p>
+
+      <p className="mt-6 t-corpo-sm text-muted-foreground">
+        {etapa.perguntas.length}{" "}
+        {etapa.perguntas.length === 1 ? "pergunta" : "perguntas"}
+        {primeira && " · cada resposta é salva na hora"}
+      </p>
+
+      <Button onClick={aoComecar} size="lg" className="mt-8 h-11 gap-2">
+        {primeira ? "Começar" : "Começar este teste"}
+      </Button>
     </div>
   );
 }
@@ -604,17 +865,21 @@ function IndicadorDeSalvamento({ estado }: { estado: EstadoDaFila }) {
 
 function PerguntaLikert({
   texto,
+  enunciado,
+  escala,
   valor,
   aoResponder,
 }: {
   texto: string;
+  enunciado: string;
+  escala: readonly OpcaoDeEscala[];
   valor: number | null;
   aoResponder: (valor: number) => void;
 }) {
   return (
     <div>
       <p className="etiqueta mb-4" id="enunciado-likert">
-        O quanto isso combina com você no trabalho?
+        {enunciado}
       </p>
 
       <h1
@@ -632,7 +897,7 @@ function PerguntaLikert({
         role="radiogroup"
         aria-labelledby={`${ID_DA_PERGUNTA} enunciado-likert`}
       >
-        {ESCALA_LIKERT.map((opcao) => {
+        {escala.map((opcao) => {
           const marcado = valor === opcao.valor;
           return (
             <button
@@ -676,7 +941,7 @@ function PerguntaLikert({
 }
 
 /**
- * Bloco de cenário — a única tela da prova que pede DUAS escolhas.
+ * Bloco de cenário do Prumo — a tela que pede DUAS escolhas ordenadas.
  *
  * É onde a pessoa trava, e o motivo é sempre o mesmo: ela marca a primeira ação
  * e acha que acabou. Por isso a instrução muda de estado em vez de ficar parada
@@ -684,11 +949,15 @@ function PerguntaLikert({
  * só ele.
  */
 function PerguntaDeCenario({
-  bloco,
+  titulo,
+  situacao,
+  opcoes,
   escolha,
   aoResponder,
 }: {
-  bloco: BlocoDaProva;
+  titulo: string;
+  situacao: string;
+  opcoes: OpcaoDePergunta[];
   escolha: { primeiraId: string; ultimaId: string } | null;
   aoResponder: (primeiraId: string, ultimaId: string) => void;
 }) {
@@ -730,13 +999,13 @@ function PerguntaDeCenario({
     function aoTeclar(evento: KeyboardEvent) {
       if (evento.metaKey || evento.ctrlKey || evento.altKey) return;
       const n = Number(evento.key);
-      if (!Number.isInteger(n) || n < 1 || n > bloco.opcoes.length) return;
+      if (!Number.isInteger(n) || n < 1 || n > opcoes.length) return;
       evento.preventDefault();
-      escolher(bloco.opcoes[n - 1].id);
+      escolher(opcoes[n - 1].id);
     }
     window.addEventListener("keydown", aoTeclar);
     return () => window.removeEventListener("keydown", aoTeclar);
-  }, [bloco.opcoes, escolher]);
+  }, [opcoes, escolher]);
 
   const completo = Boolean(primeira && ultima);
   const passo = primeira ? 2 : 1;
@@ -744,13 +1013,13 @@ function PerguntaDeCenario({
 
   return (
     <div>
-      <p className="etiqueta mb-3">{bloco.titulo}</p>
+      <p className="etiqueta mb-3">{titulo}</p>
 
       <h1
         id={ID_DA_PERGUNTA}
         className="text-balance t-secao leading-[1.5] font-medium"
       >
-        {bloco.situacao}
+        {situacao}
       </h1>
 
       <div className="mt-5 rounded-lg bg-secondary px-3.5 py-2.5 t-corpo-sm leading-relaxed">
@@ -784,7 +1053,7 @@ function PerguntaDeCenario({
       )}
 
       <div className="mt-5 space-y-2">
-        {bloco.opcoes.map((opcao, i) => {
+        {opcoes.map((opcao, i) => {
           const ehPrimeira = primeira === opcao.id;
           const ehUltima = ultima === opcao.id;
           const papel = ehPrimeira
@@ -830,6 +1099,278 @@ function PerguntaDeCenario({
                   {i + 1}
                 </kbd>
               )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Bloco de palavras do DISC: a que MAIS e a que MENOS parecem com você.
+ *
+ * Duas colunas, e não "toque uma vez, toque de novo" como no cenário: aqui as
+ * quatro opções são adjetivos soltos, sem enredo que ordene a leitura, e a
+ * pergunta é comparativa nos dois sentidos ao mesmo tempo. Ver as duas colunas
+ * lado a lado é o que deixa a comparação visível.
+ *
+ * A regra do §3.2 — "as duas escolhas devem ser diferentes" — é recusada aqui
+ * com explicação, e não silenciosamente. Marcar a mesma palavra dos dois lados
+ * daria +1 e −1 na mesma dimensão: o líquido não muda, o bloco é perdido, e
+ * nada no resultado denuncia. O servidor recusa de novo, por baixo.
+ */
+function PerguntaDeMaisMenos({
+  opcoes,
+  escolha,
+  aoResponder,
+}: {
+  opcoes: OpcaoDePergunta[];
+  escolha: { primeiraId: string; ultimaId: string } | null;
+  aoResponder: (maisId: string, menosId: string) => void;
+}) {
+  const [mais, setMais] = useState<string | null>(escolha?.primeiraId ?? null);
+  const [menos, setMenos] = useState<string | null>(escolha?.ultimaId ?? null);
+  const [conflito, setConflito] = useState<string | null>(null);
+
+  function escolher(coluna: "mais" | "menos", id: string) {
+    const oposto = coluna === "mais" ? menos : mais;
+
+    if (oposto === id) {
+      setConflito(id);
+      return;
+    }
+
+    setConflito(null);
+
+    const novoMais = coluna === "mais" ? (mais === id ? null : id) : mais;
+    const novoMenos = coluna === "menos" ? (menos === id ? null : id) : menos;
+
+    setMais(novoMais);
+    setMenos(novoMenos);
+
+    if (novoMais && novoMenos) aoResponder(novoMais, novoMenos);
+  }
+
+  const completo = Boolean(mais && menos);
+  const temSalvoDivergente = Boolean(escolha) && !completo;
+
+  return (
+    <div>
+      <p className="etiqueta mb-4" id="enunciado-mais-menos">
+        Neste grupo de palavras
+      </p>
+
+      <h1
+        id={ID_DA_PERGUNTA}
+        className="text-balance text-[1.5rem] leading-[1.3] font-semibold tracking-tight sm:text-[1.75rem]"
+      >
+        Qual <span className="text-dentro">mais</span> parece com você — e qual{" "}
+        <span className="text-fora">menos</span>?
+      </h1>
+
+      <p className="mt-3 t-corpo-sm leading-relaxed text-muted-foreground">
+        Pense no ambiente de trabalho. As duas escolhas precisam ser palavras
+        diferentes.
+      </p>
+
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-end gap-2 pr-1">
+          <span className="etiqueta w-16 text-center text-dentro">Mais</span>
+          <span className="etiqueta w-16 text-center text-fora">Menos</span>
+        </div>
+
+        <div className="space-y-2">
+          {opcoes.map((opcao) => {
+            const ehMais = mais === opcao.id;
+            const ehMenos = menos === opcao.id;
+            const emConflito = conflito === opcao.id;
+
+            return (
+              <div
+                key={opcao.id}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border px-4 py-2.5 transition-colors",
+                  ehMais && "border-dentro bg-dentro/10",
+                  ehMenos && "border-fora bg-fora/10",
+                  emConflito && "border-destructive/60 bg-destructive/5",
+                )}
+              >
+                <span className="flex-1 t-corpo leading-snug">{opcao.texto}</span>
+
+                <Marcador
+                  papel="mais"
+                  marcado={ehMais}
+                  rotulo={`${opcao.texto} — a que MAIS parece com você`}
+                  onClick={() => escolher("mais", opcao.id)}
+                />
+                <Marcador
+                  papel="menos"
+                  marcado={ehMenos}
+                  rotulo={`${opcao.texto} — a que MENOS parece com você`}
+                  onClick={() => escolher("menos", opcao.id)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* `role="alert"` porque é resposta a uma ação que a pessoa acabou de
+          fazer e que NÃO pegou — silêncio aqui vira "o botão está quebrado". */}
+      {conflito && (
+        <p
+          role="alert"
+          className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 t-corpo-sm text-destructive"
+        >
+          Esta palavra já está marcada do outro lado. As duas escolhas precisam
+          ser palavras diferentes — escolha outra, ou desmarque a primeira.
+        </p>
+      )}
+
+      {!conflito && !completo && (
+        <p className="mt-3 t-corpo-sm text-muted-foreground">
+          {mais
+            ? "Falta marcar a que MENOS parece com você."
+            : menos
+              ? "Falta marcar a que MAIS parece com você."
+              : "Marque uma de cada lado."}
+        </p>
+      )}
+
+      {temSalvoDivergente && (
+        <p className="mt-2 t-legenda text-muted-foreground">
+          Sua escolha anterior continua salva até você marcar as duas de novo.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Marcador({
+  papel,
+  marcado,
+  rotulo,
+  onClick,
+}: {
+  papel: "mais" | "menos";
+  marcado: boolean;
+  rotulo: string;
+  onClick: () => void;
+}) {
+  return (
+    // `aria-pressed`, e não `role="radio"`: as quatro opções de uma coluna não
+    // são irmãs no DOM (cada linha junta a palavra e os seus dois marcadores), e
+    // rádio fora de um `radiogroup` mente para o leitor de tela sobre o que as
+    // setas fazem. O rótulo diz o papel inteiro em cada botão.
+    <button
+      type="button"
+      aria-pressed={marcado}
+      aria-label={rotulo}
+      onClick={onClick}
+      className={cn(
+        "grid h-11 w-16 shrink-0 place-items-center rounded-lg border transition-all sm:h-9",
+        marcado
+          ? papel === "mais"
+            ? "border-dentro bg-dentro/20"
+            : "border-fora bg-fora/20"
+          : "border-border hover:border-marca/50 hover:bg-secondary",
+      )}
+    >
+      <span
+        className={cn(
+          "grid size-5 place-items-center rounded-full border-[1.5px] transition-colors",
+          marcado
+            ? papel === "mais"
+              ? "border-dentro"
+              : "border-fora"
+            : "border-border",
+        )}
+      >
+        <span
+          className={cn(
+            "size-2.5 rotate-45 rounded-[1px] transition-transform",
+            papel === "mais" ? "bg-dentro" : "bg-fora",
+            marcado ? "scale-100" : "scale-0",
+          )}
+        />
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Cenário do SJT: uma alternativa entre quatro.
+ *
+ * Sem título e sem nada que anuncie o tema — "Dilema ético" no alto da tela
+ * induziria a resposta socialmente desejável, que é exatamente o que a
+ * instrução do §4.2 pede para evitar. O que chega aqui já vem podado pelo
+ * servidor: pontuação e competência nunca saem de lá.
+ */
+function PerguntaDeEscolhaUnica({
+  situacao,
+  opcoes,
+  escolha,
+  aoResponder,
+}: {
+  situacao: string;
+  opcoes: OpcaoDePergunta[];
+  escolha: string | null;
+  aoResponder: (id: string) => void;
+}) {
+  return (
+    <div>
+      <p className="etiqueta mb-3" id="enunciado-escolha">
+        O que você faria
+      </p>
+
+      <h1
+        id={ID_DA_PERGUNTA}
+        className="text-balance t-secao leading-[1.5] font-medium"
+      >
+        {situacao}
+      </h1>
+
+      <div
+        className="mt-6 space-y-2"
+        role="radiogroup"
+        aria-labelledby={`${ID_DA_PERGUNTA} enunciado-escolha`}
+      >
+        {opcoes.map((opcao, i) => {
+          const marcado = escolha === opcao.id;
+          return (
+            <button
+              key={opcao.id}
+              type="button"
+              role="radio"
+              aria-checked={marcado}
+              onClick={() => aoResponder(opcao.id)}
+              className={cn(
+                "flex w-full items-start gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all",
+                marcado
+                  ? "border-marca bg-marca-forte/10"
+                  : "hover:border-marca/40 hover:bg-secondary/60 active:bg-secondary",
+              )}
+            >
+              <span
+                className={cn(
+                  "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors",
+                  marcado ? "border-marca" : "border-border",
+                )}
+              >
+                <span
+                  className={cn(
+                    "size-2.5 rotate-45 rounded-[1px] bg-marca-forte transition-transform",
+                    marcado ? "scale-100" : "scale-0",
+                  )}
+                />
+              </span>
+
+              <span className="flex-1 t-corpo leading-snug">{opcao.texto}</span>
+
+              <kbd className="leitura mt-px hidden rounded border px-1.5 py-0.5 t-legenda text-muted-foreground sm:block">
+                {i + 1}
+              </kbd>
             </button>
           );
         })}

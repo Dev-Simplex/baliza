@@ -223,7 +223,11 @@ export async function desempenhoPorVaga(organizationId: string) {
 
   return vagas.map((vaga) => {
     const concluidas = vaga.assessments.filter((a) => a.status === "COMPLETED");
-    const soma = concluidas.reduce((a, b) => a + (b.fitScore ?? 0), 0);
+    // A média de aderência é só de quem TEM aderência: bateria sem Prumo nem
+    // Big Five não produz os cinco fatores e grava `fitScore` nulo. Somar
+    // `?? 0` transformaria a ausência em nota zero e afundaria a média da vaga.
+    const comAderencia = concluidas.filter((a) => a.fitScore != null);
+    const soma = comAderencia.reduce((a, b) => a + (b.fitScore ?? 0), 0);
     const tempo = concluidas.reduce((a, b) => a + (b.durationMs ?? 0), 0);
 
     return {
@@ -238,7 +242,8 @@ export async function desempenhoPorVaga(organizationId: string) {
         vaga.assessments.length > 0
           ? (concluidas.length / vaga.assessments.length) * 100
           : null,
-      aderenciaMedia: concluidas.length > 0 ? soma / concluidas.length : null,
+      aderenciaMedia:
+        comAderencia.length > 0 ? soma / comAderencia.length : null,
       duracaoMedia: concluidas.length > 0 ? tempo / concluidas.length : null,
     };
   });

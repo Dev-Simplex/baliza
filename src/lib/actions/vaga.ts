@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 
 import { registrarAuditoria } from "@/lib/audit";
+import { lerBateria, validarBateria } from "@/lib/instrument/baterias";
 import { PERFIL_NEUTRO, PRESET_POR_ID } from "@/lib/instrument/presets";
 import { calcularFit } from "@/lib/instrument/scoring";
 import type { Fator } from "@/lib/instrument/types";
@@ -23,6 +24,11 @@ export type EstadoDoPerfil = {
   erro?: string;
   /** Quantas respostas já recebidas foram recalculadas contra as novas faixas. */
   recalculadas?: number;
+};
+
+export type EstadoDaBateria = {
+  ok?: boolean;
+  erro?: string;
 };
 
 const esquema = z.object({
@@ -65,9 +71,21 @@ export async function criarVaga(
     entrada: dados.get("entrada") ?? "aberta",
   });
 
-  if (!analise.success) {
+  // A bateria vem como vários campos de mesmo nome (uma caixa marcada = um
+  // valor), então é `getAll`. A validação fica em `baterias.ts` e não num zod
+  // aqui porque é a MESMA regra da edição — e regra de negócio duplicada em
+  // dois lugares vira duas regras diferentes na primeira mudança.
+  const bateria = validarBateria(dados.getAll("bateria"));
+
+  // Os dois erros voltam JUNTOS. Devolver primeiro os do zod e só depois o da
+  // bateria faria a pessoa corrigir o título, reenviar e descobrir aí que
+  // faltava marcar um teste.
+  if (!analise.success || !bateria.ok) {
     const campos: Record<string, string> = {};
-    for (const p of analise.error.issues) campos[String(p.path[0])] = p.message;
+    if (!analise.success)
+      for (const p of analise.error.issues)
+        campos[String(p.path[0])] = p.message;
+    if (!bateria.ok) campos.bateria = bateria.erro;
     return { campos };
   }
 
@@ -92,6 +110,7 @@ export async function criarVaga(
     publicEnabled: analise.data.entrada === "aberta",
     presetId: preset?.id ?? null,
     targetProfile: perfil as never,
+    testBattery: bateria.bateria,
     createdById: contexto.userId,
   });
 
@@ -102,7 +121,11 @@ export async function criarVaga(
     userId: contexto.userId,
     entidade: "Job",
     entidadeId: vaga.id,
-    metadados: { titulo: vaga.title, preset: preset?.id },
+    metadados: {
+      titulo: vaga.title,
+      preset: preset?.id,
+      bateria: bateria.bateria,
+    },
   });
 
   revalidatePath("/vagas");
@@ -137,6 +160,56 @@ export async function alternarModoDaVaga(jobId: string, aberta: boolean) {
 
   revalidatePath(`/vagas/${jobId}`);
   return { ok: true as const };
+}
+
+/**
+ * Troca os testes que a vaga aplica.
+ *
+ * O que esta ação NÃO faz, e é o ponto: ela não mexe em avaliação nenhuma. Cada
+ * convite carrega sua própria cópia congelada da bateria (`Assessment.testBattery`),
+ * tirada no momento em que foi criado. Acrescentar o DISC hoje vale para quem
+ * for convidado a partir de agora; quem começou ontem termina a prova com que
+ * começou. É a mesma promessa do `itemOrder`, um degrau acima — e é o contrário
+ * do que a edição de perfil-alvo faz, porque lá a régua muda para todos (o fit
+ * é recalculado) e aqui a PROVA mudaria, que é coisa que não se refaz.
+ *
+ * Consequência que a tela precisa dizer: tirar o Prumo e o Big Five de uma vaga
+ * deixa as próximas respostas sem aderência — não com aderência zero.
+ */
+export async function atualizarBateriaDaVaga(
+  jobId: string,
+  escolhidos: readonly string[],
+): Promise<EstadoDaBateria> {
+  const contexto = await exigirPapel("RECRUITER");
+
+  const bateria = validarBateria(escolhidos);
+  if (!bateria.ok) return { erro: bateria.erro };
+
+  // Escopo por empresa no WHERE: id de outra empresa simplesmente não acha.
+  const vaga = await prisma.job.findFirst({
+    where: { id: jobId, organizationId: contexto.organizationId },
+    select: { id: true, title: true, testBattery: true },
+  });
+  if (!vaga) return { erro: "Vaga não encontrada." };
+
+  const anterior = lerBateria(vaga.testBattery);
+  await prisma.job.update({
+    where: { id: vaga.id },
+    data: { testBattery: bateria.bateria },
+  });
+
+  await registrarAuditoria({
+    categoria: "MUTATION",
+    acao: "bateria_de_testes_editada",
+    organizationId: contexto.organizationId,
+    userId: contexto.userId,
+    entidade: "Job",
+    entidadeId: vaga.id,
+    metadados: { vaga: vaga.title, de: anterior, para: bateria.bateria },
+  });
+
+  revalidatePath(`/vagas/${vaga.id}`);
+  return { ok: true };
 }
 
 /**

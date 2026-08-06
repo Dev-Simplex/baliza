@@ -2,13 +2,29 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ArrowRight, Clock, Loader2, Lock, Save } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Clock,
+  ListChecks,
+  Loader2,
+  Lock,
+  Save,
+} from "lucide-react";
 
 import { Marca } from "@/components/marca";
-import { minutosEstimados } from "@/components/teste/tempo-estimado";
+import type { TipoDePergunta } from "@/components/teste/tipos-da-prova";
 import { Button } from "@/components/ui/button";
 import { iniciarAvaliacao } from "@/lib/actions/avaliacao";
+import { minutosDaBateria, type Teste } from "@/lib/instrument/baterias";
 import { cn } from "@/lib/utils";
+
+/** O bastante para anunciar a etapa; o conteúdo das perguntas não vem aqui. */
+export type ResumoDaEtapa = {
+  teste: Teste;
+  nome: string;
+  perguntas: Array<{ tipo: TipoDePergunta }>;
+};
 
 /**
  * Tela de abertura.
@@ -17,27 +33,33 @@ import { cn } from "@/lib/utils";
  * marketing: quanto tempo leva, o que acontece com a resposta dele, e que não
  * existe resposta certa. Tudo o mais é ruído entre a pessoa e a primeira
  * pergunta.
+ *
+ * Com bateria, entra uma quarta: QUANTOS testes são. Descobrir no meio do
+ * caminho que ainda vem outro teste é a forma mais barata de perder alguém que
+ * já tinha respondido metade — e prova incompleta não vira relatório.
  */
 export function TelaDeAbertura({
   token,
   empresa,
   vaga,
   nome,
-  totalDeItens,
-  totalDeCenarios,
+  etapas,
 }: {
   token: string;
   empresa: string;
   vaga: string;
   nome: string | null;
-  totalDeItens: number;
-  totalDeCenarios: number;
+  etapas: ResumoDaEtapa[];
 }) {
   const router = useRouter();
   const [pendente, iniciarTransicao] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
 
-  const minutos = minutosEstimados(totalDeItens, totalDeCenarios, 6);
+  // O tempo aqui é o PROMETIDO pelo catálogo — o mesmo número que o recrutador
+  // viu ao montar a vaga, e sempre o teto da faixa do manual. A estimativa
+  // afinada do que falta é outra conta, e ela só aparece com a prova andando.
+  const minutos = minutosDaBateria(etapas.map((e) => e.teste));
+  const totalDePerguntas = etapas.reduce((a, e) => a + e.perguntas.length, 0);
 
   function comecar() {
     setErro(null);
@@ -84,9 +106,23 @@ export function TelaDeAbertura({
 
         <ul className="mt-8 space-y-3.5">
           <Linha Icone={Clock} titulo={`Cerca de ${minutos} minutos`}>
-            {totalDeItens} afirmações rápidas e {totalDeCenarios} situações de
-            trabalho.
+            {etapas.length === 1
+              ? `${totalDePerguntas} perguntas, uma de cada vez.`
+              : `${etapas.length} testes, ${totalDePerguntas} perguntas no total — um teste por vez.`}
           </Linha>
+
+          {/* Com mais de um teste, dizer QUAIS são não é detalhe: é o que
+              transforma "quanto ainda falta disso?" em "falta o terceiro". */}
+          {etapas.length > 1 && (
+            <Linha Icone={ListChecks} titulo="Na ordem">
+              {etapas.map((e, i) => (
+                <span key={e.teste}>
+                  {i > 0 && " · "}
+                  {e.nome.split(" — ")[0]} ({e.perguntas.length})
+                </span>
+              ))}
+            </Linha>
+          )}
           <Linha Icone={Save} titulo="Salva sozinho">
             Pode fechar e continuar depois pelo mesmo link, de onde parou.
           </Linha>

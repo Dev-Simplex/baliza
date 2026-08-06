@@ -12,6 +12,11 @@ import {
 
 import { COR_DO_FATOR } from "@/components/app/graficos";
 import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
+// Só tipo: nada de `lib/analise` entra no pacote deste arquivo. A estrutura é
+// declarada uma vez e as duas representações do relatório comem dela — que é
+// justamente o que impede a tela e o papel de divergirem.
+import type { FichaDeModulos } from "@/lib/analise/ficha";
+import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
 
 /**
  * O relatório em PDF, desenhado — não impresso.
@@ -160,7 +165,15 @@ export type DadosDoRelatorio = {
   aderencia: string | null;
   resumoDoGap: string;
   selo: { nivel: "alta" | "media" | "baixa"; rotulo: string; texto: string } | null;
-  escores: Record<Fator, number>;
+  /**
+   * Os cinco fatores — `null` quando a bateria não os produz.
+   *
+   * Antes era obrigatório porque o PDF só existia para o Prumo. Uma vaga que
+   * aplique só DISC e SJT tem relatório (as fichas do §5.2 do manual) e não tem
+   * radar: o gráfico some, e nada é desenhado com zero no lugar do que não foi
+   * medido.
+   */
+  escores: Record<Fator, number> | null;
   faixas: Array<{
     fator: string;
     nome: string;
@@ -176,6 +189,23 @@ export type DadosDoRelatorio = {
   arquetipo: { nome: string; frase: string; brilha: string; trava: string } | null;
   facetas: Array<{ texto: string }>;
   faixasQualitativas: Array<{ nome: string; rotulo: string }>;
+  /**
+   * Os módulos do manual (Big Five, DISC, SJT) que a bateria aplicou.
+   *
+   * Ausente na vaga que só usa o Prumo — e é o que mantém o PDF dela idêntico
+   * ao de sempre, sem uma linha a mais no papel.
+   */
+  modulos?: FichaDeModulos | null;
+  qualidade?: QualidadeDasRespostas | null;
+  /**
+   * Nomes dos testes aplicados.
+   *
+   * Só é desenhado quando NÃO há aderência: aí a folha precisa dizer o que foi
+   * aplicado e por que não há número, senão ela circula parecendo um relatório
+   * ao qual faltou alguma coisa. Com aderência, a bateria é redundante — as
+   * faixas e o radar já mostram de onde o número veio.
+   */
+  bateria?: string[];
 };
 
 const ROTULO_DO_TIPO: Record<DadosDoRelatorio["faixas"][number]["tipo"], string> = {
@@ -383,6 +413,343 @@ function Radar({ escores }: { escores: Record<Fator, number> }) {
   );
 }
 
+/**
+ * Barra 0–100 dos módulos do manual.
+ *
+ * Deliberadamente mais simples que a `FaixaDoPdf`: ali há uma faixa alvo e um
+ * desvio para desenhar, porque o número é comparado à vaga. Aqui não há
+ * comparação nenhuma — Big Five e DISC descrevem, não medem aderência —, e uma
+ * barra com faixa alvo sugeriria um alvo que não existe.
+ */
+function BarraDoModulo({ valor, largura = 150 }: { valor: number; largura?: number }) {
+  const v = Math.max(0, Math.min(100, valor));
+  return (
+    <Svg width={largura} height={4} viewBox={`0 0 ${largura} 4`}>
+      <Rect x={0} y={0} width={largura} height={4} rx={2} fill={COR.linhaClara} />
+      <Rect
+        x={0}
+        y={0}
+        width={(v / 100) * largura}
+        height={4}
+        rx={2}
+        fill={COR.marcaForte}
+        fillOpacity={0.7}
+      />
+    </Svg>
+  );
+}
+
+/** Linha "rótulo ─── barra ─── número", o tijolo das fichas do §5.2. */
+function LinhaDeModulo({
+  rotulo,
+  score,
+  nota,
+  destaque,
+}: {
+  rotulo: string;
+  score: number;
+  nota?: string;
+  destaque?: boolean;
+}) {
+  return (
+    <View style={{ marginBottom: 6 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+        }}
+      >
+        <Text style={e.corpo}>{rotulo}</Text>
+        <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+          {nota && <Text style={e.etiqueta}>{nota}</Text>}
+          <Text
+            style={{
+              fontSize: 10,
+              fontFamily: "Helvetica-Bold",
+              color: destaque ? COR.fora : COR.tinta,
+            }}
+          >
+            {score}
+          </Text>
+        </View>
+      </View>
+      <View style={{ marginTop: 2 }}>
+        <BarraDoModulo valor={score} largura={460} />
+      </View>
+    </View>
+  );
+}
+
+/**
+ * As fichas dos módulos do manual, desenhadas para o papel (§5.2).
+ *
+ * Ordem: SJT primeiro. É o teste com maior peso na decisão (§6.1) e o único com
+ * gabarito — e a abertura por competência é a informação que o §4.5 manda não
+ * deixar o score geral esconder.
+ */
+function ModulosDoManual({
+  modulos,
+  qualidade,
+  emPaginaNova,
+}: {
+  modulos: FichaDeModulos;
+  qualidade?: QualidadeDasRespostas | null;
+  /**
+   * Falso quando não houve página de aderência: aí as fichas são o relatório,
+   * e quebrar a folha antes delas abriria uma página quase em branco.
+   */
+  emPaginaNova: boolean;
+}) {
+  return (
+    <View break={emPaginaNova}>
+      <Text style={[e.etiqueta, { marginBottom: 9 }]}>
+        Outros testes desta bateria
+      </Text>
+
+      {modulos.sjt && (
+        <View style={e.cartao}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+            }}
+          >
+            <View style={{ flexShrink: 1, paddingRight: 12 }}>
+              <Text style={e.titulo}>Julgamento situacional (SJT)</Text>
+              <Text style={e.legenda}>{modulos.sjt.faixa.leitura}</Text>
+            </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={e.aderencia}>{modulos.sjt.score}</Text>
+              <Text style={e.etiqueta}>
+                {modulos.sjt.pontosObtidos} de {modulos.sjt.pontosMaximos} pontos
+              </Text>
+            </View>
+          </View>
+
+          {/* A abertura por competência não é detalhamento opcional: o score
+              geral esconde o zero (§4.5). */}
+          <Text style={[e.etiqueta, { marginTop: 11, marginBottom: 5 }]}>
+            Por competência
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+            {modulos.sjt.competencias.map((c) => (
+              <View
+                key={c.rotulo}
+                style={{
+                  width: "50%",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  paddingRight: 14,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text style={[e.corpo, c.atencao ? { color: COR.fora } : {}]}>
+                  {c.curto}
+                  {c.atencao ? "  !" : ""}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 9,
+                    fontFamily: "Helvetica-Bold",
+                    color: c.atencao ? COR.fora : COR.tinta,
+                  }}
+                >
+                  {c.score}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {modulos.sjt.piores.length > 0 && (
+            <View
+              style={{
+                marginTop: 11,
+                borderWidth: 0.7,
+                borderColor: COR.fora,
+                backgroundColor: COR.foraSuave,
+                borderRadius: 4,
+                padding: 8,
+              }}
+            >
+              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: COR.fora }}>
+                Escolheu a pior alternativa em{" "}
+                {modulos.sjt.piores.length === 1
+                  ? "1 cenário"
+                  : `${modulos.sjt.piores.length} cenários`}
+              </Text>
+              {modulos.sjt.piores.map((p) => (
+                <Text key={p.titulo} style={[e.corpo, { marginTop: 3 }]}>
+                  “{p.titulo}” — {p.competencia}
+                </Text>
+              ))}
+              <Text style={[e.legenda, { marginTop: 5 }]}>
+                Vai para o roteiro de entrevista independentemente do score
+                geral. O que se leva à conversa é a situação, nunca o cenário do
+                teste.
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {modulos.bigFive && (
+        <View style={e.cartao}>
+          <Text style={e.titulo}>Big Five (Mini-IPIP)</Text>
+          <Text style={[e.legenda, { marginBottom: 9 }]}>
+            Não existe perfil bom ou ruim: a leitura é sempre em relação à vaga.
+          </Text>
+          {modulos.bigFive.notas.map((n) => (
+            <LinhaDeModulo
+              key={n.chave}
+              rotulo={n.rotulo}
+              score={n.score}
+              nota={n.faixa.rotulo}
+            />
+          ))}
+        </View>
+      )}
+
+      {modulos.disc && (
+        <View style={e.cartao} wrap={false}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "baseline",
+            }}
+          >
+            <Text style={e.titulo}>DISC — estilo de trabalho</Text>
+            <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold" }}>
+              {modulos.disc.rotulo}
+            </Text>
+          </View>
+          <Text style={[e.legenda, { marginBottom: 9 }]}>
+            {modulos.disc.resumo}
+          </Text>
+
+          {modulos.disc.dimensoes.map((dim) => (
+            <LinhaDeModulo
+              key={dim.dimensao}
+              rotulo={`${dim.dimensao} · ${dim.nome}`}
+              score={dim.score}
+            />
+          ))}
+
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 24,
+              marginTop: 5,
+              borderTopWidth: 0.7,
+              borderTopColor: COR.linhaClara,
+              paddingTop: 9,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[e.etiqueta, { color: COR.dentro }]}>
+                Pontos fortes típicos
+              </Text>
+              <Text style={[e.corpo, { marginTop: 2 }]}>
+                {modulos.disc.fortes.join(" · ")}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[e.etiqueta, { color: COR.fora }]}>
+                Pontos de atenção típicos
+              </Text>
+              <Text style={[e.corpo, { marginTop: 2 }]}>
+                {modulos.disc.atencao.join(" · ")}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[e.legenda, { marginTop: 7 }]}>
+            DISC descreve estilo, não competência nem caráter — serve para
+            prever como a pessoa tende a trabalhar, nunca como nota.
+          </Text>
+        </View>
+      )}
+
+      {qualidade && (
+        <View style={e.cartao} wrap={false}>
+          <Text style={e.titulo}>Qualidade das respostas</Text>
+          {!qualidade.avaliavel ? (
+            <Text style={e.corpo}>
+              Não foi possível conferir: as respostas brutas já foram apagadas
+              pelo prazo de retenção. Isso não quer dizer “sem alertas”.
+            </Text>
+          ) : qualidade.alertas.length === 0 ? (
+            <Text style={e.corpo}>
+              Sem alertas. Nenhum dos três controles do manual (tempo por tela,
+              padrão uniforme e itens espelhados) acusou nada.
+            </Text>
+          ) : (
+            qualidade.alertas.map((a) => (
+              <View key={a.chave} style={{ marginTop: 4 }}>
+                <Text
+                  style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: COR.fora }}
+                >
+                  {a.titulo}
+                </Text>
+                <Text style={e.corpo}>{a.detalhe}</Text>
+                <Text style={e.legenda}>{a.acao}</Text>
+              </View>
+            ))
+          )}
+          <Text style={[e.legenda, { marginTop: 7 }]}>
+            Alertas nunca eliminam candidato — orientam o analista sobre o
+            quanto confiar no resultado.
+          </Text>
+        </View>
+      )}
+
+      {/* O parecer do §5.2, em branco. Faz sentido no papel e não na tela: a
+          folha vai para a mesa da entrevista e volta escrita à mão. Na tela
+          seria um formulário que não salva. */}
+      <View style={e.cartao} wrap={false}>
+        <Text style={e.titulo}>Parecer do analista</Text>
+        <View style={{ flexDirection: "row", gap: 22, marginTop: 6 }}>
+          {["Avançar", "Dúvida", "Não avançar"].map((opcao) => (
+            <View
+              key={opcao}
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderWidth: 0.7,
+                  borderColor: COR.suave,
+                  borderRadius: 4,
+                }}
+              />
+              <Text style={e.corpo}>{opcao}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={[e.etiqueta, { marginTop: 11 }]}>Anotações</Text>
+        {[0, 1, 2].map((i) => (
+          <View
+            key={i}
+            style={{
+              marginTop: 13,
+              borderBottomWidth: 0.7,
+              borderBottomColor: COR.linha,
+            }}
+          />
+        ))}
+        <Text style={[e.legenda, { marginTop: 9 }]}>
+          A decisão é humana e vem depois da entrevista. Nenhum destes testes
+          aprova ou reprova alguém sozinho.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
   return (
     <Document
@@ -455,7 +822,30 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
 
         <View style={e.regua} />
 
+        {/* Sem aderência, o lugar de dizer isso é aqui em cima — antes de
+            qualquer número, e não numa nota de rodapé que ninguém lê. Zero não
+            aparece em lugar nenhum: o que não foi medido é dito por extenso. */}
+        {!d.aderencia && !d.escores && (
+          <View style={e.cartao}>
+            <Text style={e.titulo}>O que esta pessoa respondeu</Text>
+            {(d.bateria ?? []).map((teste) => (
+              <Text key={teste} style={[e.corpo, { marginTop: 2 }]}>
+                • {teste}
+              </Text>
+            ))}
+            <Text style={[e.legenda, { marginTop: 7 }]}>{d.resumoDoGap}</Text>
+            <Text style={[e.legenda, { marginTop: 4 }]}>
+              Não é aderência zero: é aderência não medida. Para ter o número, a
+              vaga precisa aplicar o Prumo ou o Big Five.
+            </Text>
+          </View>
+        )}
+
         {/* ─── Página 1: a conta ────────────────────────────────────────── */}
+        {/* Bateria sem os cinco fatores não tem conta para mostrar. O cartão
+            inteiro sai, em vez de sair uma moldura vazia com uma frase dentro —
+            o relatório dela são as fichas dos módulos, mais adiante. */}
+        {(d.faixas.length > 0 || d.escores) && (
         <View style={e.cartao}>
           <Text style={e.titulo}>
             {d.aderencia ? `Por que a aderência é ${d.aderencia}` : "Perfil por dimensão"}
@@ -504,9 +894,11 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
             </View>
           )}
         </View>
+        )}
 
         {/* A leitura qualitativa fecha a página 1: são cinco linhas curtas, e
             é o resumo que alguém lê antes de virar a folha. */}
+        {d.faixasQualitativas.length > 0 && (
         <View style={e.cartao}>
           <Text style={e.titulo}>Leitura por dimensão</Text>
           <View style={{ marginTop: 5 }}>
@@ -525,9 +917,13 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
             ))}
           </View>
         </View>
+        )}
 
         {/* ─── Página 2: quem é, e o que perguntar ──────────────────────── */}
-        <View break>
+        {/* A quebra só existe se houve página 1. Sem os cinco fatores não há
+            radar nem faixas, e quebrar assim mesmo abriria a folha em branco. */}
+        <View break={Boolean(d.escores)}>
+          {d.escores && (
           <View style={[e.cartao, { flexDirection: "row", gap: 18 }]} wrap={false}>
             <View style={{ width: 210 }}>
               <Text style={e.titulo}>Perfil comportamental</Text>
@@ -561,6 +957,7 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
               )}
             </View>
           </View>
+          )}
 
           {d.perguntas.length > 0 && (
             <View style={e.cartao}>
@@ -602,6 +999,15 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
             </View>
           )}
         </View>
+
+        {/* ─── As fichas dos módulos do manual (§5.2) ───────────────────── */}
+        {d.modulos?.temAlgum && (
+          <ModulosDoManual
+            modulos={d.modulos}
+            qualidade={d.qualidade}
+            emPaginaNova={Boolean(d.escores)}
+          />
+        )}
 
         {/* ─── Rodapé, em toda página ───────────────────────────────────── */}
         <View style={e.rodape} fixed>

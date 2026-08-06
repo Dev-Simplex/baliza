@@ -20,11 +20,16 @@ const ESTILO = {
 } as const;
 
 const NOME_DO_SINAL: Record<string, string> = {
+  // Os cinco do Índice de Confiança do Prumo (§5 do instrumento).
   desejabilidade: "respostas socialmente desejáveis",
   inconsistencia: "respostas inconsistentes entre itens equivalentes",
   linha_reta: "sequência longa de respostas idênticas",
   velocidade: "tempo por item abaixo do necessário para ler",
   convergencia: "cenários e afirmações contam histórias diferentes",
+  // Os três do §6.3 do manual, que valem quando os cinco fatores vieram do Big
+  // Five e não há Índice de Confiança para ler (ver `analise/qualidade.ts`).
+  apressadas: "tempo por tela abaixo do necessário para ler",
+  uniforme: "quase todas as respostas com o mesmo valor",
 };
 
 /**

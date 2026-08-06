@@ -5,6 +5,7 @@ import { Inbox } from "lucide-react";
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
 import { CompartilharVaga } from "@/components/app/compartilhar-vaga";
+import { EditarBateria } from "@/components/app/editar-bateria";
 import { EditarPerfilAlvo } from "@/components/app/editar-perfil-alvo";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import {
@@ -16,6 +17,13 @@ import { Faixa, type DadosDaFaixa } from "@/components/faixa";
 import { Badge } from "@/components/ui/badge";
 import { Painel, PainelCabecalho, PainelLista } from "@/components/ui/painel";
 import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
+import {
+  CATALOGO_DE_TESTES,
+  lerBateria,
+  produzFatores,
+  rotuloDeTempo,
+  telasDaBateria,
+} from "@/lib/instrument/baterias";
 import { idealDaDimensao } from "@/lib/instrument/scoring";
 import {
   FATORES,
@@ -59,7 +67,14 @@ export default async function PaginaDaVaga({
     include: {
       assessments: {
         where: { status: "COMPLETED" },
-        orderBy: { fitScore: "desc" },
+        // `nulls: "last"` não é detalhe: em Postgres, DESC põe NULL PRIMEIRO.
+        // Sem isso, quem respondeu uma bateria que não mede aderência (só DISC
+        // e SJT, por exemplo) subiria ao topo do ranking justamente por não ter
+        // nota. Sem nota, o desempate é por quem respondeu antes.
+        orderBy: [
+          { fitScore: { sort: "desc", nulls: "last" } },
+          { completedAt: "asc" },
+        ],
         include: { candidate: { select: { id: true, name: true } } },
       },
     },
@@ -68,6 +83,8 @@ export default async function PaginaDaVaga({
   if (!vaga) notFound();
 
   const perfil = vaga.targetProfile as unknown as PerfilAlvo;
+  const bateria = lerBateria(vaga.testBattery);
+  const temAderencia = produzFatores(bateria);
   // Base derivada do host da requisição: quem abre o painel por IP de rede
   // recebe um link com esse endereço, e não `localhost` — que só abriria na
   // máquina de quem copiou. Ver src/lib/url-publica.ts.
@@ -125,7 +142,7 @@ export default async function PaginaDaVaga({
             comBorda
             titulo={
               <>
-                Ranking por aderência
+                {temAderencia ? "Ranking por aderência" : "Quem respondeu"}
                 <span className="ml-2 text-xs font-normal text-muted-foreground">
                   {vaga.assessments.length}{" "}
                   {vaga.assessments.length === 1 ? "resposta" : "respostas"}
@@ -133,14 +150,18 @@ export default async function PaginaDaVaga({
                 </span>
               </>
             }
-            descricao="A ordem é sugestão de prioridade de conversa. Nenhum candidato é descartado automaticamente."
+            descricao={
+              temAderencia
+                ? "A ordem é sugestão de prioridade de conversa. Nenhum candidato é descartado automaticamente."
+                : "Esta vaga não aplica Prumo nem Big Five, então não há aderência a calcular: a lista é por ordem de resposta, e o resultado de cada pessoa está na ficha dela."
+            }
           />
 
           {/* A legenda das colunas.
               Sem ela o ranking mostra cinco medidores rotulados C, E, X, A e O —
               e é justamente lado a lado, na mesma coluna, que dá para comparar
               duas pessoas. Coluna que não se lê não compara nada. */}
-          {vaga.assessments.length > 0 && (
+          {vaga.assessments.length > 0 && temAderencia && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b bg-superficie-2/40 px-5 py-2">
               {FATORES.map((f) => {
                 const cfg = perfil[f];
@@ -179,27 +200,33 @@ export default async function PaginaDaVaga({
           ) : (
             <PainelLista>
               {vaga.assessments.map((avaliacao, indice) => {
-                const escores = avaliacao.scores as Record<Fator, number>;
+                // `scores` é nulo quando a bateria daquela prova não mede os
+                // cinco fatores. Sem eles não há medidor a desenhar nem
+                // aderência a explicar — a linha mostra "—" e segue listando a
+                // pessoa, que é o que o RH precisa: ela respondeu.
+                const escores = avaliacao.scores as Record<Fator, number> | null;
                 const detalhe = avaliacao.fitDetail as {
                   puxaramPraBaixo?: Array<{ fator: Fator; dentro: boolean }>;
                 } | null;
                 const derrubou = detalhe?.puxaramPraBaixo?.[0];
 
-                const medidores: MedidorMinimo[] = FATORES.map((f) => {
-                  const cfg = perfil[f];
-                  const irrelevante = !cfg || cfg.peso === 0;
-                  return {
-                    fator: f,
-                    nome: NOMES_DE_FATOR[f].ui,
-                    escore: escores[f],
-                    faixa: cfg?.faixa ?? [0, 100],
-                    dentro:
-                      !irrelevante &&
-                      escores[f] >= cfg.faixa[0] &&
-                      escores[f] <= cfg.faixa[1],
-                    irrelevante,
-                  };
-                });
+                const medidores: MedidorMinimo[] | undefined = escores
+                  ? FATORES.map((f) => {
+                      const cfg = perfil[f];
+                      const irrelevante = !cfg || cfg.peso === 0;
+                      return {
+                        fator: f,
+                        nome: NOMES_DE_FATOR[f].ui,
+                        escore: escores[f],
+                        faixa: cfg?.faixa ?? [0, 100],
+                        dentro:
+                          !irrelevante &&
+                          escores[f] >= cfg.faixa[0] &&
+                          escores[f] <= cfg.faixa[1],
+                        irrelevante,
+                      };
+                    })
+                  : undefined;
 
                 return (
                   <LinhaDeCandidato
@@ -301,8 +328,59 @@ export default async function PaginaDaVaga({
 
           <Painel>
             <PainelCabecalho
+              titulo="Testes desta vaga"
+              descricao={`${telasDaBateria(bateria)} telas, ${rotuloDeTempo(bateria)} para o candidato.`}
+              acao={
+                podeEditar && (
+                  <EditarBateria
+                    jobId={vaga.id}
+                    bateria={bateria}
+                    aguardandoResposta={pendentes}
+                  />
+                )
+              }
+            />
+
+            <ol className="mt-4 space-y-2">
+              {bateria.map((teste, i) => {
+                const ficha = CATALOGO_DE_TESTES[teste];
+                return (
+                  <li key={teste} className="flex items-start gap-2.5">
+                    {/* A posição não é enfeite: é a ordem em que o candidato
+                        atravessa as etapas. */}
+                    <span className="leitura mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-secondary t-legenda font-semibold text-muted-foreground">
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block t-corpo-sm font-medium">
+                        {ficha.nome}
+                      </span>
+                      <span className="etiqueta">
+                        {ficha.formato} · {ficha.telas} telas
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {!temAderencia && (
+              <p className="mt-4 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5 t-legenda leading-relaxed">
+                Nenhum destes testes mede os cinco fatores, então o perfil-alvo
+                abaixo fica sem uso e as respostas vêm sem aderência. Marque o
+                Prumo ou o Big Five para ligar o ranking de volta.
+              </p>
+            )}
+          </Painel>
+
+          <Painel>
+            <PainelCabecalho
               titulo="Perfil-alvo"
-              descricao="As faixas que esta vaga pede. É contra elas que a aderência é calculada."
+              descricao={
+                temAderencia
+                  ? "As faixas que esta vaga pede. É contra elas que a aderência é calculada."
+                  : "As faixas que esta vaga pede — sem efeito enquanto a bateria não tiver Prumo ou Big Five."
+              }
               acao={
                 podeEditar && (
                   <EditarPerfilAlvo

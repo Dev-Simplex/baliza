@@ -6,13 +6,40 @@ import { z } from "zod";
 import { registrarAuditoria } from "@/lib/audit";
 import { normalizarCodigo, sortearCodigoLivre } from "@/lib/codigo-de-acesso";
 import { ipAnonimoDaRequisicao } from "@/lib/ip";
+import {
+  lerProvaDaBateria,
+  montarProvaDaBateria,
+  opcoesDoBloco,
+} from "@/lib/actions/forma-da-bateria";
 import { pendenciasDaProva } from "@/lib/actions/pendencias-da-prova";
 import { prisma } from "@/lib/prisma";
 import { limitarPorIp } from "@/lib/rate-limit";
 import { ITEM_POR_ID, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
 import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
-import { montarForma } from "@/lib/instrument/form";
-import { escorar } from "@/lib/instrument/scoring";
+import {
+  escoresParaFit,
+  lerBateria,
+  type ResultadosPorModulo,
+} from "@/lib/instrument/baterias";
+import {
+  ITEM_BIG_FIVE_POR_ID,
+  paraResultadoDeModuloBigFive,
+  pontuarBigFive,
+  type RespostasBigFive,
+} from "@/lib/instrument/bigfive";
+import {
+  BLOCO_DISC_POR_ID,
+  paraResultadoDeModuloDisc,
+  pontuarDisc,
+  type RespostaDisc,
+} from "@/lib/instrument/disc";
+import {
+  CENARIO_SJT_POR_ID,
+  paraResultadoDeModuloSjt,
+  pontuarSjt,
+  type RespostaSjt,
+} from "@/lib/instrument/sjt";
+import { calcularFit, escorar } from "@/lib/instrument/scoring";
 import type { PerfilAlvo, RespostaDeCenario, Respostas } from "@/lib/instrument/types";
 
 /**
@@ -152,20 +179,31 @@ export async function criarAvaliacao(opcoes: {
   validadeEmDias?: number;
 }) {
   // Itens que esta pessoa já respondeu antes, para não repetir (histórico).
-  const anteriores = await prisma.assessment.findMany({
-    where: { candidateId: opcoes.candidateId, status: "COMPLETED" },
-    select: { itemOrder: true },
-    orderBy: { completedAt: "desc" },
-    take: 2,
-  });
+  const [anteriores, vaga] = await Promise.all([
+    prisma.assessment.findMany({
+      where: { candidateId: opcoes.candidateId, status: "COMPLETED" },
+      select: { itemOrder: true },
+      orderBy: { completedAt: "desc" },
+      take: 2,
+    }),
+    prisma.job.findUnique({
+      where: { id: opcoes.jobId },
+      select: { testBattery: true },
+    }),
+  ]);
   const jaVistos = anteriores.flatMap((a) => (a.itemOrder as string[]) ?? []);
 
+  // A bateria da vaga é COPIADA para a avaliação aqui, e a partir daqui a prova
+  // desta pessoa tem vida própria: mexer na vaga amanhã não muda o que ela já
+  // começou a responder. Mesma razão de a forma ser sorteada e gravada agora.
+  const bateria = lerBateria(vaga?.testBattery);
+
   const semente = `${opcoes.candidateId}:${opcoes.jobId}:${Date.now()}`;
-  const forma = montarForma({
-    semente,
-    versao: VERSAO_DO_INSTRUMENTO,
-    excluir: jaVistos,
-  });
+  // A prova inteira da bateria é sorteada aqui, de uma vez: as afirmações do
+  // Prumo e do Big Five em `itemOrder`, os blocos das situações, do DISC e do
+  // SJT em `scenarioOrder`. A separação de volta é por banco, em
+  // `forma-da-bateria.ts` — que é o único lugar que sabe montar e desmontar.
+  const forma = montarProvaDaBateria({ semente, bateria, excluir: jaVistos });
 
   const expiraEm = new Date();
   expiraEm.setDate(expiraEm.getDate() + (opcoes.validadeEmDias ?? 30));
@@ -194,7 +232,8 @@ export async function criarAvaliacao(opcoes: {
           instrumentVersion: VERSAO_DO_INSTRUMENTO,
           seed: semente,
           itemOrder: forma.itens as never,
-          scenarioOrder: forma.cenarios as never,
+          scenarioOrder: forma.blocos as never,
+          testBattery: bateria,
           // Consentimento é registro do que a PESSOA fez, não do que o RH fez.
           // Pelo link público ela marcou a caixa segundos atrás; por convite,
           // quem criou foi a empresa, e carimbar consentimento ali seria
@@ -300,6 +339,58 @@ export async function iniciarAvaliacao(token: string) {
   return { ok: true as const };
 }
 
+/**
+ * O convite, a avaliação e a prova desta pessoa — o preâmbulo idêntico das três
+ * ações de salvamento.
+ *
+ * Ele existe para que as três façam a MESMA pergunta ao mesmo lugar. Enquanto a
+ * prova era só o Prumo, cada ação conferia a sua coluna (`itemOrder` de um
+ * lado, `scenarioOrder` do outro) e isso bastava. Com quatro testes, "esta
+ * pergunta é desta pessoa?" depende da bateria congelada e do banco de cada
+ * teste; deixar cada ação responder por conta própria seria o começo de três
+ * respostas diferentes — e a divergência aparece do pior jeito, com a tela
+ * desenhando uma pergunta que a gravação recusa.
+ */
+async function abrirProvaParaEscrita(token: string) {
+  const convite = await prisma.invitation.findUnique({
+    where: { token },
+    include: {
+      assessment: {
+        select: {
+          id: true,
+          status: true,
+          seed: true,
+          testBattery: true,
+          itemOrder: true,
+          scenarioOrder: true,
+        },
+      },
+    },
+  });
+
+  const avaliacao = convite?.assessment;
+  if (!avaliacao) return { erro: "Convite não encontrado" as const };
+  if (avaliacao.status === "COMPLETED")
+    return { erro: "Esta avaliação já foi concluída" as const };
+
+  const prova = lerProvaDaBateria({
+    semente: avaliacao.seed,
+    bateria: lerBateria(avaliacao.testBattery),
+    itensGuardados: (avaliacao.itemOrder as string[]) ?? [],
+    blocosGuardados: (avaliacao.scenarioOrder as string[]) ?? [],
+  });
+
+  return { avaliacaoId: avaliacao.id, prova };
+}
+
+/** Todo salvamento também é sinal de vida: é ele que alimenta "visto por último". */
+async function marcarVisto(avaliacaoId: string) {
+  await prisma.assessment.update({
+    where: { id: avaliacaoId },
+    data: { lastSeenAt: new Date() },
+  });
+}
+
 const TEMPO_MAXIMO_POR_PERGUNTA_MS = 600_000;
 
 const esquemaDeResposta = z.object({
@@ -323,7 +414,7 @@ function tempoDentroDoTeto(tempoMs?: number) {
 }
 
 /**
- * Salvamento automático de uma resposta.
+ * Salvamento automático de uma afirmação de 1 a 5 — Prumo e Big Five.
  *
  * Chamada a cada clique. É upsert: a pessoa pode voltar e trocar a resposta
  * antes de concluir, e o registro não duplica.
@@ -338,31 +429,24 @@ export async function salvarResposta(
   });
   if (!analise.success) return { ok: false, erro: "Resposta inválida" };
 
-  const convite = await prisma.invitation.findUnique({
-    where: { token },
-    include: { assessment: { select: { id: true, status: true, itemOrder: true } } },
-  });
+  const aberta = await abrirProvaParaEscrita(token);
+  if ("erro" in aberta) return { ok: false, erro: aberta.erro };
 
-  const avaliacao = convite?.assessment;
-  if (!avaliacao) return { ok: false, erro: "Convite não encontrado" };
-  if (avaliacao.status === "COMPLETED")
-    return { ok: false, erro: "Esta avaliação já foi concluída" };
-
-  // O item precisa pertencer À FORMA desta pessoa: sem isso, dá pra injetar
-  // resposta de qualquer item do banco e mexer no escore.
-  const daForma = (avaliacao.itemOrder as string[]) ?? [];
-  if (!daForma.includes(analise.data.itemId))
+  // O item precisa pertencer À PROVA desta pessoa: sem isso, dá pra injetar
+  // resposta de qualquer item do banco e mexer no escore. Vale igual para o
+  // Big Five — item de um teste fora da bateria não entra.
+  if (!aberta.prova.itens.includes(analise.data.itemId))
     return { ok: false, erro: "Item fora desta avaliação" };
 
   await prisma.itemResponse.upsert({
     where: {
       assessmentId_itemId: {
-        assessmentId: avaliacao.id,
+        assessmentId: aberta.avaliacaoId,
         itemId: analise.data.itemId,
       },
     },
     create: {
-      assessmentId: avaliacao.id,
+      assessmentId: aberta.avaliacaoId,
       itemId: analise.data.itemId,
       value: analise.data.valor,
       elapsedMs: analise.data.tempoMs ?? null,
@@ -373,15 +457,21 @@ export async function salvarResposta(
     },
   });
 
-  await prisma.assessment.update({
-    where: { id: avaliacao.id },
-    data: { lastSeenAt: new Date() },
-  });
+  await marcarVisto(aberta.avaliacaoId);
 
   return { ok: true };
 }
 
-/** Salvamento automático de um bloco de cenário. */
+/**
+ * Salvamento de um bloco de MAIS/MENOS — as situações do Prumo e o DISC.
+ *
+ * Os dois gravam aqui porque a resposta tem a mesma forma: uma escolha
+ * "primeira/MAIS" e uma "última/MENOS", obrigatoriamente diferentes. A regra
+ * das duas diferentes é do manual do DISC (§3.2, "As duas escolhas devem ser
+ * diferentes") e é a mesma invariante que o escore ipsativo do Prumo sempre
+ * exigiu — a tela impede, e esta linha é a que garante quando a tela não é a
+ * única a chamar.
+ */
 export async function salvarCenario(
   token: string,
   entrada: {
@@ -391,39 +481,31 @@ export async function salvarCenario(
     tempoMs?: number;
   },
 ) {
-  const convite = await prisma.invitation.findUnique({
-    where: { token },
-    include: { assessment: { select: { id: true, status: true, scenarioOrder: true } } },
-  });
+  const aberta = await abrirProvaParaEscrita(token);
+  if ("erro" in aberta) return { ok: false, erro: aberta.erro };
 
-  const avaliacao = convite?.assessment;
-  if (!avaliacao) return { ok: false, erro: "Convite não encontrado" };
-  if (avaliacao.status === "COMPLETED")
-    return { ok: false, erro: "Esta avaliação já foi concluída" };
   if (entrada.primeiraId === entrada.ultimaId)
     return { ok: false, erro: "As duas escolhas precisam ser diferentes" };
 
-  const daForma = (avaliacao.scenarioOrder as string[]) ?? [];
-  if (!daForma.includes(entrada.blocoId))
+  if (!aberta.prova.cenarios.includes(entrada.blocoId))
     return { ok: false, erro: "Cenário fora desta avaliação" };
 
-  // As duas ações precisam ser opções DESTE bloco. A conferência espelha a que
-  // o item já tinha: sem ela dá pra gravar um par de ids inventados, e o escore
-  // ipsativo passa a ler ação que não existe em cenário nenhum.
-  const bloco = CENARIO_POR_ID.get(entrada.blocoId);
-  const opcoes = new Set(bloco?.opcoes.map((o) => o.id) ?? []);
+  // As duas escolhas precisam ser opções DESTE bloco. A conferência espelha a
+  // que o item já tinha: sem ela dá pra gravar um par de ids inventados, e a
+  // escoragem passa a ler ação que não existe em bloco nenhum.
+  const opcoes = opcoesDoBloco(entrada.blocoId);
   if (!opcoes.has(entrada.primeiraId) || !opcoes.has(entrada.ultimaId))
     return { ok: false, erro: "Escolha fora deste cenário" };
 
   await prisma.scenarioResponse.upsert({
     where: {
       assessmentId_blockId: {
-        assessmentId: avaliacao.id,
+        assessmentId: aberta.avaliacaoId,
         blockId: entrada.blocoId,
       },
     },
     create: {
-      assessmentId: avaliacao.id,
+      assessmentId: aberta.avaliacaoId,
       blockId: entrada.blocoId,
       firstActionId: entrada.primeiraId,
       lastActionId: entrada.ultimaId,
@@ -436,12 +518,70 @@ export async function salvarCenario(
     },
   });
 
-  await prisma.assessment.update({
-    where: { id: avaliacao.id },
-    data: { lastSeenAt: new Date() },
-  });
+  await marcarVisto(aberta.avaliacaoId);
 
   return { ok: true };
+}
+
+/**
+ * Salvamento de uma escolha única entre alternativas — hoje, o SJT.
+ *
+ * Grava só o id da alternativa. A pontuação ({2,1,1,0}) e a competência ficam
+ * no gabarito, no servidor: nunca vão ao front do candidato, nem depois de
+ * terminar — expor queima o banco de cenários (manual §4.2).
+ */
+export async function salvarEscolha(
+  token: string,
+  entrada: { blocoId: string; escolhaId: string; tempoMs?: number },
+) {
+  const aberta = await abrirProvaParaEscrita(token);
+  if ("erro" in aberta) return { ok: false, erro: aberta.erro };
+
+  if (!aberta.prova.escolhas.includes(entrada.blocoId))
+    return { ok: false, erro: "Situação fora desta avaliação" };
+
+  const opcoes = opcoesDoBloco(entrada.blocoId);
+  if (!opcoes.has(entrada.escolhaId))
+    return { ok: false, erro: "Escolha fora desta situação" };
+
+  await prisma.choiceResponse.upsert({
+    where: {
+      assessmentId_blockId: {
+        assessmentId: aberta.avaliacaoId,
+        blockId: entrada.blocoId,
+      },
+    },
+    create: {
+      assessmentId: aberta.avaliacaoId,
+      blockId: entrada.blocoId,
+      choiceId: entrada.escolhaId,
+      elapsedMs: tempoDentroDoTeto(entrada.tempoMs) ?? null,
+    },
+    update: {
+      choiceId: entrada.escolhaId,
+      elapsedMs: tempoDentroDoTeto(entrada.tempoMs) ?? null,
+    },
+  });
+
+  await marcarVisto(aberta.avaliacaoId);
+
+  return { ok: true };
+}
+
+/**
+ * Roda a equação de um módulo sem deixar a conclusão inteira cair com ela.
+ *
+ * O erro fica no log do servidor, onde é problema de quem mantém o banco — e
+ * não na tela de quem acabou de responder 79 perguntas e não tem o que fazer a
+ * respeito.
+ */
+function tentarPontuar<T>(teste: string, apurar: () => T): T | null {
+  try {
+    return apurar();
+  } catch (erro) {
+    console.error(`[prumo] módulo ${teste} não pôde ser pontuado:`, erro);
+    return null;
+  }
 }
 
 /**
@@ -458,6 +598,7 @@ export async function concluirAvaliacao(token: string) {
         include: {
           responses: true,
           scenarioResponses: true,
+          choiceResponses: true,
           job: { select: { targetProfile: true } },
         },
       },
@@ -470,21 +611,31 @@ export async function concluirAvaliacao(token: string) {
   // Reenvio de quem tocou duas vezes: já concluída é sucesso, não erro.
   if (avaliacao.status === "COMPLETED") return { ok: true as const };
 
-  const itensDaForma = (avaliacao.itemOrder as string[]) ?? [];
-  const cenariosDaForma = (avaliacao.scenarioOrder as string[]) ?? [];
+  const bateria = lerBateria(avaliacao.testBattery);
+  const prova = lerProvaDaBateria({
+    semente: avaliacao.seed,
+    bateria,
+    itensGuardados: (avaliacao.itemOrder as string[]) ?? [],
+    blocosGuardados: (avaliacao.scenarioOrder as string[]) ?? [],
+  });
 
-  // Os cenários entram na mesma conferência que as afirmações. Eles não entram
-  // no ranking (§5: escore ipsativo compara dimensões dentro da pessoa, não
-  // pessoas entre si), mas alimentam a leitura qualitativa — e a prova que a
-  // tela exige são as `TOTAL_DE_TELAS`, não só as afirmações. Concluir com um
-  // bloco a menos entregaria um relatório mais pobre sem ninguém perceber.
+  // A bateria conclui INTEIRA ou não conclui. Os blocos entram na mesma
+  // conferência que as afirmações — as situações do Prumo não entram no ranking
+  // (§5: escore ipsativo compara dimensões dentro da pessoa, não pessoas entre
+  // si), mas alimentam a leitura qualitativa, e um teste inteiro em branco
+  // viraria um relatório com um módulo faltando que ninguém pediria de volta.
   const pendencias = pendenciasDaProva({
-    itensDaForma,
-    cenariosDaForma,
+    itensDaForma: prova.itens,
+    cenariosDaForma: prova.cenarios,
+    escolhasDaForma: prova.escolhas,
     itensRespondidos: avaliacao.responses.map((r) => r.itemId),
-    cenariosRespondidos: avaliacao.scenarioResponses.map((r) => r.blockId),
-    itemVisivel: (id) => ITEM_POR_ID.has(id),
-    cenarioVisivel: (id) => CENARIO_POR_ID.has(id),
+    cenariosRespondidos: avaliacao.scenarioResponses
+      .filter((r) => r.firstActionId !== r.lastActionId)
+      .map((r) => r.blockId),
+    escolhasRespondidas: avaliacao.choiceResponses.map((r) => r.blockId),
+    itemVisivel: (id) => ITEM_POR_ID.has(id) || ITEM_BIG_FIVE_POR_ID.has(id),
+    cenarioVisivel: (id) => CENARIO_POR_ID.has(id) || BLOCO_DISC_POR_ID.has(id),
+    escolhaVisivel: (id) => CENARIO_SJT_POR_ID.has(id),
   });
 
   const totalFaltando = pendencias.total;
@@ -503,15 +654,15 @@ export async function concluirAvaliacao(token: string) {
           : `Faltam ${totalFaltando} respostas. Vamos voltar até a primeira.`,
     };
 
-  const respostas: Respostas = {};
-  for (const r of avaliacao.responses) respostas[r.itemId] = r.value;
-
-  const respostasDeCenario: RespostaDeCenario[] = avaliacao.scenarioResponses.map(
-    (r) => ({
-      blocoId: r.blockId,
-      primeiraId: r.firstActionId,
-      ultimaId: r.lastActionId,
-    }),
+  const valorPorItem = new Map(avaliacao.responses.map((r) => [r.itemId, r.value]));
+  const parPorBloco = new Map(
+    avaliacao.scenarioResponses.map((r) => [
+      r.blockId,
+      { primeira: r.firstActionId, ultima: r.lastActionId },
+    ]),
+  );
+  const escolhaPorBloco = new Map(
+    avaliacao.choiceResponses.map((r) => [r.blockId, r.choiceId]),
   );
 
   const agora = new Date();
@@ -519,13 +670,97 @@ export async function concluirAvaliacao(token: string) {
     ? agora.getTime() - avaliacao.startedAt.getTime()
     : avaliacao.responses.reduce((a, r) => a + (r.elapsedMs ?? 0), 0);
 
-  const resultado = escorar({
-    respostas,
-    itensDaForma,
-    perfilAlvo: avaliacao.job.targetProfile as unknown as PerfilAlvo,
-    respostasDeCenario,
-    duracaoMs,
-  });
+  const perfilAlvo = avaliacao.job.targetProfile as unknown as PerfilAlvo;
+
+  // ─── Escoragem por módulo ───────────────────────────────────────────────
+  //
+  // Cada teste é escorado com as respostas DELE, pelo módulo dele. As
+  // afirmações do Prumo e do Big Five moram na mesma tabela, então separar
+  // pelas listas da prova não é zelo: passar item de um para a equação do outro
+  // produziria escore com denominador errado nos dois.
+  //
+  // As equações dos três testes do manual LANÇAM diante de prova incompleta, de
+  // propósito — um número que parece válido é pior que nenhum. Aqui elas rodam
+  // depois da conferência de pendências, então só chegam a lançar num caso: o
+  // banco perdeu um item entre a resposta e o encerramento. Nesse caso a
+  // conclusão não pode cair junto (a pessoa terminou tudo o que a tela mostrou);
+  // o módulo fica ausente, e ausência é a coisa certa a mostrar depois.
+  const modulos: ResultadosPorModulo = {};
+
+  const respostasDoPrumo: Respostas = {};
+  for (const id of prova.porTeste.PRUMO.itens) {
+    const valor = valorPorItem.get(id);
+    if (valor != null) respostasDoPrumo[id] = valor;
+  }
+  const cenariosDoPrumo: RespostaDeCenario[] = prova.porTeste.PRUMO.blocos
+    .map((id) => ({ id, par: parPorBloco.get(id) }))
+    .filter((b) => Boolean(b.par))
+    .map((b) => ({
+      blocoId: b.id,
+      primeiraId: b.par!.primeira,
+      ultimaId: b.par!.ultima,
+    }));
+
+  const prumo = bateria.includes("PRUMO")
+    ? escorar({
+        respostas: respostasDoPrumo,
+        itensDaForma: prova.porTeste.PRUMO.itens,
+        perfilAlvo,
+        respostasDeCenario: cenariosDoPrumo,
+        duracaoMs,
+      })
+    : null;
+
+  if (prumo) modulos.PRUMO = { teste: "PRUMO", fatores: prumo.escores };
+
+  if (bateria.includes("BIG_FIVE")) {
+    const respostasBf: RespostasBigFive = {};
+    for (const id of prova.porTeste.BIG_FIVE.itens) {
+      const valor = valorPorItem.get(id);
+      if (valor != null) respostasBf[id] = valor;
+    }
+    const apuracao = tentarPontuar("BIG_FIVE", () => pontuarBigFive(respostasBf));
+    if (apuracao) modulos.BIG_FIVE = paraResultadoDeModuloBigFive(apuracao);
+  }
+
+  if (bateria.includes("DISC")) {
+    // `firstActionId` é o MAIS e `lastActionId` é o MENOS — a mesma coluna que
+    // guarda "faria primeiro / deixaria por último" nas situações do Prumo.
+    const respostasDisc: RespostaDisc[] = prova.porTeste.DISC.blocos
+      .map((id) => ({ id, par: parPorBloco.get(id) }))
+      .filter((b) => Boolean(b.par))
+      .map((b) => ({
+        blocoId: b.id,
+        maisId: b.par!.primeira,
+        menosId: b.par!.ultima,
+      }));
+    const apuracao = tentarPontuar("DISC", () => pontuarDisc(respostasDisc));
+    if (apuracao) modulos.DISC = paraResultadoDeModuloDisc(apuracao);
+  }
+
+  if (bateria.includes("SJT")) {
+    const respostasSjt: RespostaSjt[] = prova.porTeste.SJT.blocos
+      .map((id) => ({ id, escolha: escolhaPorBloco.get(id) }))
+      .filter((c) => Boolean(c.escolha))
+      .map((c) => ({ cenarioId: c.id, alternativaId: c.escolha! }));
+    const apuracao = tentarPontuar("SJT", () => pontuarSjt(respostasSjt));
+    if (apuracao) modulos.SJT = paraResultadoDeModuloSjt(apuracao);
+  }
+
+  /*
+   * Aderência só existe se a bateria produzir os cinco fatores.
+   *
+   * Este é o ponto onde escorar sem pensar produziria o pior tipo de número: um
+   * plausível. `calcularEscores` de uma prova sem afirmações devolve 50 em todos
+   * os fatores — o neutro de avaliação incompleta —, e 50 contra um perfil-alvo
+   * dá um fit perfeitamente crível que não veio de resposta nenhuma. Uma vaga
+   * que aplique só DISC e SJT tem que dizer que NÃO mede aderência.
+   *
+   * Por isso ausência, e não zero: zero na tela se lê como "candidato péssimo",
+   * e é a leitura que decide quem vai para a entrevista.
+   */
+  const fonte = escoresParaFit(modulos);
+  const fit = fonte ? calcularFit(fonte.escores, perfilAlvo) : null;
 
   await prisma.$transaction([
     prisma.assessment.update({
@@ -534,18 +769,28 @@ export async function concluirAvaliacao(token: string) {
         status: "COMPLETED",
         completedAt: agora,
         durationMs: duracaoMs,
-        scores: resultado.escores as never,
-        facetNotes: resultado.facetas as never,
-        fitScore: resultado.fit.score,
-        fitDetail: {
-          puxaramPraCima: resultado.fit.puxaramPraCima,
-          puxaramPraBaixo: resultado.fit.puxaramPraBaixo,
-          ignoradas: resultado.fit.ignoradas,
-          contribuicoes: resultado.fit.contribuicoes,
-        } as never,
-        confidence: resultado.confianca as never,
-        archetypeId: resultado.arquetipo.id,
-        archetypeMixedWith: resultado.arquetipo.segundoId ?? null,
+        moduleResults: modulos as never,
+        // A COLUNA `scores` guarda a MESMA fonte que decidiu o fit, não só a do
+        // Prumo. Gravar só o Prumo aqui deixava a bateria de Big Five com fit
+        // calculado e `scores` nulo — e `scores` é o que o resto do produto lê
+        // (média por fator do painel, relatórios). O candidato apareceria no
+        // ranking com nota e sumiria dos agregados, sem ninguém entender por quê.
+        // `escoresParaFit` já prefere o Prumo quando ele existe, então para toda
+        // vaga que existe hoje isto grava exatamente o que gravava antes.
+        scores: (fonte?.escores ?? null) as never,
+        facetNotes: (prumo?.facetas ?? null) as never,
+        fitScore: fit?.score ?? null,
+        fitDetail: fit
+          ? ({
+              puxaramPraCima: fit.puxaramPraCima,
+              puxaramPraBaixo: fit.puxaramPraBaixo,
+              ignoradas: fit.ignoradas,
+              contribuicoes: fit.contribuicoes,
+            } as never)
+          : (null as never),
+        confidence: (prumo?.confianca ?? null) as never,
+        archetypeId: prumo?.arquetipo.id ?? null,
+        archetypeMixedWith: prumo?.arquetipo.segundoId ?? null,
       },
     }),
     prisma.invitation.update({
@@ -563,7 +808,13 @@ export async function concluirAvaliacao(token: string) {
     organizationId: avaliacao.organizationId,
     entidade: "Assessment",
     entidadeId: avaliacao.id,
-    metadados: { fit: resultado.fit.score, selo: resultado.confianca.selo },
+    metadados: {
+      bateria,
+      // `null` aqui é informação, não falta de dado: registra que a bateria
+      // desta vaga não mede aderência.
+      fit: fit?.score ?? null,
+      selo: prumo?.confianca.selo ?? null,
+    },
   });
 
   return { ok: true as const };

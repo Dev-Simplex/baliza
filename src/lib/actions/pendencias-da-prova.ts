@@ -15,18 +15,30 @@
  *
  * Exigir só o que dá para ver é a única regra que não trava ninguém — e o
  * escore aguenta, porque a escoragem ignora id desconhecido em vez de estourar.
+ *
+ * ─── Três listas, porque são três tabelas ──────────────────────────────────
+ * Com a bateria, a prova pode ter afirmações (Prumo, Big Five), blocos de
+ * MAIS/MENOS (situações do Prumo, palavras do DISC) e escolha única (SJT) — e
+ * cada família grava numa tabela diferente. A conferência é a mesma para as
+ * três, e o total é o que tranca a porta: a bateria só conclui INTEIRA. Deixar
+ * um teste de fora da conta seria concluir a prova sem ele e gerar um relatório
+ * com um módulo em branco que ninguém pediria de volta.
  */
 export function pendenciasDaProva(entrada: {
   itensDaForma: string[];
   cenariosDaForma: string[];
+  escolhasDaForma: string[];
   itensRespondidos: Iterable<string>;
   cenariosRespondidos: Iterable<string>;
+  escolhasRespondidas: Iterable<string>;
   /** O instrumento atual ainda conhece este item? */
   itemVisivel: (id: string) => boolean;
   cenarioVisivel: (id: string) => boolean;
+  escolhaVisivel: (id: string) => boolean;
 }) {
   const respondidos = new Set(entrada.itensRespondidos);
   const blocosRespondidos = new Set(entrada.cenariosRespondidos);
+  const escolhasRespondidas = new Set(entrada.escolhasRespondidas);
 
   // `Set` na forma também protege de id repetido no sorteio: pendência contada
   // duas vezes viraria "faltam 2 respostas" com uma pergunta só na tela.
@@ -38,5 +50,14 @@ export function pendenciasDaProva(entrada: {
     (id) => entrada.cenarioVisivel(id) && !blocosRespondidos.has(id),
   );
 
-  return { itens, cenarios, total: itens.length + cenarios.length };
+  const escolhas = [...new Set(entrada.escolhasDaForma)].filter(
+    (id) => entrada.escolhaVisivel(id) && !escolhasRespondidas.has(id),
+  );
+
+  return {
+    itens,
+    cenarios,
+    escolhas,
+    total: itens.length + cenarios.length + escolhas.length,
+  };
 }

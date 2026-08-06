@@ -6,6 +6,7 @@ import { ArrowLeft, Hourglass, MessageSquareQuote } from "lucide-react";
 import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
 import { BotaoCopiar } from "@/components/app/copiar";
 import { EstadoVazio } from "@/components/app/estado-vazio";
+import { FichaDosModulos } from "@/components/app/ficha-de-modulos";
 import { RadarComportamental } from "@/components/app/graficos";
 import {
   BotaoSalvarPdf,
@@ -16,10 +17,17 @@ import { SeloDeConfianca, type Confianca } from "@/components/app/selo-de-confia
 import { Faixa, type DadosDaFaixa } from "@/components/faixa";
 import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
+import { CATALOGO_DE_TESTES, type Teste } from "@/lib/instrument/baterias";
+import { lerAvaliacao, type LeituraDaAvaliacao } from "@/lib/analise/modulos";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
 import { faixaQualitativa } from "@/lib/instrument/scoring";
-import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
+import {
+  FATORES,
+  NOMES_DE_FATOR,
+  type Fator,
+  type PerfilAlvo,
+} from "@/lib/instrument/types";
 import {
   ROTULO_DE_STATUS_DE_AVALIACAO,
   data,
@@ -55,7 +63,9 @@ export default async function PaginaDoCandidato({
       assessments: {
         where: { status: "COMPLETED" },
         orderBy: { completedAt: "desc" },
-        include: { job: { select: { id: true, title: true } } },
+        include: {
+          job: { select: { id: true, title: true, targetProfile: true } },
+        },
       },
     },
   });
@@ -78,13 +88,51 @@ export default async function PaginaDoCandidato({
     candidato.assessments.find((a) => a.id === avaliacaoId) ??
     candidato.assessments[0];
 
-  const escores = avaliacao.scores as Record<Fator, number>;
-  const confianca = avaliacao.confidence as unknown as Confianca;
-  const detalhe = avaliacao.fitDetail as {
-    contribuicoes: ContribuicaoDeFit[];
-    puxaramPraCima: ContribuicaoDeFit[];
-    puxaramPraBaixo: ContribuicaoDeFit[];
-    ignoradas: Fator[];
+  const leitura = lerAvaliacao(
+    avaliacao,
+    await respostasBrutas(avaliacao),
+    avaliacao.job.targetProfile as unknown as PerfilAlvo | null,
+  );
+
+  /*
+   * Sem os cinco fatores não existe ficha de aderência para montar.
+   *
+   * Acontece quando a bateria da vaga não tem Prumo nem Big Five: DISC devolve
+   * estilo e o SJT devolve acerto contra gabarito, e nenhum dos dois vira
+   * fator.
+   *
+   * A saída é dizer isso com todas as letras e mostrar o que os testes
+   * aplicados produziram — e não desenhar o relatório de sempre com zeros:
+   * metade desta página lê `escores[fator]` e a outra metade lê o detalhe do
+   * fit. Zero na tela se lê como "candidato péssimo", que é a leitura que
+   * decide quem vai para a entrevista.
+   */
+  if (!leitura.escores) {
+    return (
+      <SemOsCincoFatores
+        candidatoId={candidato.id}
+        candidato={candidato.name}
+        email={candidato.email}
+        vaga={avaliacao.job}
+        avaliacaoId={avaliacao.id}
+        leitura={leitura}
+        respondidoEm={avaliacao.completedAt}
+      />
+    );
+  }
+
+  const escores = leitura.escores;
+  // `selo` nunca é nulo quando há aderência (é a regra do §4.4, garantida em
+  // `lerAvaliacao`) — mas o número também pode faltar por conta própria, e aí
+  // não há o que acompanhar.
+  const confianca = leitura.selo as unknown as Confianca | null;
+  const aderencia =
+    avaliacao.fitScore == null ? null : numero(avaliacao.fitScore, 1);
+  const detalhe = (avaliacao.fitDetail ?? {}) as {
+    contribuicoes?: ContribuicaoDeFit[];
+    puxaramPraCima?: ContribuicaoDeFit[];
+    puxaramPraBaixo?: ContribuicaoDeFit[];
+    ignoradas?: Fator[];
   };
   const facetas = (avaliacao.facetNotes as NotaDeFaceta[]) ?? [];
   const arquetipo = avaliacao.archetypeId
@@ -93,9 +141,10 @@ export default async function PaginaDoCandidato({
 
   const roteiro = montarRoteiro({
     contribuicoes: detalhe.contribuicoes ?? [],
-    sinaisDeConfianca: confianca.sinais ?? [],
+    sinaisDeConfianca: confianca?.sinais ?? [],
     arquetipoId: avaliacao.archetypeId,
     escores,
+    perguntasDeModulo: leitura.perguntasDeModulo,
   });
 
   // Histórico: a mesma pessoa em mais de um processo desta empresa.
@@ -110,9 +159,7 @@ export default async function PaginaDoCandidato({
         respondidoEm={
           avaliacao.completedAt ? data(avaliacao.completedAt) : null
         }
-        aderencia={
-          avaliacao.fitScore == null ? null : numero(avaliacao.fitScore, 1)
-        }
+        aderencia={aderencia}
         selo={
           confianca
             ? {
@@ -149,13 +196,20 @@ export default async function PaginaDoCandidato({
             <BotaoSalvarPdf
               href={`/candidatos/${candidato.id}/pdf?avaliacao=${avaliacao.id}`}
             />
-            <SeloDeConfianca confianca={confianca} />
-            <div className="text-right">
-              <p className="etiqueta">Aderência</p>
-              <p className="leitura text-3xl leading-none font-semibold text-marca">
-                {numero(avaliacao.fitScore ?? 0, 1)}
-              </p>
-            </div>
+            {/* O selo e o número andam juntos, e é aqui que a regra do §4.4
+                vira layout: sem selo o número não é exibido — fit sozinho vira
+                nota de aprovação. */}
+            {confianca && aderencia && (
+              <>
+                <SeloDeConfianca confianca={confianca} />
+                <div className="text-right">
+                  <p className="etiqueta">Aderência</p>
+                  <p className="leitura text-3xl leading-none font-semibold text-marca">
+                    {aderencia}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </header>
       </div>
@@ -165,13 +219,24 @@ export default async function PaginaDoCandidato({
         <div className="space-y-4">
           <section className="rounded-xl border bg-card p-5">
             <h2 className="text-sm font-semibold">
-              Por que a aderência é {numero(avaliacao.fitScore ?? 0, 1)}
+              {aderencia
+                ? `Por que a aderência é ${aderencia}`
+                : "Perfil por dimensão"}
             </h2>
-            <p className="mt-1 mb-6 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               {roteiro.resumoDoGap}
             </p>
+            {/* De qual instrumento saíram os cinco fatores. Só aparece quando
+                NÃO é o Prumo: dizer a origem importa porque o Big Five mede o
+                mesmo terreno com 20 itens em vez de 34, e sem facetas. */}
+            {leitura.origemDosFatores === "BIG_FIVE" && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Os cinco fatores desta conta vieram do Big Five (20 itens), não
+                do Prumo — esta vaga não aplicou o instrumento completo.
+              </p>
+            )}
 
-            <div className="space-y-6">
+            <div className="mt-6 space-y-6">
               {(detalhe.contribuicoes ?? []).map((c, i) => {
                 const dados: DadosDaFaixa = {
                   fator: c.fator,
@@ -240,6 +305,9 @@ export default async function PaginaDoCandidato({
               </div>
             </div>
           </section>
+
+          {/* ─── Os outros testes da bateria (§5.2 do manual) ──────────── */}
+          <FichaDosModulos ficha={leitura.ficha} qualidade={leitura.qualidade} />
 
           {/* ─── O roteiro: o produto entrega decisão, não rótulo ──────── */}
           <section className="rounded-xl border border-marca/30 bg-marca-forte/[0.03] p-5">
@@ -367,8 +435,10 @@ export default async function PaginaDoCandidato({
                       className="flex items-baseline justify-between gap-3 rounded-md px-2 py-1.5 t-corpo-sm transition-colors hover:bg-secondary"
                     >
                       <span className="truncate">{a.job.title}</span>
+                      {/* "—" e não 0: a vaga daquele processo pode não medir
+                          aderência, e zero se leria como resultado ruim. */}
                       <span className="leitura shrink-0 text-muted-foreground">
-                        {numero(a.fitScore ?? 0, 1)}
+                        {a.fitScore == null ? "—" : numero(a.fitScore, 1)}
                       </span>
                     </Link>
                   </li>
@@ -423,6 +493,164 @@ function roteiroEmTexto(
     "",
     "Insumo para a conversa. Não substitui a entrevista e não deve ser o único critério de decisão.",
   ].join("\n");
+}
+
+/**
+ * As respostas brutas dos módulos do manual — só quando há módulo que as use.
+ *
+ * Os alertas do §6.3 (tempo por tela, padrão uniforme, itens espelhados) moram
+ * na resposta item a item, que o relatório do Prumo nunca precisou carregar. A
+ * consulta é condicionada ao que a bateria tem: a página da esmagadora maioria
+ * das avaliações — as só do Prumo — continua fazendo exatamente as mesmas
+ * consultas de antes.
+ */
+async function respostasBrutas(avaliacao: { id: string; testBattery: string[] }) {
+  const precisa =
+    avaliacao.testBattery.includes("BIG_FIVE") ||
+    avaliacao.testBattery.includes("DISC");
+
+  if (!precisa) return {};
+
+  const [itens, blocos] = await Promise.all([
+    prisma.itemResponse.findMany({
+      where: { assessmentId: avaliacao.id },
+      select: { itemId: true, value: true, elapsedMs: true },
+    }),
+    prisma.scenarioResponse.findMany({
+      where: { assessmentId: avaliacao.id },
+      select: { blockId: true, elapsedMs: true },
+    }),
+  ]);
+
+  return { itens, blocos };
+}
+
+/**
+ * Respondeu, mas a bateria não mede os cinco fatores.
+ *
+ * A tela diz por que não há aderência — sem fingir que há e sem mostrar zero —
+ * e em seguida entrega o que a bateria DE FATO produziu: perfil DISC, nota por
+ * competência do SJT, alertas de qualidade e o roteiro de entrevista que sai
+ * deles. Uma vaga que aplica DISC e SJT não é uma vaga sem resultado; é uma
+ * vaga com outro resultado.
+ */
+function SemOsCincoFatores({
+  candidatoId,
+  candidato,
+  email,
+  vaga,
+  avaliacaoId,
+  leitura,
+  respondidoEm,
+}: {
+  candidatoId: string;
+  candidato: string;
+  email: string;
+  vaga: { id: string; title: string };
+  avaliacaoId: string;
+  leitura: LeituraDaAvaliacao;
+  respondidoEm: Date | null;
+}) {
+  const roteiro = montarRoteiro({
+    contribuicoes: [],
+    sinaisDeConfianca: [],
+    arquetipoId: null,
+    perguntasDeModulo: leitura.perguntasDeModulo,
+    semAderencia: true,
+  });
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-4">
+      <div data-impressao="ocultar">
+        <Link
+          href={`/vagas/${vaga.id}`}
+          className="etiqueta inline-flex items-center gap-1.5 hover:text-foreground"
+        >
+          <ArrowLeft className="size-3" />
+          {vaga.title}
+        </Link>
+
+        <header className="mt-3 mb-2 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="t-titulo">{candidato}</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              {email}
+              {respondidoEm && ` · respondeu em ${data(respondidoEm)}`}
+            </p>
+          </div>
+          <BotaoSalvarPdf
+            href={`/candidatos/${candidatoId}/pdf?avaliacao=${avaliacaoId}`}
+          />
+        </header>
+      </div>
+
+      <section className="rounded-xl border bg-card p-5">
+        <h2 className="text-sm font-semibold">O que esta pessoa respondeu</h2>
+        <ul className="mt-3 space-y-2">
+          {leitura.bateria.map((teste: Teste) => (
+            <li key={teste} className="t-corpo-sm">
+              {CATALOGO_DE_TESTES[teste].nome}
+              <span className="etiqueta ml-2">
+                {CATALOGO_DE_TESTES[teste].formato}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-5 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5 t-legenda leading-relaxed">
+          Esta vaga não aplicou o Prumo nem o Big Five, então não há os cinco
+          fatores — e sem eles não há aderência ao perfil-alvo para calcular.
+          Não é aderência zero: é aderência não medida. Para ter o número,
+          marque um dos dois na vaga; vale para quem for convidado a partir dali.
+        </p>
+      </section>
+
+      <FichaDosModulos ficha={leitura.ficha} qualidade={leitura.qualidade} />
+
+      <section className="rounded-xl border border-marca/30 bg-marca-forte/[0.03] p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <MessageSquareQuote className="size-4 text-marca" />
+              <h2 className="text-sm font-semibold">Roteiro de entrevista</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {roteiro.resumoDoGap}
+            </p>
+          </div>
+          <BotaoCopiar
+            texto={roteiroEmTexto(candidato, vaga.title, roteiro)}
+            confirmacao="Roteiro copiado"
+            variant="outline"
+            rotuloAcessivel="Copiar o roteiro de entrevista em texto"
+          >
+            Copiar roteiro
+          </BotaoCopiar>
+        </div>
+        <ol className="mt-5 space-y-4">
+          {roteiro.perguntas.map((p, i) => (
+            <li key={i} className="flex gap-3">
+              <span className="leitura mt-0.5 w-5 shrink-0 text-sm text-marca">
+                {i + 1}
+              </span>
+              <div>
+                <p className="t-corpo leading-snug">{p.pergunta}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {p.motivo}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <p className="rounded-xl border border-dashed px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
+        Este resultado é um insumo para a entrevista. Ele não substitui a
+        conversa com a pessoa e não deve ser o único critério de decisão.
+        Nenhum destes testes elimina candidato sozinho.
+      </p>
+    </div>
+  );
 }
 
 /**
