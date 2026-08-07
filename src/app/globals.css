@@ -94,6 +94,19 @@
 
 /* ─── Claro ─────────────────────────────────────────────────────────────── */
 :root {
+  /* Avisa ao navegador em que tema ele deve desenhar o que é DELE, e não
+     nosso: a lista que abre num `<select>`, a barra de rolagem, o calendário
+     de um campo de data, o realce do preenchimento automático.
+
+     Sem esta declaração o navegador assume claro sempre. No tema escuro isso
+     abria a lista do `<select>` com fundo BRANCO enquanto as opções herdavam
+     a cor de texto do tema escuro — cinza-claro sobre branco, ilegível, e só
+     a opção sob o cursor dava para ler porque o realce azul a resgatava.
+     Nenhum CSS nosso alcança essa lista: ela é desenhada pelo sistema
+     operacional, fora da página. `color-scheme` é o único jeito de falar
+     com ela. */
+  color-scheme: light;
+
   /* `marca` é a cor de TEXTO e passa AA (5,45:1 sobre o papel).
      `marca-forte` é só preenchimento — marcador, barra, ícone sobre sólido —
      onde a regra de contraste de texto não se aplica. */
@@ -157,6 +170,9 @@
 
 /* ─── Escuro ────────────────────────────────────────────────────────────── */
 .dark {
+  /* Ver a explicação no `:root`. É esta linha que conserta a lista ilegível. */
+  color-scheme: dark;
+
   --marca: #d9a951;
   --marca-forte: #d4a24c;
   --marca-suave: #2a2114;
@@ -239,6 +255,24 @@
   ::selection {
     background: var(--marca-forte);
     color: #fff;
+  }
+
+  /* ─── A lista do `<select>` precisa de fundo PRÓPRIO ───────────────────
+     Os nossos `<select>` usam `bg-transparent`, e fechados ficam certos: o
+     fundo da página aparece atrás deles. Só que a lista que abre ao clicar
+     não é desenhada DENTRO da página — é uma janelinha do sistema, por cima
+     de tudo, e lá não há página nenhuma atrás para aparecer. "Transparente"
+     ali vira o branco padrão do sistema, enquanto o texto continua herdando a
+     cor clara do tema escuro: branco sobre branco.
+
+     Só dava para ler a opção sob o cursor, que o realce azul do sistema
+     resgatava. Todas as outras sumiam.
+
+     Por isso a cor vai no `option`, e não no `select`: é o `option` que a
+     janelinha desenha, e é ele que não tem nada atrás. */
+  select option {
+    background-color: var(--superficie);
+    color: var(--foreground);
   }
 
   * {
