@@ -182,3 +182,49 @@ export async function devolverCodigosVencidos(agora = new Date()) {
   });
   return count;
 }
+
+/**
+ * Quanto tempo a trilha de auditoria guarda o endereço de quem agiu.
+ *
+ * Dezoito meses porque a trilha serve para RECONSTRUIR um incidente, e incidente
+ * que ninguém notou em um ano e meio não vai ser reconstruído por um IP. Quem
+ * precisar de prazo diferente troca aqui — é decisão de política, não técnica.
+ */
+export const MESES_DE_AUDITORIA = 18;
+
+/**
+ * Apaga a trilha de auditoria vencida.
+ *
+ * ─── Por que isto faltava, e por que incomodava ────────────────────────────
+ * O produto se orgulha de minimizar endereço: `ip.ts` guarda hash com sal, e o
+ * expurgo por retenção zera `ipHash`/`userAgent` do consentimento. Só que o
+ * `AuditLog` gravava o IP EM CLARO e nada, em lugar nenhum, o apagava — ele
+ * acumulava indefinidamente o endereço real de candidatos e de usuários. É a
+ * contradição exata da política que o resto do sistema cumpre (LGPD art. 6º VII
+ * e art. 16), e numa auditoria de titular o IP perpétuo é o dado mais difícil
+ * de justificar.
+ *
+ * Apaga a LINHA inteira, e não só o IP: registro de auditoria sem endereço e
+ * sem agente não reconstrói nada — guardá-lo pela metade seria manter o custo
+ * de armazenamento e perder a utilidade, que é o pior dos dois mundos.
+ */
+export async function expurgarAuditoriaVencida(opcoes?: {
+  agora?: Date;
+  meses?: number;
+  /** Igual ao expurgo por retenção: nada é apagado sem pedir. */
+  simular?: boolean;
+}) {
+  const agora = opcoes?.agora ?? new Date();
+  const meses = opcoes?.meses ?? MESES_DE_AUDITORIA;
+  const corte = new Date(agora);
+  corte.setMonth(corte.getMonth() - meses);
+
+  const onde = { createdAt: { lt: corte } };
+
+  if (opcoes?.simular !== false) {
+    return { corte, apagados: await prisma.auditLog.count({ where: onde }), simulado: true };
+  }
+
+  const { count } = await prisma.auditLog.deleteMany({ where: onde });
+  return { corte, apagados: count, simulado: false };
+}

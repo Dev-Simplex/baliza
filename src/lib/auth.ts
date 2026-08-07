@@ -6,6 +6,7 @@ import { z } from "zod";
 import { authConfig } from "@/lib/auth.config";
 import { prisma } from "@/lib/prisma";
 import { registrarAuditoria } from "@/lib/audit";
+import { limitarPorIp } from "@/lib/rate-limit";
 
 const credenciais = z.object({
   email: z.string().email(),
@@ -29,6 +30,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(entrada) {
         const analise = credenciais.safeParse(entrada);
         if (!analise.success) return null;
+
+        // ─── O limite mora AQUI, e não só na Server Action ──────────────────
+        // Estava só em `actions/auth.ts`, e por isso protegia pouco: quem posta
+        // direto em `/api/auth/callback/credentials` cai neste `authorize` sem
+        // passar pela Action. Reproduzido — dá para logar por esse caminho sem
+        // encostar no contador, o que deixava a força bruta de senha SEM TETO
+        // justamente no endpoint mais fácil de automatizar.
+        //
+        // `bcrypt` com custo 10 encarece cada tentativa, mas encarecer não é
+        // limitar: quem paraleliza testa dicionário do mesmo jeito.
+        //
+        // Este é o funil por onde TODO login passa — tela, callback ou qualquer
+        // cliente futuro. O da Action continua lá como redundância barata, e
+        // porque é ele que consegue devolver mensagem para a tela.
+        const limite = await limitarPorIp("login", {
+          max: 10,
+          janelaSegundos: 300,
+        });
+        // `null` é o único "não" que o NextAuth entende aqui. De fora fica
+        // indistinguível de senha errada — o que também convém: não avisa ao
+        // atacante que ele bateu no teto.
+        if (!limite.permitido) return null;
 
         const { email, senha } = analise.data;
 

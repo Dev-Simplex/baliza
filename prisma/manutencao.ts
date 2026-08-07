@@ -1,7 +1,7 @@
 /**
  * Manutenção periódica. É o "job que não existia" do README.
  *
- * Três rotinas, todas idempotentes e todas seguras de repetir:
+ * Quatro rotinas, todas idempotentes e todas seguras de repetir:
  *
  *   1. EXPURGO POR RETENÇÃO — apaga a resposta bruta das avaliações que
  *      passaram do prazo de cada empresa e carimba `purgedAt`. É a promessa
@@ -10,7 +10,9 @@
  *      link do candidato continua funcionando. Ver `src/lib/retencao.ts`.
  *   2. DEVOLUÇÃO DE CÓDIGOS — solta o código de 4 dígitos de convite vencido.
  *      Sem isso o acervo de 10.000 seca e candidato novo fica sem código.
- *   3. FAXINA DOS CONTADORES — contador de limite de taxa de mais de 24h.
+ *   3. EXPURGO DA AUDITORIA — a trilha guardava IP em claro para sempre, que é
+ *      a contradição exata da minimização que o resto do sistema cumpre.
+ *   4. FAXINA DOS CONTADORES — contador de limite de taxa de mais de 24h.
  *
  * Uso:
  *   pnpm exec tsx prisma/manutencao.ts             # mostra o que faria
@@ -26,7 +28,12 @@ import "dotenv/config";
 
 import { prisma } from "../src/lib/prisma";
 import { limparContadoresAntigos } from "../src/lib/rate-limit";
-import { devolverCodigosVencidos, expurgarPorRetencao } from "../src/lib/retencao";
+import {
+  devolverCodigosVencidos,
+  expurgarAuditoriaVencida,
+  expurgarPorRetencao,
+  MESES_DE_AUDITORIA,
+} from "../src/lib/retencao";
 
 const APLICAR = process.argv.includes("--aplicar");
 
@@ -65,6 +72,14 @@ async function main() {
       },
     });
     console.log(`  ${presos} código(s) preso(s) em convite vencido`);
+  }
+
+  console.log(`\n→ expurgo da trilha de auditoria (${MESES_DE_AUDITORIA} meses)`);
+  {
+    const r = await expurgarAuditoriaVencida({ simular: !APLICAR });
+    console.log(
+      `  ${r.apagados} registro(s) ${r.simulado ? "seriam apagados" : "apagados"} — anteriores a ${r.corte.toISOString().slice(0, 10)}`,
+    );
   }
 
   console.log("\n→ faxina dos contadores de limite de taxa");
