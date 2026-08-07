@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { criarAvaliacao } from "@/lib/actions/avaliacao";
@@ -207,4 +208,93 @@ export async function convidarPorEmail(
         ? "Candidato cadastrado. Não há servidor de e-mail configurado — entregue o acesso por um dos caminhos abaixo."
         : "Candidato cadastrado, mas o e-mail não saiu. Entregue o acesso por um dos caminhos abaixo.",
   };
+}
+
+/**
+ * Revoga o acesso de um convite.
+ *
+ * ─── O leitor existia; o escritor, não ────────────────────────────────────
+ * `InvitationStatus` já tinha `REVOKED` e `/t/<token>` já tratava esse estado
+ * com uma tela própria ("este acesso foi cancelado") — mas nenhuma linha do
+ * sistema jamais escrevia esse status. Era um caminho pronto para receber
+ * alguém e sem ninguém que soubesse mandar.
+ *
+ * Sem isto, cancelar um convite mandado por engano — pessoa errada, e-mail
+ * digitado errado, vaga que fechou — não tinha caminho: o link seguia abrindo
+ * por 30 dias e a única saída era pedir para a pessoa não usar.
+ *
+ * ─── O código de 4 dígitos volta ao acervo ────────────────────────────────
+ * Revogar sem liberar o `accessCode` prenderia aquele código para sempre — são
+ * 10.000 combinações e a unicidade é do sistema inteiro, não por vaga. A
+ * devolução normal só acontece quando a prova TERMINA, e uma prova revogada
+ * nunca termina. Sem esta linha, cada cancelamento consumiria um código
+ * definitivamente.
+ *
+ * ─── O que NÃO se revoga ──────────────────────────────────────────────────
+ * Convite de prova já concluída. O resultado existe, foi lido e pode ter
+ * embasado uma decisão; marcar o acesso como cancelado depois não desfaz nada
+ * e só faria a linha do tempo mentir. Para tirar o dado do ar, o caminho é o
+ * expurgo, que é outra coisa e tem outra regra.
+ *
+ * A avaliação PENDING/IN_PROGRESS que estiver pendurada vira `ABANDONED` na
+ * mesma transação: deixá-la aberta manteria a pessoa contada em "aguardando
+ * resposta" para sempre — cobrando alguém que não pode mais responder.
+ */
+export async function revogarConvite(
+  invitationId: string,
+): Promise<{ ok?: boolean; erro?: string }> {
+  const contexto = await exigirPapel("RECRUITER");
+
+  const convite = await prisma.invitation.findFirst({
+    where: { id: invitationId, organizationId: contexto.organizationId },
+    select: {
+      id: true,
+      status: true,
+      jobId: true,
+      candidate: { select: { name: true } },
+      job: { select: { title: true } },
+      assessment: { select: { id: true, status: true } },
+    },
+  });
+
+  if (!convite) return { erro: "Convite não encontrado." };
+  if (convite.status === "REVOKED") return { ok: true };
+  if (convite.assessment?.status === "COMPLETED")
+    return { erro: "Esta pessoa já respondeu — não há acesso a cancelar." };
+
+  await prisma.$transaction([
+    prisma.invitation.update({
+      where: { id: convite.id },
+      data: { status: "REVOKED", accessCode: null },
+    }),
+    ...(convite.assessment
+      ? [
+          prisma.assessment.update({
+            where: { id: convite.assessment.id },
+            data: { status: "ABANDONED" },
+          }),
+        ]
+      : []),
+  ]);
+
+  await registrarAuditoria({
+    categoria: "MUTATION",
+    acao: "convite_revogado",
+    organizationId: contexto.organizationId,
+    userId: contexto.userId,
+    entidade: "Invitation",
+    entidadeId: convite.id,
+    metadados: {
+      vaga: convite.job.title,
+      candidato: convite.candidate?.name ?? null,
+      // Estava no meio da prova? É o caso em que alguém perdeu trabalho feito,
+      // e é a pergunta que quem audita vai fazer.
+      estavaRespondendo: convite.assessment?.status === "IN_PROGRESS",
+    },
+  });
+
+  revalidatePath(`/vagas/${convite.jobId}`);
+  revalidatePath("/dashboard");
+
+  return { ok: true };
 }

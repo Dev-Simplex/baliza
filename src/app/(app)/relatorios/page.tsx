@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChartNoAxesColumn } from "lucide-react";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
+import { ExportarRespostas } from "@/components/app/exportar-respostas";
 import { CartaoIndicador } from "@/components/app/cartao-indicador";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import { Painel, PainelCabecalho, NotaDeRodape } from "@/components/ui/painel";
@@ -70,6 +71,7 @@ export default async function PaginaDeRelatorios() {
         etiqueta="Agregado"
         titulo="Relatórios"
         descricao="Como o processo está andando, para além de um candidato de cada vez."
+        acoes={<ExportarRespostas />}
       />
 
       <div className="space-y-4">

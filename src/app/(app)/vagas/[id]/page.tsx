@@ -8,6 +8,7 @@ import { BotaoCopiar } from "@/components/app/copiar";
 import { CompartilharVaga } from "@/components/app/compartilhar-vaga";
 import { EditarBateria } from "@/components/app/editar-bateria";
 import { EstadoDaVaga } from "@/components/app/estado-da-vaga";
+import { RevogarConvite } from "@/components/app/revogar-convite";
 import { EditarPerfilAlvo } from "@/components/app/editar-perfil-alvo";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import {
@@ -331,27 +332,41 @@ export default async function PaginaDaVaga({
                           : "ainda não começou"}
                       </p>
                     </div>
-                    {convidado.accessCode ? (
-                      <CodigoDeAcesso
-                        variante="linha"
-                        codigo={convidado.accessCode}
-                        baseDoSite={baseDoSite}
-                        de={convidado.candidate?.name ?? undefined}
-                      />
-                    ) : convidado.expiresAt > new Date() ? (
-                      <BotaoCopiar
-                        texto={`${baseDoSite}/t/${convidado.token}`}
-                        confirmacao="Link copiado"
-                        variant="ghost"
-                        rotuloAcessivel={`Copiar o link pessoal de ${convidado.candidate?.name ?? "candidato"}`}
-                      >
-                        Copiar link
-                      </BotaoCopiar>
-                    ) : (
-                      <span className="etiqueta shrink-0 text-fora">
-                        convite vencido
-                      </span>
-                    )}
+                    <span className="flex shrink-0 items-center gap-1">
+                      {convidado.accessCode ? (
+                        <CodigoDeAcesso
+                          variante="linha"
+                          codigo={convidado.accessCode}
+                          baseDoSite={baseDoSite}
+                          de={convidado.candidate?.name ?? undefined}
+                        />
+                      ) : convidado.expiresAt > new Date() ? (
+                        <BotaoCopiar
+                          texto={`${baseDoSite}/t/${convidado.token}`}
+                          confirmacao="Link copiado"
+                          variant="ghost"
+                          rotuloAcessivel={`Copiar o link pessoal de ${convidado.candidate?.name ?? "candidato"}`}
+                        >
+                          Copiar link
+                        </BotaoCopiar>
+                      ) : (
+                        <span className="etiqueta shrink-0 text-fora">
+                          convite vencido
+                        </span>
+                      )}
+                      {/* Cancelar fica ao lado de entregar o acesso porque é a
+                          outra metade da mesma decisão: esta lista é onde o RH
+                          administra quem ainda pode responder. */}
+                      {podeEditar && (
+                        <RevogarConvite
+                          invitationId={convidado.id}
+                          nome={convidado.candidate?.name ?? "esta pessoa"}
+                          respondendo={
+                            convidado.assessment?.status === "IN_PROGRESS"
+                          }
+                        />
+                      )}
+                    </span>
                   </li>
                 ))}
               </PainelLista>
