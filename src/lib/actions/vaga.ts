@@ -341,3 +341,59 @@ async function criarComTokenLegivel(
   // gerar o `cuid` do default em vez de recusar a vaga.
   return prisma.job.create({ data: dados });
 }
+
+/**
+ * Encerra, pausa ou reabre uma vaga.
+ *
+ * ─── Por que isto faltava ──────────────────────────────────────────────────
+ * `Job.status` só era escrito uma vez, no `"OPEN"` da criação: `PAUSED` e
+ * `CLOSED` eram estados inalcançáveis. Processo seletivo acaba, e a ferramenta
+ * não sabia disso — o link público seguia recebendo candidato depois da vaga
+ * preenchida, o painel contava a vaga como aberta para sempre, e a lista só
+ * crescia.
+ *
+ * Havia mais código morto pendurado nisso do que parece: `/vagas` ordena por
+ * status e promete "abertas primeiro, encerradas no fim" (ordenação que nunca
+ * ordenava nada), três das quatro cores de status nunca eram usadas, e o guarda
+ * de `convidarPorEmail` que recusa vaga não-aberta nunca disparava.
+ *
+ * ─── O que encerrar faz com quem já foi convidado ──────────────────────────
+ * Nada. Quem já tem o link termina a prova, e é de propósito: a pessoa
+ * respondeu metade, a empresa fechou a vaga, e derrubar a prova dela no meio
+ * seria descartar trabalho de alguém para arrumar uma lista. O que fecha é a
+ * porta da frente — o link público —, e é isso que `publicEnabled` já faz.
+ * Encerrar desliga os dois de uma vez.
+ */
+export async function mudarStatusDaVaga(
+  jobId: string,
+  status: "OPEN" | "PAUSED" | "CLOSED",
+) {
+  const contexto = await exigirPapel("RECRUITER");
+
+  const vaga = await prisma.job.updateMany({
+    where: { id: jobId, organizationId: contexto.organizationId },
+    data: {
+      status,
+      // Encerrada não recebe mais ninguém pelo link público. Reabrir NÃO
+      // reabre o link sozinho: quem fechou pode ter fechado por vazamento do
+      // anúncio, e reabrir a porta sem pedir seria decidir por quem fechou.
+      ...(status === "CLOSED" ? { publicEnabled: false, closedAt: new Date() } : {}),
+      ...(status === "OPEN" ? { closedAt: null } : {}),
+    },
+  });
+
+  if (vaga.count === 0) return { ok: false as const, erro: "Vaga não encontrada." };
+
+  await registrarAuditoria({
+    categoria: "MUTATION",
+    acao: `vaga_${status.toLowerCase()}`,
+    organizationId: contexto.organizationId,
+    userId: contexto.userId,
+    entidade: "Job",
+    entidadeId: jobId,
+  });
+
+  revalidatePath(`/vagas/${jobId}`);
+  revalidatePath("/vagas");
+  return { ok: true as const };
+}

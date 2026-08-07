@@ -110,8 +110,27 @@ export async function convidarPorEmail(
   if (existente?.status === "COMPLETED")
     return { erro: `${nome} já respondeu esta vaga.` };
 
+  /**
+   * Reaproveitar o convite antigo só vale enquanto ele AINDA ABRE.
+   *
+   * O convite vale 30 dias e `/t/<token>` barra o vencido; além disso a
+   * manutenção devolve ao acervo o código de 4 dígitos de convite vencido.
+   * Sem esta checagem, reconvidar no dia 31 entregava o MESMO token morto: o
+   * painel dizia "Convite enviado" e as três vias do diálogo estavam mortas —
+   * link vencido, QR do link vencido e código nulo. Silencioso e do lado
+   * errado: o RH via sucesso, o candidato não entrava, e nenhum dos dois sabia
+   * de quem era o problema.
+   *
+   * Vencido, cai no `criarAvaliacao`, que emite convite novo — prazo novo e
+   * código novo — para a mesma pessoa na mesma vaga.
+   */
+  const conviteValido =
+    existente?.invitation && existente.invitation.expiresAt > new Date()
+      ? existente.invitation.token
+      : null;
+
   const token =
-    existente?.invitation?.token ??
+    conviteValido ??
     (await criarAvaliacao({
       organizationId: contexto.organizationId,
       jobId: vaga.id,

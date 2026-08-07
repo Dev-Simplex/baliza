@@ -52,7 +52,7 @@ export function LinhaDeCandidato({
   return (
     <li>
       <Link href={href} className="linha-clicavel block px-5 py-3.5">
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-0 sm:flex-nowrap sm:gap-4">
           {posicao !== undefined && (
             /* `aria-label` num <span> sem papel é ignorado por leitor de tela —
                o número era anunciado solto, no meio do nome. Texto oculto de
@@ -77,27 +77,22 @@ export function LinhaDeCandidato({
             {detalhe && (
               <p className="t-legenda truncate text-muted-foreground">{detalhe}</p>
             )}
-            {/* No celular o selo não cabe na mesma linha do escore — e escondê-lo
-                era a saída antiga. Mas a regra §4.4 não tem versão mobile: o
-                número não aparece sem o selo. Aqui ele desce uma linha em vez de
-                desaparecer. */}
-            {confianca && (
-              <div className="mt-1.5 sm:hidden">
-                <SeloDeConfianca
-                  tamanho="sm"
-                  focavel={false}
-                  confianca={confianca}
-                />
-              </div>
-            )}
           </div>
 
           {meta && (
             <span className="etiqueta hidden shrink-0 md:block">{meta}</span>
           )}
 
+          {/* UM selo por linha, posicionado por CSS.
+              Eram dois — um `sm:hidden` e outro `hidden sm:block` — e os dois
+              ficavam no DOM sempre, porque a escolha era so visual. O leitor de
+              tela lia "Confiança alta. Confiança alta." em cada linha, e uma
+              lista de 100 respostas carregava 200 tooltips.
+              A regra §4.4 continua valendo em toda largura: o numero nao aparece
+              sem o selo. No celular ele quebra para a linha de baixo (`order` +
+              `basis-full`) em vez de sumir. */}
           {confianca && (
-            <div className="hidden shrink-0 sm:block">
+            <div className="order-last mt-1.5 basis-full sm:order-none sm:mt-0 sm:basis-auto sm:shrink-0">
               <SeloDeConfianca tamanho="sm" focavel={false} confianca={confianca} />
             </div>
           )}

@@ -4,8 +4,10 @@ import { Inbox } from "lucide-react";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
+import { BotaoCopiar } from "@/components/app/copiar";
 import { CompartilharVaga } from "@/components/app/compartilhar-vaga";
 import { EditarBateria } from "@/components/app/editar-bateria";
+import { EstadoDaVaga } from "@/components/app/estado-da-vaga";
 import { EditarPerfilAlvo } from "@/components/app/editar-perfil-alvo";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import {
@@ -109,6 +111,12 @@ export default async function PaginaDaVaga({
     select: {
       id: true,
       accessCode: true,
+      // O link pessoal SEMPRE existe; o código de 4 dígitos não. A manutenção
+      // devolve o código de convite vencido ao acervo (é rotina, não acidente),
+      // e a linha ficava sem nada para oferecer — justo em "fulana perdeu o
+      // link", que é o pedido mais comum que o RH recebe.
+      token: true,
+      expiresAt: true,
       candidate: { select: { name: true } },
       assessment: { select: { status: true } },
     },
@@ -130,9 +138,19 @@ export default async function PaginaDaVaga({
           .filter(Boolean)
           .join(" · ")}
         acoes={
-          <Badge className="border">
-            {ROTULO_DE_STATUS_DE_VAGA[vaga.status]}
-          </Badge>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <Badge className="border">
+              {ROTULO_DE_STATUS_DE_VAGA[vaga.status]}
+            </Badge>
+            {/* Quem só lê não muda o estado do processo. */}
+            {podeEditar && (
+              <EstadoDaVaga
+                jobId={vaga.id}
+                status={vaga.status}
+                aberta={vaga.publicEnabled}
+              />
+            )}
+          </div>
         }
       />
 
@@ -313,13 +331,26 @@ export default async function PaginaDaVaga({
                           : "ainda não começou"}
                       </p>
                     </div>
-                    {convidado.accessCode && (
+                    {convidado.accessCode ? (
                       <CodigoDeAcesso
                         variante="linha"
                         codigo={convidado.accessCode}
                         baseDoSite={baseDoSite}
                         de={convidado.candidate?.name ?? undefined}
                       />
+                    ) : convidado.expiresAt > new Date() ? (
+                      <BotaoCopiar
+                        texto={`${baseDoSite}/t/${convidado.token}`}
+                        confirmacao="Link copiado"
+                        variant="ghost"
+                        rotuloAcessivel={`Copiar o link pessoal de ${convidado.candidate?.name ?? "candidato"}`}
+                      >
+                        Copiar link
+                      </BotaoCopiar>
+                    ) : (
+                      <span className="etiqueta shrink-0 text-fora">
+                        convite vencido
+                      </span>
                     )}
                   </li>
                 ))}

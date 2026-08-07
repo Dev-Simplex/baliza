@@ -6,6 +6,10 @@ import { Marca } from "@/components/marca";
 import { Button } from "@/components/ui/button";
 import { FormularioDeEntrada } from "@/components/teste/formulario-de-entrada";
 import { ROTULO_DE_MODELO, ROTULO_DE_SENIORIDADE } from "@/lib/formato";
+// O tempo prometido AQUI e o primeiro que o candidato le. Era fixo em "6
+// minutos" e nao tinha relacao com a bateria da vaga — numa bateria completa
+// ficava a 17 minutos da verdade que ele encontra na tela seguinte.
+import { lerBateria, rotuloDeTempo } from "@/lib/instrument/baterias";
 import { prisma } from "@/lib/prisma";
 
 export async function generateMetadata({
@@ -83,7 +87,8 @@ export default async function PaginaPublicaDaVaga({
               Comece pelo mapeamento comportamental
             </h2>
             <p className="mt-1.5 t-corpo-sm leading-relaxed text-muted-foreground">
-              Leva cerca de 6 minutos e responde pelo celular. Não é prova, não
+              Leva {rotuloDeTempo(lerBateria(vaga.testBattery))} e responde pelo
+              celular. Não é prova, não
               precisa criar conta, e o resultado vai direto para quem conduz o
               processo.
             </p>

@@ -57,8 +57,13 @@ export default async function PaginaDoPainel() {
 
   // Os passos se marcam sozinhos a partir do estado real da conta — nada de
   // checklist que a pessoa precisa marcar na mão.
-  const mostrarPrimeirosPassos =
-    !usuario?.onboardingDoneAt && resumo.concluidas === 0;
+  //
+  // A condição era `!onboardingDoneAt && concluidas === 0`, e ela se contradizia
+  // com os proprios passos: os dois ultimos so ficam "feitos" QUANDO ha resposta
+  // — e o cartao sumia justamente ai. O contador travava em "2 de 4", e o texto
+  // "a lista some sozinha quando terminar" descrevia algo que nunca acontecia.
+  // Some agora quando a pessoa termina de verdade, ou quando ela dispensa.
+  const mostrarPrimeirosPassos = !usuario?.onboardingDoneAt;
 
   // Quem só lê não cria vaga: o botão existia e terminava num redirecionamento
   // com "erro=permissao".
