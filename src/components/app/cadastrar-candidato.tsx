@@ -37,10 +37,20 @@ export function CadastrarCandidato({
   jobId,
   tituloDaVaga,
   baseDoSite,
+  tempoDaProva,
 }: {
   jobId: string;
   tituloDaVaga: string;
   baseDoSite: string;
+  /**
+   * O tempo REAL desta bateria ("cerca de 23 min"), calculado pela página da
+   * vaga. Era literal "cerca de 8 minutos" aqui dentro — número que não batia
+   * nem com a bateria padrão (6 min) e que ficava a 15 minutos da verdade numa
+   * bateria completa. Quem abre o link lê o tempo certo na tela de abertura, e
+   * a diferença entre o prometido e o lido é o que faz desistir no meio — e
+   * prova incompleta não vira relatório.
+   */
+  tempoDaProva: string;
 }) {
   const [aberto, setAberto] = useState(false);
   const [estado, acao, pendente] = useActionState(
@@ -270,7 +280,7 @@ export function CadastrarCandidato({
                       href={`mailto:?subject=${encodeURIComponent(
                         `${tituloDaVaga} — mapeamento comportamental`,
                       )}&body=${encodeURIComponent(
-                        `Olá!\n\nPara seguir no processo da vaga de ${tituloDaVaga}, responda o mapeamento comportamental (leva cerca de 8 minutos):\n\n${acesso.link}\n\n${
+                        `Olá!\n\nPara seguir no processo da vaga de ${tituloDaVaga}, responda o mapeamento comportamental (leva ${tempoDaProva}):\n\n${acesso.link}\n\n${
                           acesso.codigo
                             ? `Se preferir: ${mensagemDeAcesso(baseDoSite, acesso.codigo)}.\n\n`
                             : ""

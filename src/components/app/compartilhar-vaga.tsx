@@ -31,6 +31,7 @@ export function CompartilharVaga({
   aberta,
   baseDoSite,
   podeCadastrar = true,
+  tempoDaProva,
 }: {
   url: string;
   /** `null` quando o desenho do QR falhou — ver `src/lib/qr.ts`. */
@@ -45,6 +46,8 @@ export function CompartilharVaga({
    * RECRUITER. Quem só lê continua conseguindo compartilhar a vaga.
    */
   podeCadastrar?: boolean;
+  /** Repassado à tela de cadastro: o convite tem que prometer o tempo real. */
+  tempoDaProva: string;
 }) {
   const idDoLink = "link-publico-da-vaga";
 
@@ -153,6 +156,7 @@ export function CompartilharVaga({
 
         {podeCadastrar && (
           <CadastrarCandidato
+            tempoDaProva={tempoDaProva}
             jobId={jobId}
             tituloDaVaga={titulo}
             baseDoSite={baseDoSite}

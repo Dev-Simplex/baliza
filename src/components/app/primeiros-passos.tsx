@@ -60,7 +60,10 @@ export function PrimeirosPassos({
     {
       titulo: "Espere a resposta",
       descricao:
-        "São cerca de 8 minutos do lado do candidato. O ranking aparece sozinho quando a primeira pessoa termina.",
+        // Sem número fixo: o tempo agora depende da bateria que a vaga
+        // escolheu (de 5 a 29 min). Quem quiser o número exato o lê na
+        // página da vaga, onde ele é calculado.
+        "O tempo depende dos testes que a vaga aplica — a página da vaga mostra. O ranking aparece sozinho quando a primeira pessoa termina.",
       feito: temResposta,
     },
     {

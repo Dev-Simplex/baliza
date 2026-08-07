@@ -274,6 +274,7 @@ export default async function PaginaDaVaga({
             />
             <div className="mt-4">
               <CompartilharVaga
+                tempoDaProva={rotuloDeTempo(bateria)}
                 url={url}
                 qrDataUrl={qr}
                 titulo={vaga.title}

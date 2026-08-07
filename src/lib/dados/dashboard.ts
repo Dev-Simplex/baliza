@@ -24,7 +24,6 @@ export async function resumoDoPainel(organizationId: string) {
     emAndamento,
     concluidasNoPeriodo,
     concluidasNoPeriodoAnterior,
-    convitesPendentes,
   ] = await Promise.all([
     prisma.candidate.count({ where: { organizationId } }),
     prisma.job.count({ where: { organizationId, status: "OPEN" } }),
@@ -45,9 +44,6 @@ export async function resumoDoPainel(organizationId: string) {
         completedAt: { gte: sessentaDiasAtras, lt: trintaDiasAtras },
       },
     }),
-    prisma.invitation.count({
-      where: { organizationId, status: { in: ["PENDING", "SENT", "OPENED"] } },
-    }),
   ]);
 
   const agregado = await prisma.assessment.aggregate({
@@ -59,7 +55,19 @@ export async function resumoDoPainel(organizationId: string) {
     candidatos,
     vagasAbertas,
     concluidas,
-    pendentes: pendentes + convitesPendentes,
+    // ─── Uma conta só, e ela não conta ninguém duas vezes ──────────────────
+    // Era `pendentes + convitesPendentes`, e as duas parcelas se sobrepunham:
+    // todo convite cria uma avaliação PENDING na mesma transação, então quem
+    // acabou de ser convidado entrava nas duas. O painel dizia 7 onde havia 5.
+    //
+    // Pior: o apoio "N em andamento" parecia um recorte desse número e não era —
+    // IN_PROGRESS não entrava em nenhuma das duas parcelas. Agora entra, e o
+    // apoio virou de fato um subconjunto: "aguardando" é quem não terminou,
+    // e "em andamento" é quem já começou.
+    //
+    // É o único número que responde "quantos ainda preciso cobrar". Errado, ele
+    // faz o RH cobrar gente que não existe.
+    pendentes: pendentes + emAndamento,
     emAndamento,
     concluidasNoPeriodo,
     concluidasNoPeriodoAnterior,

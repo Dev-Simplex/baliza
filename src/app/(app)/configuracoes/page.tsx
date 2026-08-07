@@ -58,15 +58,21 @@ export default async function PaginaDeConfiguracoes() {
               valor={`${empresa.retentionMonths} meses`}
             />
           </dl>
-          {/* O que a rotina de manutenção apaga e o que ela preserva, dito aqui
-              porque é a única tela onde o prazo aparece — e porque "apagar as
-              respostas" soa como apagar o resultado, que é justamente o que não
-              acontece (regra nº 7: o resultado é do candidato). */}
+          {/* O que a manutenção apaga e o que ela preserva, dito aqui porque é
+              a única tela onde o prazo aparece — e porque "apagar as respostas"
+              soa como apagar o resultado, que é justamente o que não acontece.
+
+              O motivo mudou: esta frase dizia que o consolidado fica "porque o
+              link de resultado do candidato continua valendo". Esse link foi
+              REMOVIDO (regra nº 7 do README, invertida). Quem lê esta tela é o
+              controlador dos dados; deixá-lo achar que o titular tem acesso por
+              conta própria faria ele responder errado a um pedido de titular. */}
           <p className="t-legenda mt-5 border-t pt-4 leading-relaxed text-muted-foreground">
             Passado o prazo, a manutenção apaga a resposta bruta — o que a pessoa
-            marcou item por item. O resultado consolidado fica, porque o link de
-            resultado do candidato continua valendo. Exclusão antes do prazo é a
-            pedido, e passa por decisão de alguém.
+            marcou item por item. O resultado consolidado fica: é dele que a sua
+            empresa precisa para responder a um pedido de acesso feito depois
+            desse prazo. O candidato não vê o resultado por conta própria; o
+            acesso, a correção e a exclusão passam por pedido a você.
           </p>
         </Painel>
 
