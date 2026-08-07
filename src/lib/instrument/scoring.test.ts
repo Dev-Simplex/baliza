@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { criarAleatorio, montarForma } from "./form";
 import { ITEM_POR_ID } from "./items";
-import { PRESET_POR_ID } from "./presets";
+import { PRESET_POR_ID, PRESETS } from "./presets";
 import {
   DENTRO_DA_FAIXA,
   atribuirArquetipo,
@@ -177,13 +177,24 @@ describe("fit score (§4.4)", () => {
   });
 
   it("sempre devolve explicabilidade junto com o número (§4.4 / LGPD art. 20)", () => {
+    // Este candidato está DENTRO da faixa em todas as dimensões do preset, e por
+    // isso `puxaramPraBaixo` é legitimamente vazio. A asserção antiga exigia a
+    // lista não-vazia aqui, e só passava porque o filtro de "pra baixo" também
+    // pegava quem estava dentro — o mesmo defeito que fazia a MESMA dimensão
+    // sair nas duas listas. O que precisa existir sempre é a EXPLICAÇÃO, que é
+    // `contribuicoes`: toda dimensão, com nome e faixa.
     const fit = calcularFit({ C: 70, E: 80, X: 85, A: 40, O: 60 }, perfil);
-    expect(fit.puxaramPraBaixo.length).toBeGreaterThan(0);
+    expect(fit.puxaramPraBaixo).toHaveLength(0);
     expect(fit.contribuicoes.length).toBeGreaterThan(0);
     for (const c of fit.contribuicoes) {
       expect(c.nome).toBeTruthy();
       expect(c.faixa).toHaveLength(2);
     }
+
+    // E quem FICA FORA aparece, que é a outra metade da explicação.
+    const foraDaFaixa = calcularFit({ C: 20, E: 30, X: 25, A: 95, O: 10 }, perfil);
+    expect(foraDaFaixa.puxaramPraBaixo.length).toBeGreaterThan(0);
+    for (const c of foraDaFaixa.puxaramPraBaixo) expect(c.dentro).toBe(false);
   });
 
   it("nunca sai da faixa 0-100", () => {
@@ -478,5 +489,51 @@ describe("escoragem completa", () => {
 
     expect(Number.isFinite(resultado.fit.score)).toBe(true);
     for (const f of FATORES) expect(Number.isFinite(resultado.escores[f])).toBe(true);
+  });
+});
+
+describe("a explicação da aderência não pode se contradizer", () => {
+  /**
+   * Regressão de um defeito que estava em 13 das 19 fichas da base: a mesma
+   * dimensão saía em "puxaram pra cima" E em "puxaram pra baixo", às vezes logo
+   * abaixo da frase "todas as dimensões ficaram dentro da faixa alvo".
+   *
+   * Este é o painel que sustenta a regra nº 3 do produto ("a aderência nunca
+   * aparece sozinha") e o direito de revisão do art. 20 da LGPD. Explicação que
+   * se contradiz não explica nada — e quem paga é o RH tentando justificar a
+   * ordem do ranking para o gestor.
+   */
+  it("nenhuma dimensão aparece nas duas listas, em 400 perfis sorteados", () => {
+    const aleatorio = criarAleatorio("disjuntas");
+    const repetidas: string[] = [];
+
+    for (let n = 0; n < 400; n += 1) {
+      const escores = Object.fromEntries(
+        FATORES.map((f) => [f, Math.round(aleatorio() * 100)]),
+      ) as Record<Fator, number>;
+
+      const alvo = PRESETS[n % PRESETS.length].dimensoes;
+      const fit = calcularFit(escores, alvo);
+
+      const cima = new Set(fit.puxaramPraCima.map((c) => c.fator));
+      for (const c of fit.puxaramPraBaixo) {
+        if (cima.has(c.fator)) repetidas.push(`${n}:${c.fator}`);
+      }
+    }
+
+    expect(repetidas.slice(0, 5)).toEqual([]);
+  });
+
+  it("o que puxou pra baixo ficou de fato fora da faixa, e o que puxou pra cima ficou dentro", () => {
+    const aleatorio = criarAleatorio("coerencia");
+    for (let n = 0; n < 200; n += 1) {
+      const escores = Object.fromEntries(
+        FATORES.map((f) => [f, Math.round(aleatorio() * 100)]),
+      ) as Record<Fator, number>;
+      const fit = calcularFit(escores, PRESETS[n % PRESETS.length].dimensoes);
+
+      for (const c of fit.puxaramPraBaixo) expect(c.dentro).toBe(false);
+      for (const c of fit.puxaramPraCima) expect(c.dentro).toBe(true);
+    }
   });
 });

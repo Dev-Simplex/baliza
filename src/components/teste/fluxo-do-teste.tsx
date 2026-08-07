@@ -7,6 +7,7 @@ import { ArrowLeft, Check, CloudOff, Loader2, RotateCw } from "lucide-react";
 
 import {
   criarFila,
+  FALHAS_PARA_MUDAR_O_TOM,
   type EstadoDaFila,
   type Fila,
 } from "@/components/teste/fila-de-salvamento";
@@ -57,6 +58,25 @@ const ID_DA_PERGUNTA = "pergunta-atual";
 
 type Tela = { etapa: number; posicao: number; pergunta: Pergunta };
 
+/**
+ * A pendência como ela vai para o disco.
+ *
+ * Discriminada por `tipo` porque a fila é cega ao conteúdo: ela guarda, devolve
+ * e reenvia sem saber o que é. Quem traduz de volta é o `reconstruir` logo
+ * abaixo — e é por isso que este tipo precisa ser puro JSON, sem função nem
+ * classe no meio.
+ */
+type PendenciaDeResposta =
+  | { tipo: "item"; itemId: string; valor: number; tempoMs?: number }
+  | {
+      tipo: "bloco";
+      blocoId: string;
+      primeiraId: string;
+      ultimaId: string;
+      tempoMs?: number;
+    }
+  | { tipo: "escolha"; blocoId: string; escolhaId: string; tempoMs?: number };
+
 export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   const router = useRouter();
   const semMovimento = useReducedMotion();
@@ -88,13 +108,35 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     situacao: "ocioso",
     pendentes: 0,
     erro: null,
+    tentativasFalhas: 0,
   });
 
   // A fila é criada uma vez por prova e sobrevive a toda re-renderização: é ela
   // que segura as respostas que ainda não foram aceitas pelo servidor.
   const filaRef = useRef<Fila | null>(null);
   if (filaRef.current === null) {
-    filaRef.current = criarFila({ aoMudar: setEstadoDaFila });
+    filaRef.current = criarFila({
+      aoMudar: setEstadoDaFila,
+      // A chave é por PROVA. Duas abas da mesma prova compartilham a fila de
+      // propósito (é a mesma pessoa); provas diferentes nunca se misturam.
+      chaveDeArmazenamento: `prumo:fila:${dados.token}`,
+      // A fila guarda dado; quem sabe virar chamada é este mapa. Ele mora aqui,
+      // e não na fila, porque é o único lugar que já conhece as actions.
+      reconstruir: (bruto) => {
+        const d = bruto as PendenciaDeResposta;
+        if (d.tipo === "item")
+          return () => salvarResposta(dados.token, { itemId: d.itemId, valor: d.valor, tempoMs: d.tempoMs });
+        if (d.tipo === "bloco")
+          return () =>
+            salvarCenario(dados.token, {
+              blocoId: d.blocoId,
+              primeiraId: d.primeiraId,
+              ultimaId: d.ultimaId,
+              tempoMs: d.tempoMs,
+            });
+        return () => salvarEscolha(dados.token, { blocoId: d.blocoId, escolhaId: d.escolhaId, tempoMs: d.tempoMs });
+      },
+    });
   }
 
   const respondidos = useMemo(() => {
@@ -219,12 +261,15 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
       const tempoMs = tempoNaPergunta();
       setSalvas((s) => ({ ...s, itens: { ...s.itens, [itemId]: valor } }));
       setErro(null);
-      filaRef.current?.enfileirar(`item:${itemId}`, () =>
-        salvarResposta(dados.token, { itemId, valor, tempoMs }),
-      );
+      filaRef.current?.enfileirar(`item:${itemId}`, {
+        tipo: "item",
+        itemId,
+        valor,
+        tempoMs,
+      } satisfies PendenciaDeResposta);
       agendarAvanco();
     },
-    [agendarAvanco, dados.token, tempoNaPergunta],
+    [agendarAvanco, tempoNaPergunta],
   );
 
   /**
@@ -244,12 +289,16 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
         blocos: { ...s.blocos, [blocoId]: { primeiraId, ultimaId } },
       }));
       setErro(null);
-      filaRef.current?.enfileirar(`bloco:${blocoId}`, () =>
-        salvarCenario(dados.token, { blocoId, primeiraId, ultimaId, tempoMs }),
-      );
+      filaRef.current?.enfileirar(`bloco:${blocoId}`, {
+        tipo: "bloco",
+        blocoId,
+        primeiraId,
+        ultimaId,
+        tempoMs,
+      } satisfies PendenciaDeResposta);
       if (avancarDepois) agendarAvanco();
     },
-    [agendarAvanco, dados.token, tempoNaPergunta],
+    [agendarAvanco, tempoNaPergunta],
   );
 
   const responderEscolha = useCallback(
@@ -260,12 +309,15 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
         escolhas: { ...s.escolhas, [blocoId]: escolhaId },
       }));
       setErro(null);
-      filaRef.current?.enfileirar(`escolha:${blocoId}`, () =>
-        salvarEscolha(dados.token, { blocoId, escolhaId, tempoMs }),
-      );
+      filaRef.current?.enfileirar(`escolha:${blocoId}`, {
+        tipo: "escolha",
+        blocoId,
+        escolhaId,
+        tempoMs,
+      } satisfies PendenciaDeResposta);
       agendarAvanco();
     },
-    [agendarAvanco, dados.token, tempoNaPergunta],
+    [agendarAvanco, tempoNaPergunta],
   );
 
   // Rede que volta, aba que volta ao primeiro plano: os dois são o momento de
@@ -393,6 +445,29 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   const naUltima = indice === total - 1;
   const quantasFaltam = total - respondidos.size;
   const temPendencia = estadoDaFila.pendentes > 0;
+
+  /**
+   * A frase do aviso conta a verdade sobre QUEM está fora do ar.
+   *
+   * Dizer "sem conexão" para quem tem internet manda a pessoa consertar o que
+   * não está quebrado: ela troca de wi-fi, vai para o 4G, reinicia o roteador —
+   * e continua lendo a mesma frase, porque o problema é do servidor.
+   */
+  const tituloDaFalha =
+    estadoDaFila.situacao === "servidor-instavel"
+      ? "Não estamos conseguindo falar com o servidor."
+      : "Sem conexão.";
+
+  /**
+   * E depois de muitas tentativas, a promessa muda de tom em vez de se repetir.
+   * A pessoa precisa saber que pode fechar — antes, a tela pedia para ela ficar
+   * esperando indefinidamente, e quem fecha assim mesmo (ou tem a aba
+   * descartada) perdia a prova. Agora não perde: a fila está no aparelho.
+   */
+  const textoDeEspera =
+    estadoDaFila.tentativasFalhas >= FALHAS_PARA_MUDAR_O_TOM
+      ? "isto está demorando mais que o normal. Você pode fechar esta página e voltar depois pelo mesmo link: nada do que você respondeu se perde."
+      : "pode continuar respondendo normalmente.";
 
   // A última pergunta não avança sozinha — não há para onde. Num celular baixo,
   // o "Concluir" fica abaixo da dobra, e a tela parece não ter reagido à última
@@ -590,22 +665,22 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
         {/* Leitor de tela: só o que é problema. Anunciar "salvo" 79 vezes
             atrapalharia justamente quem depende do anúncio. */}
         <p role="status" aria-live="polite" className="sr-only">
-          {estadoDaFila.situacao === "aguardando-rede"
-            ? `Sem conexão. ${estadoDaFila.pendentes} resposta(s) guardadas no aparelho, aguardando a internet voltar.`
+          {estadoDaFila.situacao === "aguardando-rede" ||
+          estadoDaFila.situacao === "servidor-instavel"
+            ? `${tituloDaFalha} ${estadoDaFila.pendentes} resposta(s) guardadas no aparelho.`
             : estadoDaFila.situacao === "recusado"
               ? (estadoDaFila.erro ?? "")
               : ""}
         </p>
 
-        {estadoDaFila.situacao === "aguardando-rede" && (
+        {(estadoDaFila.situacao === "aguardando-rede" ||
+          estadoDaFila.situacao === "servidor-instavel") && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5">
             <p className="flex items-start gap-2 text-sm">
               <CloudOff className="mt-0.5 size-4 shrink-0 text-fora" />
               <span>
-                Sem conexão. Suas respostas estão guardadas aqui e sobem sozinhas
-                quando a internet voltar —{" "}
-                <strong className="font-medium">não feche esta página</strong> até
-                lá.
+                {tituloDaFalha} Suas respostas ficam guardadas neste aparelho e
+                sobem sozinhas — {textoDeEspera}
               </span>
             </p>
             <Button

@@ -19,7 +19,7 @@ export const authConfig = {
   callbacks: {
     // O token carrega o tenant. É daqui que sai TODO o escopo de dados —
     // por isso ele nunca é lido do cliente nem de query string.
-    jwt({ token, user, trigger, session }) {
+    jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
         token.organizationId = user.organizationId ?? null;

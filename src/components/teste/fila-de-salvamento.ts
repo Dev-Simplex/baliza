@@ -33,6 +33,15 @@ export type SituacaoDaFila =
   | "salvo"
   /** Tem coisa pendente e a última tentativa estourou: vamos tentar de novo. */
   | "aguardando-rede"
+  /**
+   * O servidor respondeu, e respondeu quebrado (500, deploy no meio, banco fora).
+   *
+   * Separado de `aguardando-rede` porque a saída é OUTRA. Quem está sem internet
+   * resolve trocando de rede; dizer "sem conexão" para quem tem internet manda a
+   * pessoa consertar o que não está quebrado — ela troca de wi-fi, vai para o
+   * 4G, reinicia o roteador, e continua lendo a mesma frase.
+   */
+  | "servidor-instavel"
   /** O servidor recusou. Não adianta repetir. */
   | "recusado";
 
@@ -40,10 +49,24 @@ export type EstadoDaFila = {
   situacao: SituacaoDaFila;
   pendentes: number;
   erro: string | null;
+  /**
+   * Falhas seguidas. A tela usa isto para parar de repetir a mesma promessa:
+   * depois de muitas tentativas, "já já volta" deixa de ser verdade.
+   */
+  tentativasFalhas: number;
 };
 
+/**
+ * O que precisa ser gravado, em forma que sobrevive a `JSON.stringify`.
+ *
+ * A fila guardava CLOSURES, e closure não atravessa o fechamento da aba —
+ * enquanto a tela prometia, em letra grande, "guardadas no aparelho". Agora a
+ * pendência é DADO: cabe no `localStorage` e volta na próxima abertura. Quem
+ * sabe transformar dado em chamada é o `reconstruir` de quem monta a fila; a
+ * fila não conhece nenhuma action.
+ */
 export type Fila = {
-  enfileirar: (chave: string, envio: Envio) => void;
+  enfileirar: (chave: string, dados: unknown) => void;
   tentarAgora: () => void;
   encerrar: () => void;
 };
@@ -55,8 +78,42 @@ export function esperaDaTentativa(tentativa: number) {
   return Math.min(1000 * 2 ** Math.max(0, tentativa - 1), ESPERA_MAXIMA_MS);
 }
 
+/**
+ * Falhas seguidas a partir das quais a tela deixa de prometer que já volta.
+ *
+ * Seis, e não três: com o backoff atual (1, 2, 4, 8, 15, 15s) seis tentativas
+ * são ~45 segundos. Antes disso ainda é soluço de rede, e trocar o texto cedo
+ * demais assusta quem só entrou no elevador.
+ */
+export const FALHAS_PARA_MUDAR_O_TOM = 6;
+
+/**
+ * Isto é queda de rede, ou o servidor respondendo quebrado?
+ *
+ * `navigator.onLine === false` é o caso fácil. O difícil é o resto: `fetch`
+ * falha com `TypeError` quando não conseguiu falar com o servidor, e é o que a
+ * Server Action propaga. Qualquer outra exceção significa que a conversa
+ * ACONTECEU e deu errado do lado de lá — que é uma informação diferente e
+ * merece uma frase diferente.
+ */
+function pareceQuedaDeRede(erro: unknown) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  return erro instanceof TypeError;
+}
+
 export function criarFila(opcoes: {
   aoMudar: (estado: EstadoDaFila) => void;
+  /**
+   * Transforma a pendência guardada na chamada que a grava. É a peça que
+   * permite a fila ser persistida: o que vai para o disco é `dados`, e é daqui
+   * que ele volta a ser uma chamada quando a prova reabre.
+   */
+  reconstruir: (dados: unknown) => Envio;
+  /**
+   * Onde espelhar as pendências. Sem isto a fila segue só em memória — é o que
+   * os testes usam, e o que acontece se `localStorage` não existir.
+   */
+  chaveDeArmazenamento?: string;
   /** Injetável para o teste não depender do relógio. */
   agendar?: (acao: () => void, ms: number) => () => void;
 }): Fila {
@@ -67,17 +124,71 @@ export function criarFila(opcoes: {
       return () => clearTimeout(id);
     });
 
-  const pendentes = new Map<string, Envio>();
+  const pendentes = new Map<string, unknown>();
   let rodando = false;
   let tentativa = 0;
+  let falhasSeguidas = 0;
   let cancelarEspera: (() => void) | null = null;
   let situacao: SituacaoDaFila = "ocioso";
   let erro: string | null = null;
 
+  /** O disco é best-effort: modo privado e cota cheia não podem derrubar a prova. */
+  function armazenamento(): Storage | null {
+    if (!opcoes.chaveDeArmazenamento) return null;
+    try {
+      return typeof localStorage === "undefined" ? null : localStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  function gravarNoDisco() {
+    const store = armazenamento();
+    if (!store) return;
+    try {
+      if (pendentes.size === 0) {
+        store.removeItem(opcoes.chaveDeArmazenamento!);
+        return;
+      }
+      store.setItem(
+        opcoes.chaveDeArmazenamento!,
+        JSON.stringify([...pendentes.entries()].map(([chave, dados]) => ({ chave, dados }))),
+      );
+    } catch {
+      // Sem espaço ou sem permissão: a fila continua valendo em memória.
+    }
+  }
+
+  function lerDoDisco() {
+    const store = armazenamento();
+    if (!store) return;
+    try {
+      const cru = store.getItem(opcoes.chaveDeArmazenamento!);
+      if (!cru) return;
+      const lista = JSON.parse(cru) as Array<{ chave: string; dados: unknown }>;
+      if (!Array.isArray(lista)) return;
+      // Reenviar o que já subiu não faz mal: o servidor grava por `upsert`, e a
+      // dúvida "será que subiu?" só se resolve enviando de novo.
+      for (const p of lista) if (p?.chave) pendentes.set(p.chave, p.dados);
+    } catch {
+      // Guardado corrompido não pode impedir a prova de abrir.
+      try {
+        store.removeItem(opcoes.chaveDeArmazenamento!);
+      } catch {
+        /* nada a fazer */
+      }
+    }
+  }
+
   function mudar(nova: SituacaoDaFila, novoErro: string | null = null) {
     situacao = nova;
     erro = novoErro;
-    opcoes.aoMudar({ situacao, pendentes: pendentes.size, erro });
+    opcoes.aoMudar({
+      situacao,
+      pendentes: pendentes.size,
+      erro,
+      tentativasFalhas: falhasSeguidas,
+    });
   }
 
   async function processar() {
@@ -90,31 +201,36 @@ export function criarFila(opcoes: {
 
     try {
       while (pendentes.size > 0) {
-        const [chave, envio] = pendentes.entries().next().value as [
+        const [chave, dados] = pendentes.entries().next().value as [
           string,
-          Envio,
+          unknown,
         ];
 
         mudar("salvando");
 
         let resultado: ResultadoDoEnvio;
         try {
-          resultado = await envio();
-        } catch {
+          resultado = await opcoes.reconstruir(dados)();
+        } catch (falha) {
           tentativa += 1;
+          falhasSeguidas += 1;
           cancelarEspera = agendar(() => {
             cancelarEspera = null;
             void processar();
           }, esperaDaTentativa(tentativa));
-          mudar("aguardando-rede");
+          mudar(pareceQuedaDeRede(falha) ? "aguardando-rede" : "servidor-instavel");
           return;
         }
 
         // A resposta pode ter sido trocada enquanto esta subia. Só remove a
         // pendência se ela ainda for a mesma que acabou de ser aceita.
-        if (pendentes.get(chave) === envio) pendentes.delete(chave);
+        if (pendentes.get(chave) === dados) {
+          pendentes.delete(chave);
+          gravarNoDisco();
+        }
 
         tentativa = 0;
+        falhasSeguidas = 0;
         if (!resultado.ok) recusa = resultado.erro ?? "Não foi possível salvar.";
       }
 
@@ -132,12 +248,17 @@ export function criarFila(opcoes: {
     void processar();
   }
 
+  // O que ficou de uma sessão anterior sobe antes de qualquer resposta nova.
+  lerDoDisco();
+  if (pendentes.size > 0) void processar();
+
   return {
-    enfileirar(chave, envio) {
-      pendentes.set(chave, envio);
+    enfileirar(chave, dados) {
+      pendentes.set(chave, dados);
+      gravarNoDisco();
       // Uma resposta nova é também um pedido implícito de "tenta agora": se a
       // rede voltou, não faz sentido esperar o fim do backoff para descobrir.
-      if (situacao === "aguardando-rede") tentarAgora();
+      if (situacao === "aguardando-rede" || situacao === "servidor-instavel") tentarAgora();
       else void processar();
     },
 
