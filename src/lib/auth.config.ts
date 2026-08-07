@@ -26,10 +26,21 @@ export const authConfig = {
         token.role = user.role;
         token.isPlatformAdmin = user.isPlatformAdmin ?? false;
       }
-      // Atualização de sessão sem novo login (ex.: trocou de plano/papel).
-      if (trigger === "update" && session?.organizationId) {
-        token.organizationId = session.organizationId as string;
-      }
+      // ─── Por que NÃO existe mais um ramo `trigger === "update"` aqui ───────
+      // Existia, e ele copiava `session.organizationId` para dentro do token
+      // "para atualizar a sessão sem novo login". Só que esse `session` é o
+      // corpo que o CLIENTE manda no POST /api/auth/session — não é o servidor
+      // falando com ele mesmo.
+      //
+      // Reproduzido: logado como recrutador@acme.com, um POST com o id de outra
+      // empresa fazia /candidatos listar os candidatos DELA. O tenant inteiro
+      // trocava, e com ele todo o escopo de dados — porque é deste token que
+      // sai o `organizationId` que vai no WHERE de cada consulta.
+      //
+      // Nenhuma tela do produto chamava `update()` com organizationId, então o
+      // ramo era superfície de ataque sem nenhum consumidor legítimo. Se algum
+      // dia for preciso trocar de empresa sem relogar, o caminho é o servidor
+      // reler o vínculo do banco — nunca aceitar o que veio do navegador.
       return token;
     },
     session({ session, token }) {
