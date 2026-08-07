@@ -259,6 +259,20 @@ export type DadosDoRelatorio = {
    * faixas e o radar já mostram de onde o número veio.
    */
   bateria?: string[];
+
+  /**
+   * O parecer já registrado, quando existe.
+   *
+   * `decisao` vem como o RÓTULO ("Avançar"/"Dúvida"/"Não avançar") e não como o
+   * valor do banco: este arquivo desenha, não traduz. Quem lê do banco é a rota,
+   * que é o único lugar onde o vocabulário do domínio precisa ser conhecido.
+   */
+  parecer?: {
+    decisao: string;
+    nota: string | null;
+    por: string | null;
+    em: string | null;
+  } | null;
 };
 
 /**
@@ -793,33 +807,83 @@ function ModulosDoManual({
         </View>
       )}
 
-      {/* O parecer do §5.2, em branco. Faz sentido no papel e não na tela: a
-          folha vai para a mesa da entrevista e volta escrita à mão. Na tela
-          seria um formulário que não salva. */}
-      <View style={e.cartao} wrap={false}>
+    </View>
+  );
+}
+
+/**
+ * O parecer, no papel.
+ *
+ * Ficava DENTRO do bloco dos modulos do manual, o que tinha uma consequencia
+ * que so aparece olhando dois relatorios lado a lado: bateria sem modulo — a
+ * vaga que aplica so o Prumo — imprimia sem caixa de parecer nenhuma. Quem
+ * levava essa folha para a entrevista nao tinha onde anotar a decisao, e
+ * agora que o parecer e um registro de verdade tambem nao teria onde LE-LO.
+ * Fora do bloco, ele fecha todo relatorio.
+ */
+function ParecerNoPapel({ parecer }: { parecer: DadosDoRelatorio["parecer"] }) {
+  /* O parecer do §5.2.
+
+     Nasceu sempre em branco — três quadradinhos para preencher à caneta —
+     porque o sistema não tinha onde guardar decisão nenhuma. Agora tem, e o
+     papel passa a refletir o que está gravado: havendo parecer, ele sai
+     MARCADO, com autoria, data e as anotações da conversa.
+
+     A caixa vazia continua existindo para quem ainda não decidiu — é o caso de
+     quem imprime ANTES da entrevista, que é o uso original: a folha vai para a
+     mesa e volta escrita à mão. */
+  return (
+    <View style={e.cartao} wrap={false}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
         <Text style={e.titulo}>Parecer do analista</Text>
-        <View style={{ flexDirection: "row", gap: 22, marginTop: 6 }}>
-          {["Avançar", "Dúvida", "Não avançar"].map((opcao) => (
+        {parecer && (
+          <Text style={e.etiqueta}>
+            {[parecer.por, parecer.em].filter(Boolean).join(" · ")}
+          </Text>
+        )}
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 22, marginTop: 6 }}>
+        {(["Avançar", "Dúvida", "Não avançar"] as const).map((opcao) => {
+          const marcado = parecer?.decisao === opcao;
+          return (
             <View
               key={opcao}
               style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
             >
+              {/* O marcado é um disco cheio, e não um "x": impresso em preto e
+                  branco, ou numa cópia de cópia, o preenchimento sobrevive e
+                  o traço fino some. */}
               <View
                 style={{
                   width: 8,
                   height: 8,
                   borderWidth: 0.7,
-                  borderColor: COR.suave,
+                  borderColor: marcado ? COR.marca : COR.suave,
                   borderRadius: 4,
+                  backgroundColor: marcado ? COR.marca : undefined,
                 }}
               />
-              <Text style={e.corpo}>{opcao}</Text>
+              <Text
+                style={
+                  marcado
+                    ? [e.corpo, { fontFamily: CORPO, fontWeight: 700 }]
+                    : e.corpo
+                }
+              >
+                {opcao}
+              </Text>
             </View>
-          ))}
-        </View>
+          );
+        })}
+      </View>
 
-        <Text style={[e.etiqueta, { marginTop: 11 }]}>Anotações</Text>
-        {[0, 1, 2].map((i) => (
+      <Text style={[e.etiqueta, { marginTop: 11 }]}>Anotações</Text>
+
+      {parecer?.nota ? (
+        <Text style={[e.corpo, { marginTop: 5 }]}>{parecer.nota}</Text>
+      ) : (
+        [0, 1, 2].map((i) => (
           <View
             key={i}
             style={{
@@ -828,12 +892,12 @@ function ModulosDoManual({
               borderBottomColor: COR.linha,
             }}
           />
-        ))}
-        <Text style={[e.legenda, { marginTop: 9 }]}>
-          A decisão é humana e vem depois da entrevista. Nenhum destes testes
-          aprova ou reprova alguém sozinho.
-        </Text>
-      </View>
+        ))
+      )}
+      <Text style={[e.legenda, { marginTop: 9 }]}>
+        A decisão é humana e vem depois da entrevista. Nenhum destes testes
+        aprova ou reprova alguém sozinho.
+      </Text>
     </View>
   );
 }
@@ -1137,6 +1201,9 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
             emPaginaNova={Boolean(d.escores)}
           />
         )}
+
+        {/* ─── O parecer fecha o documento, sempre ──────────────────────── */}
+        <ParecerNoPapel parecer={d.parecer ?? null} />
 
         {/* ─── Rodapé, em toda página ───────────────────────────────────── */}
         <View style={e.rodape} fixed>

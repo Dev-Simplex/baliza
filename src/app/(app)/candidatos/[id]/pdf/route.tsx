@@ -13,7 +13,7 @@ import {
   type Fator,
   type PerfilAlvo,
 } from "@/lib/instrument/types";
-import { data, duracao, numero } from "@/lib/formato";
+import { ROTULO_DA_DECISAO, data, duracao, numero } from "@/lib/formato";
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { exigirTenant } from "@/lib/tenant";
@@ -62,6 +62,9 @@ export async function GET(
           // curtas aqui não se compara ao de duas consultas condicionais.
           responses: { select: { itemId: true, value: true, elapsedMs: true } },
           scenarioResponses: { select: { blockId: true, elapsedMs: true } },
+          // O nome de quem deu o parecer: sem autor, o parecer impresso não
+          // sustenta uma conversa meses depois nem um pedido de revisão.
+          decidedBy: { select: { name: true } },
         },
       },
     },
@@ -194,6 +197,17 @@ export async function GET(
     modulos: leitura.ficha.temAlgum ? leitura.ficha : null,
     qualidade: leitura.qualidade,
     bateria: leitura.bateria.map((t) => CATALOGO_DE_TESTES[t].nome),
+
+    // Traduzir o valor do banco para o rótulo é trabalho DESTA camada: o
+    // arquivo do PDF desenha, e não conhece o vocabulário do domínio.
+    parecer: avaliacao.decision
+      ? {
+          decisao: ROTULO_DA_DECISAO[avaliacao.decision],
+          nota: avaliacao.decisionNote,
+          por: avaliacao.decidedBy?.name ?? null,
+          em: avaliacao.decidedAt ? data(avaliacao.decidedAt) : null,
+        }
+      : null,
   };
 
   const buffer = await renderToBuffer(<RelatorioPdf d={dados} />);

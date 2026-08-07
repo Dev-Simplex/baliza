@@ -82,6 +82,7 @@ model User {
   createdJobs Job[]        @relation("JobCreatedBy")
   invitations Invitation[] @relation("InvitationCreatedBy")
   auditLogs   AuditLog[]
+  pareceres   Assessment[] @relation("PareceresDoAnalista")
 
   @@index([organizationId])
 }
@@ -291,6 +292,19 @@ enum AssessmentStatus {
   ABANDONED
 }
 
+/// O que o analista decidiu DEPOIS de ler o resultado e conversar.
+///
+/// Três opções e não duas: "Dúvida" é o estado real da maioria das pessoas
+/// logo depois da entrevista, e obrigar a escolher entre avançar e recusar
+/// nesse momento produz decisão apressada — exatamente o que o produto existe
+/// para evitar. É também o estado que a lista precisa mostrar em destaque,
+/// porque é o único que ainda pede ação de alguém.
+enum AnalystDecision {
+  ADVANCE
+  DOUBT
+  REJECT
+}
+
 model Assessment {
   id             String           @id @default(cuid())
   organizationId String
@@ -358,6 +372,27 @@ model Assessment {
   shareToken  String?   @unique
   sharedAt    DateTime?
 
+  /// ─── O parecer, que até aqui não existia em lugar nenhum ─────────────────
+  /// O PDF já trazia uma caixa "Parecer do analista" com três quadradinhos
+  /// para preencher à CANETA, e o sistema não tinha campo para guardar nada
+  /// disso. O produto existe para embasar uma decisão, e era justamente a
+  /// decisão que ele não registrava: quem avaliou, o que concluiu e por quê
+  /// ficavam num papel na mesa de alguém.
+  ///
+  /// O custo não era só de organização. Sem isto, ninguém responde "quem eu já
+  /// avaliei e o que decidi", não há como medir quantos avançam, e o pedido de
+  /// revisão do art. 20 da LGPD — que trata de decisão automatizada — fica sem
+  /// a prova de que houve pessoa decidindo.
+  ///
+  /// `decidedById` é SetNull: o parecer sobrevive à saída de quem o deu. Perder
+  /// a decisão porque o recrutador foi embora seria perder o registro do
+  /// processo junto com o crachá.
+  decision     AnalystDecision?
+  decisionNote String?          @db.Text
+  decidedAt    DateTime?
+  decidedById  String?
+  decidedBy    User?            @relation("PareceresDoAnalista", fields: [decidedById], references: [id], onDelete: SetNull)
+
   // LGPD
   consentAt DateTime?
   ipHash    String?
@@ -386,6 +421,9 @@ model Assessment {
   // índice acima só serve até `organizationId`.
   @@index([organizationId, status, completedAt])
   @@index([candidateId, completedAt])
+  // "O que ainda está sem parecer" é a pergunta que a lista faz toda vez que
+  // abre, e é a única que sobra depois de o resultado estar pronto.
+  @@index([organizationId, decision])
 }
 
 // ─── Onde cada teste guarda a resposta bruta ───────────────────────────────

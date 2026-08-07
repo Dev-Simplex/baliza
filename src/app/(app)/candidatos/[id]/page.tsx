@@ -7,6 +7,7 @@ import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
 import { BotaoCopiar } from "@/components/app/copiar";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import { FichaDosModulos } from "@/components/app/ficha-de-modulos";
+import { ParecerDoAnalista } from "@/components/app/parecer-do-analista";
 import { RadarComportamental } from "@/components/app/graficos";
 import {
   BotaoSalvarPdf,
@@ -65,6 +66,9 @@ export default async function PaginaDoCandidato({
         orderBy: { completedAt: "desc" },
         include: {
           job: { select: { id: true, title: true, targetProfile: true } },
+          // Só o nome de quem deu o parecer. Parecer sem autor não sustenta uma
+          // conversa seis meses depois nem um pedido de revisão.
+          decidedBy: { select: { name: true } },
         },
       },
     },
@@ -454,6 +458,17 @@ export default async function PaginaDoCandidato({
           )}
         </div>
       </div>
+
+      {/* O parecer vem DEPOIS de tudo: a ordem da tela é a ordem do trabalho, e
+          um seletor de "avançar / não avançar" acima do resultado convidaria a
+          decidir antes de ler. */}
+      <ParecerDoAnalista
+        avaliacaoId={avaliacao.id}
+        decisao={avaliacao.decision}
+        nota={avaliacao.decisionNote}
+        decididoEm={avaliacao.decidedAt ? data(avaliacao.decidedAt) : null}
+        decididoPor={avaliacao.decidedBy?.name ?? null}
+      />
 
       {/* Na tela este aviso é o rodapé; no papel ele sairia duas vezes, porque
           o rodapé impresso já o carrega junto do aviso de confidencialidade. */}

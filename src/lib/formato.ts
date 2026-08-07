@@ -103,6 +103,20 @@ export const ROTULO_DE_STATUS_DE_AVALIACAO: Record<string, string> = {
   ABANDONED: "Abandonada",
 };
 
+/**
+ * O parecer do analista.
+ *
+ * Mora aqui, e não no componente que o desenha, porque três camadas diferentes
+ * precisam do rótulo — a tela do candidato, a lista e o PDF gerado no servidor —
+ * e a do PDF não pode importar de um módulo `"use client"`. Um vocabulário, um
+ * lugar só.
+ */
+export const ROTULO_DA_DECISAO: Record<string, string> = {
+  ADVANCE: "Avançar",
+  DOUBT: "Dúvida",
+  REJECT: "Não avançar",
+};
+
 export const ROTULO_DE_PAPEL: Record<string, string> = {
   OWNER: "Dono da conta",
   ADMIN: "Administrador",
