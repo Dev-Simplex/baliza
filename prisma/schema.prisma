@@ -372,6 +372,15 @@ model Assessment {
   choiceResponses   ChoiceResponse[]
   aiAnalysis        AiAnalysis?
 
+  // Uma avaliação por pessoa por vaga — a invariante que o código já assumia
+  // sem o banco garantir. `entrarPeloLinkDaVaga` lê e depois escreve, sem
+  // transação: dois envios concorrentes do formulário público (recarregar
+  // impaciente numa conexão lenta, dois aparelhos, duas abas) criavam duas
+  // avaliações da mesma pessoa na mesma vaga. O comentário de `convite.ts` já
+  // dizia por que isso é ruim: "duas avaliações da mesma pessoa na mesma vaga
+  // bagunçam o ranking". Aqui a corrida vira erro de unicidade, que o código
+  // trata redirecionando para a avaliação que ganhou.
+  @@unique([jobId, candidateId])
   @@index([organizationId, jobId, status])
   // O painel conta por (empresa, status) o tempo todo; com `jobId` no meio, o
   // índice acima só serve até `organizationId`.

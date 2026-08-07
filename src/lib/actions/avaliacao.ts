@@ -12,6 +12,7 @@ import {
   opcoesDoBloco,
 } from "@/lib/actions/forma-da-bateria";
 import { pendenciasDaProva } from "@/lib/actions/pendencias-da-prova";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { limitarPorIp } from "@/lib/rate-limit";
 import { ITEM_POR_ID, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
@@ -152,12 +153,41 @@ export async function entrarPeloLinkDaVaga(
 
   if (existente?.invitation) redirect(`/t/${existente.invitation.token}`);
 
-  const token = await criarAvaliacao({
-    organizationId: vaga.organizationId,
-    jobId: vaga.id,
-    candidateId: candidato.id,
-    canal: "LINK",
-  });
+  /**
+   * A corrida existe: entre o `findFirst` acima e a criação abaixo não há
+   * transação nenhuma. Dois envios do formulário público — recarregar
+   * impaciente numa conexão lenta, dois aparelhos, duas abas — passavam os dois
+   * pela leitura e criavam duas avaliações da mesma pessoa na mesma vaga.
+   *
+   * Agora o banco recusa a segunda (`@@unique([jobId, candidateId])`), e este
+   * `catch` transforma a recusa no desfecho certo: quem perdeu a corrida vai
+   * para a avaliação que ganhou, em vez de ver um erro por ter clicado duas
+   * vezes. Só o conflito de unicidade é tratado assim — qualquer outra falha
+   * continua subindo.
+   */
+  let token: string;
+  try {
+    token = await criarAvaliacao({
+      organizationId: vaga.organizationId,
+      jobId: vaga.id,
+      candidateId: candidato.id,
+      canal: "LINK",
+    });
+  } catch (erro) {
+    const conflito =
+      erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002";
+    if (!conflito) throw erro;
+
+    const vencedora = await prisma.assessment.findFirst({
+      where: { jobId: vaga.id, candidateId: candidato.id },
+      include: { invitation: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (vencedora?.invitation) redirect(`/t/${vencedora.invitation.token}`);
+    return {
+      erro: "Não conseguimos abrir sua prova agora. Tente de novo em instantes.",
+    };
+  }
 
   redirect(`/t/${token}`);
 }
@@ -295,8 +325,38 @@ export async function entrarPeloCodigo(
       erro: "Código não encontrado. Confira os dígitos com quem te enviou — e, se você já concluiu, o código deixa de valer: não é preciso responder de novo.",
     };
 
-  if (convite.assessment?.status === "COMPLETED")
-    redirect(`/t/${convite.token}`);
+  /**
+   * Convite sem avaliação é beco sem saída, e o beco terminava no próprio
+   * ponto de partida.
+   *
+   * `/t/<token>` faz `notFound()` quando não há avaliação, e a página de "não
+   * encontrado" sugere: "recebeu um código de 4 dígitos? entre por /acesso" —
+   * de onde a pessoa acabou de vir. Ela volta, digita o mesmo código válido, e
+   * cai no mesmo lugar, gastando uma das 6 tentativas por hora a cada volta.
+   *
+   * Existem convites assim no banco: o `Candidate` foi apagado, o `Assessment`
+   * caiu em cascata e o convite sobreviveu, porque `Invitation.candidate` é
+   * `SetNull` e `Assessment.candidate` é `Cascade`. Hoje isso vem de fora do
+   * app — mas a assimetria dispara sozinha no dia em que a exclusão de
+   * candidato por LGPD (prometida na tela de conclusão) for implementada.
+   *
+   * Aqui a pessoa recebe a informação que resolve o problema dela: este convite
+   * não vale mais, peça outro. E o código é devolvido ao acervo, senão ele fica
+   * preso para sempre nas 10.000 combinações — a devolução normal só acontece
+   * no encerramento da prova, que nunca vai acontecer.
+   */
+  if (!convite.assessment) {
+    await prisma.invitation
+      .update({ where: { id: convite.id }, data: { accessCode: null } })
+      .catch(() => {
+        // Devolver o código é higiene do acervo, não parte da resposta: se
+        // falhar, a pessoa ainda precisa ler o motivo.
+      });
+
+    return {
+      erro: "Este convite não vale mais. Peça um novo para quem te enviou — o código antigo não abre mais nada.",
+    };
+  }
 
   redirect(`/t/${convite.token}`);
 }

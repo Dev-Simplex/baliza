@@ -41,7 +41,16 @@ export function ReguaDeProgresso({
           <span className="hidden sm:inline">{etapa}</span>
         </span>
 
-        <span className="etiqueta shrink-0">
+        {/* Duas medidas de unidades DIFERENTES, e o rótulo precisa dizer isso.
+            A contagem é DESTA etapa; o tempo é do que falta da BATERIA inteira
+            (decisão de `fluxo-do-teste.tsx`: a pergunta que faz alguém fechar a
+            aba é "quanto falta disso tudo"). Grudadas por um ponto médio, elas
+            liam como uma coisa só — "1/12 · cerca de 18 min" sugeria 90
+            segundos por bloco de palavras, quando o DISC inteiro custa 6.
+
+            Sem `shrink-0`: ampliado a 175% o rótulo empurrava a página para
+            rolagem lateral em TODAS as telas da prova. Agora ele quebra. */}
+        <span className="etiqueta min-w-0 text-right">
           <span className="sm:hidden">
             {posicao}/{total}
           </span>
@@ -49,10 +58,10 @@ export function ReguaDeProgresso({
             {posicao} de {total}
           </span>
           {restante && (
-            <>
-              {" · "}
-              <span className="text-muted-foreground">{restante}</span>
-            </>
+            <span className="block text-muted-foreground sm:inline">
+              <span className="hidden sm:inline"> · </span>
+              {restante} no total
+            </span>
           )}
         </span>
       </div>
@@ -63,8 +72,8 @@ export function ReguaDeProgresso({
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={respondidos.size}
-        aria-valuetext={`${respondidos.size} de ${total} respondidas${
-          restante ? `, falta ${restante}` : ""
+        aria-valuetext={`${respondidos.size} de ${total} respondidas nesta etapa${
+          restante ? `, e ${restante} para terminar tudo` : ""
         }`}
       >
         {Array.from({ length: total }, (_, i) => {

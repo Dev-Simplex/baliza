@@ -77,6 +77,66 @@ type PendenciaDeResposta =
     }
   | { tipo: "escolha"; blocoId: string; escolhaId: string; tempoMs?: number };
 
+/**
+ * O teclado que `role="radiogroup"` promete — e que não existia.
+ *
+ * O papel diz ao leitor de tela: "grupo de opções, 1 de 5". Quem ouve isso faz
+ * o que o padrão manda e aperta uma seta. Aqui não acontecia nada — e no eixo
+ * horizontal era pior: `ArrowLeft`/`ArrowRight` estão capturados na janela para
+ * trocar de PERGUNTA, então a seta jogava a pessoa para a tela anterior sem
+ * anunciar nada.
+ *
+ * Além disso os cinco botões tinham `tabIndex` 0, ou seja cinco paradas de Tab
+ * por tela: numa bateria completa, ~395 Tabs a mais do que o padrão pede.
+ *
+ * As duas coisas se resolvem juntas com o "tabIndex rotativo": só UM botão do
+ * grupo é tabulável (o marcado, ou o primeiro quando nada está marcado), e as
+ * setas movem o foco dentro do grupo — parando a propagação, para o atalho de
+ * navegação entre perguntas não roubar a tecla.
+ */
+function useTecladoDeGrupo(indiceMarcado: number) {
+  const grupo = useRef<HTMLDivElement | null>(null);
+
+  const aoTeclar = useCallback(
+    (evento: React.KeyboardEvent) => {
+      const teclas = ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft", "Home", "End"];
+      if (!teclas.includes(evento.key)) return;
+
+      const botoes = Array.from(
+        grupo.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]') ?? [],
+      );
+      if (botoes.length === 0) return;
+
+      const atual = botoes.findIndex((b) => b === document.activeElement);
+      // Fora do grupo: a seta segue valendo para navegar entre perguntas.
+      if (atual < 0) return;
+
+      evento.preventDefault();
+      evento.stopPropagation();
+
+      const passo =
+        evento.key === "ArrowDown" || evento.key === "ArrowRight" ? 1 : -1;
+      const proximo =
+        evento.key === "Home"
+          ? 0
+          : evento.key === "End"
+            ? botoes.length - 1
+            : (atual + passo + botoes.length) % botoes.length;
+
+      botoes[proximo]?.focus();
+    },
+    [],
+  );
+
+  /** Só um botão entra na ordem de tabulação — o padrão do radiogroup. */
+  const tabIndexDe = useCallback(
+    (i: number) => (i === (indiceMarcado >= 0 ? indiceMarcado : 0) ? 0 : -1),
+    [indiceMarcado],
+  );
+
+  return { grupo, aoTeclar, tabIndexDe };
+}
+
 export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   const router = useRouter();
   const semMovimento = useReducedMotion();
@@ -575,8 +635,12 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
     );
   }
 
+  // `w-full min-w-0`: sem eles o contêiner cresce com o conteúdo em vez de
+  // conter, e a página inteira ganha rolagem lateral quando alguém amplia o
+  // texto. A margem em px, e não em rem, é de propósito — padding que cresce
+  // junto com a fonte é parte do que empurrava a página para fora a 200%.
   return (
-    <div className="mx-auto flex min-h-svh max-w-2xl flex-col px-5 py-6 sm:px-8">
+    <div className="mx-auto flex min-h-svh w-full min-w-0 max-w-2xl flex-col px-[20px] py-6 sm:px-8">
       <header className="shrink-0 space-y-3">
         <TrilhaDeEtapas
           etapas={etapas.map((e) => ({ curto: e.curto, teste: e.teste }))}
@@ -951,6 +1015,10 @@ function PerguntaLikert({
   valor: number | null;
   aoResponder: (valor: number) => void;
 }) {
+  const { grupo, aoTeclar, tabIndexDe } = useTecladoDeGrupo(
+    escala.findIndex((o) => o.valor === valor),
+  );
+
   return (
     <div>
       <p className="etiqueta mb-4" id="enunciado-likert">
@@ -968,11 +1036,13 @@ function PerguntaLikert({
           quem ouve "concordo totalmente" sem a frase antes não tem como
           responder. */}
       <div
+        ref={grupo}
+        onKeyDown={aoTeclar}
         className="mt-9 space-y-2"
         role="radiogroup"
         aria-labelledby={`${ID_DA_PERGUNTA} enunciado-likert`}
       >
-        {escala.map((opcao) => {
+        {escala.map((opcao, i) => {
           const marcado = valor === opcao.valor;
           return (
             <button
@@ -980,6 +1050,7 @@ function PerguntaLikert({
               type="button"
               role="radio"
               aria-checked={marcado}
+              tabIndex={tabIndexDe(i)}
               onClick={() => aoResponder(opcao.valor)}
               className={cn(
                 "group flex w-full items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all",
@@ -1393,6 +1464,10 @@ function PerguntaDeEscolhaUnica({
   escolha: string | null;
   aoResponder: (id: string) => void;
 }) {
+  const { grupo, aoTeclar, tabIndexDe } = useTecladoDeGrupo(
+    opcoes.findIndex((o) => o.id === escolha),
+  );
+
   return (
     <div>
       <p className="etiqueta mb-3" id="enunciado-escolha">
@@ -1407,6 +1482,8 @@ function PerguntaDeEscolhaUnica({
       </h1>
 
       <div
+        ref={grupo}
+        onKeyDown={aoTeclar}
         className="mt-6 space-y-2"
         role="radiogroup"
         aria-labelledby={`${ID_DA_PERGUNTA} enunciado-escolha`}
@@ -1419,6 +1496,7 @@ function PerguntaDeEscolhaUnica({
               type="button"
               role="radio"
               aria-checked={marcado}
+              tabIndex={tabIndexDe(i)}
               onClick={() => aoResponder(opcao.id)}
               className={cn(
                 "flex w-full items-start gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all",
