@@ -6,7 +6,7 @@ import { CATALOGO_DE_TESTES } from "@/lib/instrument/baterias";
 import { lerAvaliacao } from "@/lib/analise/modulos";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
-import { faixaQualitativa } from "@/lib/instrument/scoring";
+import { faixaQualitativa, separarPorFaixa } from "@/lib/instrument/scoring";
 import {
   FATORES,
   NOMES_DE_FATOR,
@@ -100,6 +100,7 @@ export async function GET(
   } | null;
   const facetas =
     (avaliacao.facetNotes as Array<{ texto: string }> | null) ?? [];
+  const separadas = separarPorFaixa(detalhe?.contribuicoes ?? []);
 
   const roteiro = montarRoteiro({
     contribuicoes: detalhe?.contribuicoes ?? [],
@@ -153,11 +154,14 @@ export async function GET(
       })),
     ],
 
-    puxaramPraCima: (detalhe?.puxaramPraCima ?? []).map((c) => ({
+    // Derivadas na leitura, e NÃO lidas de `detalhe.puxaram*`: a cópia gravada
+    // é de quando a prova foi corrigida, e as pontuadas antes do conserto ainda
+    // trazem a mesma dimensão nas duas colunas. Ver `separarPorFaixa`.
+    puxaramPraCima: separadas.puxaramPraCima.map((c) => ({
       nome: c.nome ?? NOMES_DE_FATOR[c.fator].ui,
       escore: c.escore,
     })),
-    puxaramPraBaixo: (detalhe?.puxaramPraBaixo ?? []).map((c) => ({
+    puxaramPraBaixo: separadas.puxaramPraBaixo.map((c) => ({
       nome: c.nome ?? NOMES_DE_FATOR[c.fator].ui,
       escore: c.escore,
     })),

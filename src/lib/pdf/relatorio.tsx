@@ -1,5 +1,8 @@
+import path from "node:path";
+
 import {
   Document,
+  Font,
   Page,
   Path,
   Polygon,
@@ -43,6 +46,54 @@ import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
  * ~300 MB de navegador para subir a cada requisição.
  */
 
+/* ─── Tipografia ────────────────────────────────────────────────────────────
+   O PDF nascia inteiro em Helvetica, que é uma das 14 fontes que todo leitor
+   de PDF já tem. Sai de graça — e sai igual a qualquer documento do mundo. O
+   relatório é o único pedaço do Prumo que circula FORA do produto: vai por
+   e-mail, é impresso, é lido por quem nunca abriu a ferramenta. Sair sem a
+   cara do produto é desperdiçar a única peça que viaja sozinha.
+
+   Agora ele usa as mesmas duas famílias da tela: Inter Tight no texto e
+   Bricolage Grotesque no que é display (nome, número da aderência, marca).
+
+   Os arquivos estão VERSIONADOS em `fontes/`, e não buscados na hora. Duas
+   razões: gerar relatório não pode depender de a Google estar no ar — o build
+   já falhou uma vez hoje exatamente assim; e o arquivo tem que sair idêntico
+   daqui a dois anos, quando a versão da fonte lá fora já tiver mudado. São
+   ~1 MB de TTF sob licença aberta (OFL), que permite embutir.
+
+   `process.cwd()` funciona porque o servidor roda da raiz do projeto. Se um
+   dia virar `output: "standalone"`, estes arquivos precisam entrar na cópia. */
+const PASTA_DE_FONTES = path.join(process.cwd(), "src/lib/pdf/fontes");
+const CORPO = "Inter Tight";
+const DISPLAY = "Bricolage Grotesque";
+
+Font.register({
+  family: CORPO,
+  fonts: [
+    { src: path.join(PASTA_DE_FONTES, "InterTight-Regular.ttf"), fontWeight: 400 },
+    { src: path.join(PASTA_DE_FONTES, "InterTight-SemiBold.ttf"), fontWeight: 600 },
+    { src: path.join(PASTA_DE_FONTES, "InterTight-Bold.ttf"), fontWeight: 700 },
+  ],
+});
+
+Font.register({
+  family: DISPLAY,
+  fonts: [
+    { src: path.join(PASTA_DE_FONTES, "BricolageGrotesque-SemiBold.ttf"), fontWeight: 600 },
+    { src: path.join(PASTA_DE_FONTES, "BricolageGrotesque-Bold.ttf"), fontWeight: 700 },
+  ],
+});
+
+/* Sem hifenização automática.
+
+   A biblioteca quebra palavra no fim da linha usando um dicionário que é do
+   INGLÊS. Em português ela corta em lugar que não existe — "comporta-mental",
+   "entre-vista" — e num relatório que alguém vai imprimir e levar para uma
+   conversa isso lê como erro de revisão. Devolver a palavra inteira desliga a
+   quebra: prefiro uma linha com mais espaço do que uma palavra partida errado. */
+Font.registerHyphenationCallback((palavra) => [palavra]);
+
 // As cores vêm dos mesmos valores do tema claro em `globals.css`. Repetidas
 // como literal porque o PDF não tem CSS custom property para resolver.
 const COR = {
@@ -68,23 +119,25 @@ const e = StyleSheet.create({
     fontSize: 9,
     color: COR.tinta,
     backgroundColor: COR.papel,
-    fontFamily: "Helvetica",
+    fontFamily: CORPO,
   },
 
   // ─── Cabeçalho ───────────────────────────────────────────────────────────
   topo: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   marca: { flexDirection: "row", alignItems: "center", gap: 5 },
-  marcaTexto: { fontSize: 11, fontFamily: "Helvetica-Bold", letterSpacing: -0.2 },
+  marcaTexto: { fontSize: 11, fontFamily: DISPLAY, fontWeight: 700, letterSpacing: -0.2 },
   etiqueta: {
     fontSize: 6.5,
     letterSpacing: 1.1,
     color: COR.suave,
-    fontFamily: "Helvetica",
+    fontFamily: CORPO,
     textTransform: "uppercase",
   },
-  nome: { fontSize: 17, fontFamily: "Helvetica-Bold", letterSpacing: -0.4 },
+  // Display nos três lugares em que o documento se apresenta: a marca, o nome
+  // de quem é o relatório e o número que resume tudo. O resto é leitura.
+  nome: { fontSize: 17, fontFamily: DISPLAY, fontWeight: 700, letterSpacing: -0.4 },
   vaga: { fontSize: 9, color: COR.suave, marginTop: 1 },
-  aderencia: { fontSize: 24, fontFamily: "Helvetica-Bold", color: COR.marca, letterSpacing: -0.5 },
+  aderencia: { fontSize: 24, fontFamily: DISPLAY, fontWeight: 700, color: COR.marca, letterSpacing: -0.5 },
 
   selo: {
     marginTop: 4,
@@ -106,7 +159,7 @@ const e = StyleSheet.create({
     padding: 13,
     marginBottom: 11,
   },
-  titulo: { fontSize: 10, fontFamily: "Helvetica-Bold", marginBottom: 3 },
+  titulo: { fontSize: 10, fontFamily: CORPO, fontWeight: 700, marginBottom: 3 },
   legenda: { fontSize: 8, color: COR.suave, lineHeight: 1.45 },
   corpo: { fontSize: 9, lineHeight: 1.5 },
 
@@ -208,6 +261,29 @@ export type DadosDoRelatorio = {
   bateria?: string[];
 };
 
+/**
+ * Junta perguntas VIZINHAS que compartilham a mesma justificativa.
+ *
+ * Vizinhas, e não todas as iguais: a ordem do roteiro é deliberada (§6.1 manda
+ * o SJT primeiro), e reagrupar por conteúdo a embaralharia. `primeiro` guarda o
+ * índice original, que é o número impresso ao lado da pergunta — sem ele a
+ * numeração recomeçaria a cada grupo.
+ */
+function agruparPorMotivo(perguntas: DadosDoRelatorio["perguntas"]) {
+  const grupos: Array<{
+    primeiro: number;
+    itens: DadosDoRelatorio["perguntas"];
+  }> = [];
+
+  perguntas.forEach((p, i) => {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.itens[0].motivo === p.motivo) ultimo.itens.push(p);
+    else grupos.push({ primeiro: i, itens: [p] });
+  });
+
+  return grupos;
+}
+
 const ROTULO_DO_TIPO: Record<DadosDoRelatorio["faixas"][number]["tipo"], string> = {
   maior_melhor: "quanto mais, melhor",
   faixa_otima: "faixa ótima — penaliza os dois lados",
@@ -248,11 +324,11 @@ function FaixaDoPdf({ d }: { d: DadosDoRelatorio["faixas"][number] }) {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
           <Text style={e.etiqueta}>{d.fator}</Text>
-          <Text style={{ fontSize: 9, fontFamily: "Helvetica-Bold" }}>{d.nome}</Text>
+          <Text style={{ fontSize: 9, fontFamily: CORPO, fontWeight: 700 }}>{d.nome}</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
           <Text style={e.etiqueta}>{irrelevante ? "peso 0" : `peso ${d.peso}`}</Text>
-          <Text style={{ fontSize: 11, fontFamily: "Helvetica-Bold", color: cor }}>
+          <Text style={{ fontSize: 11, fontFamily: CORPO, fontWeight: 700, color: cor }}>
             {Math.round(d.escore)}
           </Text>
         </View>
@@ -402,7 +478,7 @@ function Radar({ escores }: { escores: Record<Fator, number> }) {
             key={`v-${f}`}
             x={x}
             y={y + 10}
-            style={{ fontSize: 7, fill: COR.tinta, fontFamily: "Helvetica-Bold" }}
+            style={{ fontSize: 7, fill: COR.tinta, fontFamily: CORPO, fontWeight: 700 }}
             textAnchor={ancora}
           >
             {Math.round(escores[f] ?? 0)}
@@ -466,7 +542,7 @@ function LinhaDeModulo({
           <Text
             style={{
               fontSize: 10,
-              fontFamily: "Helvetica-Bold",
+              fontFamily: CORPO, fontWeight: 700,
               color: destaque ? COR.fora : COR.tinta,
             }}
           >
@@ -502,7 +578,19 @@ function ModulosDoManual({
   emPaginaNova: boolean;
 }) {
   return (
-    <View break={emPaginaNova}>
+    /* Quebra CONDICIONAL, não incondicional.
+
+       Era `break`, que quebra sempre. A intenção estava certa — esta seção não
+       deve começar com dois centímetros de folha sobrando — mas o efeito foi o
+       oposto do pretendido: o roteiro de entrevista terminava logo no topo de
+       uma página, o `break` empurrava tudo para a SEGUINTE, e sobrava uma folha
+       com uma pergunta e 95% de papel em branco. O relatório saía com 5 páginas
+       onde cabiam 4, e quem imprime paga por essa folha.
+
+       `minPresenceAhead` diz a mesma coisa de um jeito que se defende sozinho:
+       "só comece aqui se houver ao menos 260pt de folha" — cerca de um terço de
+       uma A4. Sobrando menos que isso, quebra; sobrando mais, preenche. */
+    <View minPresenceAhead={emPaginaNova ? 260 : 0}>
       <Text style={[e.etiqueta, { marginBottom: 9 }]}>
         Outros testes desta bateria
       </Text>
@@ -552,7 +640,7 @@ function ModulosDoManual({
                 <Text
                   style={{
                     fontSize: 9,
-                    fontFamily: "Helvetica-Bold",
+                    fontFamily: CORPO, fontWeight: 700,
                     color: c.atencao ? COR.fora : COR.tinta,
                   }}
                 >
@@ -573,7 +661,7 @@ function ModulosDoManual({
                 padding: 8,
               }}
             >
-              <Text style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: COR.fora }}>
+              <Text style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 700, color: COR.fora }}>
                 Escolheu a pior alternativa em{" "}
                 {modulos.sjt.piores.length === 1
                   ? "1 cenário"
@@ -621,7 +709,7 @@ function ModulosDoManual({
             }}
           >
             <Text style={e.titulo}>DISC — estilo de trabalho</Text>
-            <Text style={{ fontSize: 12, fontFamily: "Helvetica-Bold" }}>
+            <Text style={{ fontSize: 12, fontFamily: CORPO, fontWeight: 700 }}>
               {modulos.disc.rotulo}
             </Text>
           </View>
@@ -689,7 +777,7 @@ function ModulosDoManual({
             qualidade.alertas.map((a) => (
               <View key={a.chave} style={{ marginTop: 4 }}>
                 <Text
-                  style={{ fontSize: 8, fontFamily: "Helvetica-Bold", color: COR.fora }}
+                  style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 700, color: COR.fora }}
                 >
                   {a.titulo}
                 </Text>
@@ -919,10 +1007,21 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
         </View>
         )}
 
-        {/* ─── Página 2: quem é, e o que perguntar ──────────────────────── */}
-        {/* A quebra só existe se houve página 1. Sem os cinco fatores não há
-            radar nem faixas, e quebrar assim mesmo abriria a folha em branco. */}
-        <View break={Boolean(d.escores)}>
+        {/* ─── Quem é, e o que perguntar ─────────────────────────────────── */}
+        {/* Mesma troca da seção dos módulos, e pelo mesmo motivo — só que aqui
+            eu só enxerguei o efeito DEPOIS de trocar a outra.
+
+            Com as fontes novas o cartão "Leitura por dimensão" deixou de caber
+            na primeira folha por alguns pontos e escorregou para a segunda.
+            O `break` daqui então empurrava o radar para a TERCEIRA, e a segunda
+            ficava com um cartão de cinco linhas e 80% de papel em branco: a
+            folha vazia não sumiu, mudou de lugar. Quebra incondicional é assim
+            — ela não pergunta quanto sobrou, e cada vez que o conteúdo acima
+            muda de tamanho ela reabre o buraco em outro ponto.
+
+            Com `minPresenceAhead` a regra passa a ser sobre o espaço, não sobre
+            a posição: começa aqui se couber um terço de folha, senão vira. */}
+        <View minPresenceAhead={d.escores ? 260 : 0}>
           {d.escores && (
           <View style={[e.cartao, { flexDirection: "row", gap: 18 }]} wrap={false}>
             <View style={{ width: 210 }}>
@@ -935,7 +1034,7 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
                 <View>
                   <Text style={e.etiqueta}>Arquétipo</Text>
                   <Text
-                    style={{ fontSize: 13, fontFamily: "Helvetica-Bold", marginTop: 2 }}
+                    style={{ fontSize: 13, fontFamily: CORPO, fontWeight: 700, marginTop: 2 }}
                   >
                     {d.arquetipo.nome}
                   </Text>
@@ -966,19 +1065,49 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
                 Perguntas comportamentais — a pessoa conta um fato que aconteceu.
                 Cada uma sonda um ponto específico deste perfil.
               </Text>
-              {d.perguntas.map((p, i) => (
-                <View
-                  key={i}
-                  style={{ flexDirection: "row", gap: 8, marginBottom: 9 }}
-                  wrap={false}
-                >
-                  <Text style={{ fontSize: 8, color: COR.marca, width: 10 }}>
-                    {i + 1}
-                  </Text>
-                  <View style={{ flex: 1 }}>
-                    <Text style={e.corpo}>{p.pergunta}</Text>
-                    <Text style={[e.legenda, { marginTop: 2 }]}>{p.motivo}</Text>
-                  </View>
+              {/* O motivo repetido não se repete no papel.
+
+                  O roteiro monta duas perguntas por dimensão fraca, e as duas
+                  carregam a MESMA justificativa, palavra por palavra:
+                  "Cooperação ficou em 50, abaixo do piso de 65 que esta vaga
+                  pede." aparecia duas vezes seguidas, e "Escolheu a pior
+                  alternativa…" três. Num relatório de entrevista isso lê como
+                  texto de encher — e o leitor começa a pular o que está em
+                  cinza, que é justamente onde mora o porquê de cada pergunta.
+
+                  Some só quando é IDÊNTICA à anterior. É supressão de
+                  apresentação: o dado que vem do roteiro não muda, e a tela
+                  segue mostrando cada pergunta com a sua.
+
+                  As que dividem motivo viram um BLOCO indivisível, e não itens
+                  soltos com o texto escondido. A diferença aparece na quebra de
+                  página: solto, o grupo podia partir e a pergunta de baixo
+                  começava a folha seguinte sem porquê nenhum — pior do que a
+                  repetição que eu estava removendo. */}
+              {agruparPorMotivo(d.perguntas).map((grupo) => (
+                <View key={grupo.primeiro} wrap={false}>
+                  {grupo.itens.map((p, j) => (
+                    <View
+                      key={j}
+                      style={{
+                        flexDirection: "row",
+                        gap: 8,
+                        marginBottom: j === grupo.itens.length - 1 ? 9 : 4,
+                      }}
+                    >
+                      <Text style={{ fontSize: 8, color: COR.marca, width: 10 }}>
+                        {grupo.primeiro + j + 1}
+                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={e.corpo}>{p.pergunta}</Text>
+                        {j === 0 && (
+                          <Text style={[e.legenda, { marginTop: 2 }]}>
+                            {p.motivo}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  ))}
                 </View>
               ))}
             </View>

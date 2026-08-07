@@ -21,7 +21,7 @@ import { CATALOGO_DE_TESTES, type Teste } from "@/lib/instrument/baterias";
 import { lerAvaliacao, type LeituraDaAvaliacao } from "@/lib/analise/modulos";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
-import { faixaQualitativa } from "@/lib/instrument/scoring";
+import { faixaQualitativa, separarPorFaixa } from "@/lib/instrument/scoring";
 import {
   FATORES,
   NOMES_DE_FATOR,
@@ -130,10 +130,12 @@ export default async function PaginaDoCandidato({
     avaliacao.fitScore == null ? null : numero(avaliacao.fitScore, 1);
   const detalhe = (avaliacao.fitDetail ?? {}) as {
     contribuicoes?: ContribuicaoDeFit[];
-    puxaramPraCima?: ContribuicaoDeFit[];
-    puxaramPraBaixo?: ContribuicaoDeFit[];
     ignoradas?: Fator[];
   };
+  // Derivadas na leitura, e não lidas de `fitDetail.puxaram*`. A cópia gravada
+  // é de quando a prova foi corrigida: as pontuadas antes do conserto ainda
+  // trazem a mesma dimensão nas duas colunas. Ver `separarPorFaixa`.
+  const separadas = separarPorFaixa(detalhe.contribuicoes ?? []);
   const facetas = (avaliacao.facetNotes as NotaDeFaceta[]) ?? [];
   const arquetipo = avaliacao.archetypeId
     ? ARQUETIPO_POR_ID.get(avaliacao.archetypeId)
@@ -272,8 +274,8 @@ export default async function PaginaDoCandidato({
               <div>
                 <p className="etiqueta mb-2 text-dentro">Puxaram pra cima</p>
                 <ul className="space-y-1 t-corpo-sm">
-                  {detalhe.puxaramPraCima?.length ? (
-                    detalhe.puxaramPraCima.map((c) => (
+                  {separadas.puxaramPraCima.length ? (
+                    separadas.puxaramPraCima.map((c) => (
                       <li key={c.fator}>
                         {c.nome ?? NOMES_DE_FATOR[c.fator].ui}{" "}
                         <span className="leitura text-muted-foreground">
@@ -289,8 +291,8 @@ export default async function PaginaDoCandidato({
               <div>
                 <p className="etiqueta mb-2 text-fora">Puxaram pra baixo</p>
                 <ul className="space-y-1 t-corpo-sm">
-                  {detalhe.puxaramPraBaixo?.length ? (
-                    detalhe.puxaramPraBaixo.map((c) => (
+                  {separadas.puxaramPraBaixo.length ? (
+                    separadas.puxaramPraBaixo.map((c) => (
                       <li key={c.fator}>
                         {c.nome ?? NOMES_DE_FATOR[c.fator].ui}{" "}
                         <span className="leitura text-muted-foreground">

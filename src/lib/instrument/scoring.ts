@@ -462,41 +462,56 @@ export function calcularFit(
             10,
         ) / 10;
 
-  const porPerda = [...contribuicoes].sort((a, b) => b.perda - a.perda);
-
-  // ─── As duas listas precisam ser DISJUNTAS ────────────────────────────────
-  // Elas não eram, e o resultado aparecia na cara do usuário: em 13 das 19
-  // fichas da base a MESMA dimensão saía em "puxaram pra cima" e em "puxaram
-  // pra baixo", às vezes logo abaixo da frase "todas as dimensões ficaram
-  // dentro da faixa alvo".
-  //
-  // A causa era o critério do "pra baixo" ser NEGATIVO — "não (dentro e desvio
-  // pequeno)" — o que deixava passar qualquer dimensão dentro da faixa com
-  // desvio ≥ 0,05; e o "pra cima" aceitar "dentro e peso ≥ 3" sem excluí-la.
-  // Toda dimensão dentro da faixa, com peso e um pouco longe do ideal, caía nas
-  // duas. Não era o caso raro: era o comum.
-  //
-  // Agora cada lista tem critério PRÓPRIO e POSITIVO, e a fronteira é o mesmo
-  // `dentro` que o resto da ficha usa:
-  //   · puxou pra baixo = ficou FORA da faixa que a vaga pede (é a lacuna real)
-  //   · puxou pra cima  = ficou DENTRO e pesa, ordenada da mais próxima do ideal
-  // Ser disjunto passa a ser propriedade da definição, não de um filtro extra
-  // que alguém pode remover sem perceber.
-  //
-  // Quando tudo está dentro, "pra baixo" fica vazio — que é exatamente o que a
-  // frase do cabeçalho já dizia, e agora as duas coisas concordam.
-  const puxaramPraBaixo = porPerda.filter((c) => !c.dentro).slice(0, 3);
-  const puxaramPraCima = [...porPerda]
-    .reverse()
-    .filter((c) => c.dentro && c.peso >= 3)
-    .slice(0, 3);
-
   return {
     score: Math.max(0, Math.min(100, score)),
-    puxaramPraBaixo,
-    puxaramPraCima,
+    ...separarPorFaixa(contribuicoes),
     ignoradas,
     contribuicoes,
+  };
+}
+
+/**
+ * As duas listas da explicação da aderência — DISJUNTAS por definição.
+ *
+ * ─── O defeito original ────────────────────────────────────────────────────
+ * Elas não eram disjuntas, e isso aparecia na cara do usuário: em 13 das 19
+ * fichas da base a MESMA dimensão saía em "puxaram pra cima" e em "puxaram pra
+ * baixo", às vezes logo abaixo da frase "todas as dimensões ficaram dentro da
+ * faixa alvo". A causa era o critério do "pra baixo" ser NEGATIVO — "não
+ * (dentro e desvio pequeno)" — deixando passar qualquer dimensão dentro da
+ * faixa com desvio ≥ 0,05, enquanto o "pra cima" aceitava "dentro e peso ≥ 3"
+ * sem excluí-la. Toda dimensão dentro da faixa, com peso e um pouco longe do
+ * ideal, caía nas duas. Não era o caso raro: era o comum.
+ *
+ * Agora cada lista tem critério PRÓPRIO e POSITIVO, e a fronteira é o mesmo
+ * `dentro` que o resto da ficha usa:
+ *   · puxou pra baixo = ficou FORA da faixa que a vaga pede (é a lacuna real)
+ *   · puxou pra cima  = ficou DENTRO e pesa, da mais próxima do ideal
+ * Ser disjunto passa a ser propriedade da definição, e não de um filtro extra
+ * que alguém remove sem perceber. Tudo dentro ⇒ "pra baixo" vazio, que é o que
+ * a frase do cabeçalho já dizia.
+ *
+ * ─── Por que virou função exportada ────────────────────────────────────────
+ * Consertar o cálculo NÃO consertou as fichas. As duas listas são gravadas em
+ * `fitDetail` na hora em que a prova é corrigida, e tela e PDF liam a cópia
+ * gravada: toda avaliação pontuada antes da correção seguia mostrando a
+ * contradição, e eu só descobri porque fui olhar um PDF de julho.
+ *
+ * Derivado não se guarda — ou, se guardar, não se confia. `contribuicoes` está
+ * no mesmo `fitDetail` e carrega o `dentro` de cada dimensão, então quem lê
+ * recalcula com a regra de HOJE. As fichas antigas se corrigem sozinhas, sem
+ * migração e sem reprocessar prova nenhuma, e uma mudança futura de regra não
+ * volta a criar duas verdades.
+ */
+export function separarPorFaixa(contribuicoes: ContribuicaoDeFit[]) {
+  const porPerda = [...contribuicoes].sort((a, b) => b.perda - a.perda);
+
+  return {
+    puxaramPraBaixo: porPerda.filter((c) => !c.dentro).slice(0, 3),
+    puxaramPraCima: [...porPerda]
+      .reverse()
+      .filter((c) => c.dentro && c.peso >= 3)
+      .slice(0, 3),
   };
 }
 
