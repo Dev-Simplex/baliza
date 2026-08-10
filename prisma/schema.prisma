@@ -74,6 +74,19 @@ model User {
   // que quem já aprendeu não veja o tutorial de novo ao trocar de máquina.
   onboardingDoneAt DateTime?
 
+  /// A apresentação que abre sozinha na primeira entrada.
+  ///
+  /// Coluna PRÓPRIA, e não `onboardingDoneAt` reaproveitado: as duas coisas
+  /// terminam em momentos diferentes. A apresentação acaba em um minuto, na
+  /// primeira sessão; a lista de primeiros passos só se completa quando a
+  /// primeira pessoa responde, o que pode levar dias. Uma coluna só faria
+  /// fechar a apresentação apagar a lista junto — e a lista é justamente o que
+  /// sustenta quem ainda não terminou o caminho.
+  ///
+  /// No usuário pelo mesmo motivo da outra: quem já viu não deve rever ao abrir
+  /// o painel em outra máquina.
+  welcomeTourAt DateTime?
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

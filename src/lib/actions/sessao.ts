@@ -27,6 +27,27 @@ export async function concluirPrimeirosPassos() {
   revalidatePath("/dashboard");
 }
 
+/**
+ * Fecha a apresentação de entrada, para sempre.
+ *
+ * Chamada tanto ao terminar quanto ao pular: as duas significam a mesma coisa
+ * — "já vi isto" — e distinguir só serviria para mostrar de novo a quem já
+ * disse que não queria. Quem quiser rever tem a página `/como-funciona`, que
+ * é a versão completa e não some nunca.
+ */
+export async function concluirTutorialDeEntrada() {
+  const sessao = await auth();
+  const userId = sessao?.user?.id;
+  if (!userId) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { welcomeTourAt: new Date() },
+  });
+
+  revalidatePath("/dashboard");
+}
+
 export async function sair() {
   const sessao = await auth();
 

@@ -32,6 +32,7 @@ import { exigirTenant, podeAoMenos } from "@/lib/tenant";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PrimeirosPassos } from "@/components/app/primeiros-passos";
+import { TutorialDeEntrada } from "@/components/app/tutorial-de-entrada";
 
 export const metadata: Metadata = { title: "Visão geral" };
 
@@ -49,7 +50,7 @@ export default async function PaginaDoPainel() {
       sessao?.user?.id
         ? prisma.user.findUnique({
             where: { id: sessao.user.id },
-            select: { onboardingDoneAt: true },
+            select: { onboardingDoneAt: true, welcomeTourAt: true, name: true },
           })
         : null,
       prisma.invitation.count({ where: { organizationId } }),
@@ -65,6 +66,11 @@ export default async function PaginaDoPainel() {
   // Some agora quando a pessoa termina de verdade, ou quando ela dispensa.
   const mostrarPrimeirosPassos = !usuario?.onboardingDoneAt;
 
+  // A apresentação abre uma vez, na primeira entrada. Coluna própria e não
+  // `onboardingDoneAt`: as duas coisas terminam em momentos diferentes, e uma
+  // só faria fechar a apresentação apagar a lista de primeiros passos junto.
+  const mostrarTutorial = !usuario?.welcomeTourAt;
+
   // Quem só lê não cria vaga: o botão existia e terminava num redirecionamento
   // com "erro=permissao".
   const criarVaga = podeAoMenos(role, "RECRUITER") ? (
@@ -77,6 +83,8 @@ export default async function PaginaDoPainel() {
   return (
     <div className="mx-auto max-w-7xl">
       <CabecalhoDePagina etiqueta="Painel" titulo="Visão geral" acoes={criarVaga} />
+
+      {mostrarTutorial && <TutorialDeEntrada nome={usuario?.name} />}
 
       {mostrarPrimeirosPassos && (
         <div className="mb-4">
