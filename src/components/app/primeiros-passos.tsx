@@ -107,6 +107,19 @@ export function PrimeirosPassos({
         <p className="mt-1 t-corpo-sm text-muted-foreground">
           {concluidos} de {passos.length} — a lista some sozinha quando terminar.
         </p>
+        {/* Esta lista diz O QUE FAZER; ela não diz o que o produto é. Quem chega
+            sem nunca ter visto um teste comportamental precisa da segunda coisa
+            antes da primeira — senão cria a vaga sem entender contra o que a
+            aderência vai ser calculada. */}
+        <p className="mt-2.5 t-corpo-sm">
+          <Link
+            href="/como-funciona"
+            className="text-marca underline underline-offset-2 hover:no-underline"
+          >
+            Primeira vez aqui? Entenda como o Prumo funciona
+          </Link>{" "}
+          <span className="text-muted-foreground">— 5 minutos.</span>
+        </p>
       </div>
 
       <ol className="mt-5 space-y-3">

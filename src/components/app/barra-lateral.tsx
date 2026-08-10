@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   ChartNoAxesColumn,
   LayoutDashboard,
+  LifeBuoy,
   Settings,
   ShieldCheck,
   Users,
@@ -19,6 +20,12 @@ const ITENS = [
   { href: "/vagas", rotulo: "Vagas", Icone: BriefcaseBusiness },
   { href: "/candidatos", rotulo: "Candidatos", Icone: Users },
   { href: "/relatorios", rotulo: "Relatórios", Icone: ChartNoAxesColumn },
+  // Fica na navegação permanente, e não escondido atrás de um "?" no canto: a
+  // dúvida sobre o que significa a aderência não nasce no primeiro login, nasce
+  // três dias depois olhando o primeiro resultado. Precisa estar à vista nessa
+  // hora — e ter endereço próprio, para mandar o link a quem lê o relatório
+  // sem nunca ter entrado no sistema.
+  { href: "/como-funciona", rotulo: "Como funciona", Icone: LifeBuoy },
   { href: "/configuracoes", rotulo: "Configurações", Icone: Settings },
 ];
 
