@@ -14,53 +14,61 @@ export const metadata: Metadata = { title: "Como funciona" };
  * Balão que aparece uma vez some exatamente quando a pessoa precisa dele: a
  * dúvida sobre o que significa "aderência 58,1" não nasce no primeiro login,
  * nasce três dias depois, olhando o primeiro resultado. Página fica, tem
- * endereço, é possível mandar o link para o gestor da área — que é quem mais
+ * endereço, e dá para mandar o link para o gestor da área — que é quem mais
  * costuma ler o relatório sem nunca ter entrado aqui.
  *
- * ─── Por que ela repete coisas que já estão em outras telas ───────────────
- * De propósito. Cada tela explica o SEU pedaço no momento em que ele aparece;
- * esta é a única que mostra como os pedaços se encaixam. Quem já entendeu não
- * volta aqui, e não custa nada a ele.
+ * ─── Esta é a segunda versão, e a primeira tinha cinco mentiras ───────────
+ * Três revisores independentes leram a versão original: um sem conhecer o
+ * produto, um conferindo cada afirmação contra o código, um percorrendo as
+ * telas. Acharam 5 afirmações FALSAS e 12 exageradas, e a raiz de metade delas
+ * era uma omissão só: o texto descrevia UMA prova, e o produto aplica uma
+ * bateria de até quatro testes por vaga. É disso que dependem o tempo, o
+ * número, o selo e as checagens — omitir a bateria fazia tudo o mais soar
+ * absoluto quando era condicional.
  *
- * ─── A linguagem ──────────────────────────────────────────────────────────
- * Sem "instrumento psicométrico", sem "fator", sem "percentil". As cinco
- * dimensões aparecem com o nome de gente que o produto já usa na tela
- * (`NOMES_DE_FATOR.ui`), e não com o nome técnico. Onde um termo do mercado é
- * inevitável — DISC, Big Five — ele vem traduzido na mesma frase.
+ * Por isso, aqui, toda frase que vale só para parte da bateria diz para qual
+ * parte. É mais chato de ler e é a diferença entre explicar e enganar.
+ *
+ * ─── A ordem mudou por causa do leitor que nunca viu o produto ────────────
+ * As cinco dimensões vinham DUAS seções depois do passo que manda "marcar o
+ * quanto cada coisa importa" — a dúvida ficava aberta o caminho inteiro. Agora
+ * elas vêm antes do caminho. E a seção do número deixou de ser só uma lista de
+ * negações ("não é nota, não é erro, não tem corte") para dizer o que fazer
+ * com ele.
  */
 
-/** Um passo do caminho, com o nome da tela onde ele acontece. */
+/** Um passo do caminho, com o nome REAL da tela onde ele acontece. */
 const CAMINHO = [
   {
     n: 1,
     titulo: "Você descreve a vaga",
     texto:
-      "Não é o anúncio: é o que a vaga PEDE de comportamento. Um caixa de farmácia precisa de paciência e capricho; um vendedor, de energia e insistência. Você marca o quanto cada coisa importa nessa vaga específica.",
-    onde: "Vagas › Criar vaga",
+      "Não é o anúncio: é o que a vaga PEDE de comportamento. Um caixa de farmácia precisa de paciência e capricho; um vendedor, de energia e insistência. Ao criar a vaga você escolhe um modelo pronto e, depois, ajusta o peso de cada uma das cinco coisas acima.",
+    onde: "Vagas › Criar vaga, e depois › a vaga › Perfil-alvo › Ajustar",
     href: "/vagas",
   },
   {
     n: 2,
-    titulo: "A pessoa responde",
+    titulo: "Você escolhe quais testes aplicar",
     texto:
-      "Você manda um link. Ela abre no celular, responde de 6 a 25 minutos (depende do que você escolheu aplicar) e pronto. Não tem certo nem errado, e ela não precisa criar conta nem instalar nada.",
-    onde: "Vagas › a vaga › Convidar",
+      "São quatro, e a vaga usa os que você quiser. Aplicar só um leva 5 ou 6 minutos; aplicar os quatro leva cerca de 29. A página da vaga mostra o número exato da combinação que você montou — e é esse número que o candidato vê antes de começar.",
+    onde: "Vagas › a vaga › Testes desta vaga",
     href: "/vagas",
   },
   {
     n: 3,
-    titulo: "O Prumo compara",
+    titulo: "A pessoa responde",
     texto:
-      "O sistema põe a resposta dela lado a lado com o que você pediu no passo 1 e mostra o quanto bate. É só isso que o número grande significa.",
-    onde: "Candidatos",
-    href: "/candidatos",
+      "Você entrega um link, um QR Code ou um código de 4 dígitos. Ela abre no celular e responde. Não precisa criar conta nem instalar nada.",
+    onde: "Vagas › a vaga › Acesso dos candidatos",
+    href: "/vagas",
   },
   {
     n: 4,
-    titulo: "Você conversa e decide",
+    titulo: "O Prumo compara e você conversa",
     texto:
-      "O Prumo escreve as perguntas de entrevista que valem a pena para AQUELA pessoa, você conversa, e registra o que decidiu. A decisão é sua — o sistema nunca aprova nem reprova ninguém.",
-    onde: "Candidatos › a pessoa › Parecer",
+      "O sistema põe a resposta dela lado a lado com o que você pediu no passo 1, escolhe as perguntas de entrevista que valem a pena para aquela pessoa, e espera. Quem decide é você — e o parecer fica registrado com o seu nome e a data.",
+    onde: "Candidatos › a pessoa › Parecer do analista",
     href: "/candidatos",
   },
 ] as const;
@@ -73,6 +81,30 @@ const EM_MIUDOS: Record<string, string> = {
   A: "Coopera, cede quando precisa, evita briga por bobagem.",
   O: "Gosta de coisa nova, de mudar o jeito de fazer, de aprender.",
 };
+
+/** Os quatro testes, com o que cada um entrega e quanto custa de tempo. */
+const TESTES = [
+  {
+    nome: "Prumo",
+    tempo: "~6 min",
+    faz: "O mapeamento completo da casa: as cinco dimensões, o arquétipo e o selo de confiança. Sozinho já produz a aderência.",
+  },
+  {
+    nome: "Big Five",
+    tempo: "~5 min",
+    faz: "Mede as mesmas cinco dimensões, mais rápido e com menos nuance. Também produz aderência.",
+  },
+  {
+    nome: "DISC",
+    tempo: "~6 min",
+    faz: "Estilo de trabalho — como a pessoa tende a agir, não o quanto ela serve. Não gera aderência.",
+  },
+  {
+    nome: "Julgamento situacional",
+    tempo: "~12 min",
+    faz: "O único com resposta certa: apresenta situações de trabalho e compara a escolha dela com a esperada.",
+  },
+] as const;
 
 export default function PaginaComoFunciona() {
   return (
@@ -90,16 +122,44 @@ export default function PaginaComoFunciona() {
           Prumo é o nome daquele peso de pedreiro pendurado num barbante: você
           encosta na parede e ele mostra se está torta ou reta.{" "}
           <strong className="font-semibold">
-            Aqui é a mesma coisa, mas para pessoas e vagas.
+            Aqui a ideia é parecida, com uma diferença que muda tudo.
+          </strong>
+        </p>
+        <p className="mt-3 t-corpo leading-relaxed">
+          O prumo do pedreiro tem uma referência só, a gravidade, e por isso ele
+          julga: torta ou reta.{" "}
+          <strong className="font-semibold">
+            Aqui a referência é a vaga — e cada vaga é um prumo diferente.
           </strong>{" "}
-          Você diz como é a vaga, a pessoa responde uma prova curta, e o sistema
-          mostra o quanto ela chega perto — sem dizer se ela é boa ou ruim.
+          Não existe pessoa &ldquo;torta&rdquo;: existe alguém perto do que uma
+          vaga pede e longe do que outra pede. A mesma pessoa, no mesmo dia, com
+          a mesma resposta.
         </p>
         <p className="mt-3 t-corpo leading-relaxed text-muted-foreground">
-          E é importante o que ele <em>não</em> é: não é teste de QI, não é prova
-          de conhecimento, não tem resposta certa e não reprova ninguém. É uma
-          pista para a sua conversa ficar melhor.
+          E o que ele não é: não é teste de QI e não é prova de conhecimento.
+          Não reprova ninguém — nenhuma tela daqui elimina candidato sozinha.
         </p>
+      </section>
+
+      {/* ─── As cinco dimensões vêm ANTES do caminho ─────────────────────── */}
+      <section className="mt-8 rounded-xl border bg-card p-6">
+        <h2 className="text-base font-semibold">As cinco coisas que ele mede</h2>
+        <p className="mt-2 t-corpo-sm leading-relaxed text-muted-foreground">
+          Todo mundo tem um pouco de cada uma. Não existe lado bom e lado ruim —
+          existe o que a vaga pede. São estas que você vai pesar no passo 1.
+        </p>
+        <dl className="mt-4 divide-y">
+          {FATORES.map((f) => (
+            <div key={f} className="flex flex-wrap gap-x-4 gap-y-1 py-2.5">
+              <dt className="w-52 shrink-0 text-sm font-medium">
+                {NOMES_DE_FATOR[f].ui}
+              </dt>
+              <dd className="min-w-0 flex-1 t-corpo text-muted-foreground">
+                {EM_MIUDOS[f]}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* ─── O caminho, do começo ao fim ────────────────────────────────── */}
@@ -127,54 +187,62 @@ export default function PaginaComoFunciona() {
         ))}
       </ol>
 
-      {/* ─── O número grande: onde mora quase todo mal-entendido ────────── */}
+      {/* ─── A bateria: a omissão que fazia tudo soar absoluto ───────────── */}
       <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">
-          O número grande não é uma nota
-        </h2>
-        <p className="mt-3 t-corpo leading-relaxed">
-          Em cada resposta você vê um número, tipo{" "}
-          <span className="leitura font-semibold text-marca">72,4</span>. Ele
-          chama <strong className="font-semibold">aderência</strong> e responde
-          uma única pergunta:{" "}
-          <em>o quanto esta pessoa se parece com o que ESTA vaga pediu.</em>
-        </p>
-
-        <div className="mt-4 rounded-lg border border-dashed p-4">
-          <p className="t-corpo-sm leading-relaxed">
-            A mesma pessoa, no mesmo dia, com a mesma resposta, pode dar{" "}
-            <span className="leitura font-semibold">91</span> numa vaga e{" "}
-            <span className="leitura font-semibold">38</span> em outra. Não é
-            erro. É que as duas vagas pedem coisas diferentes — e é exatamente
-            para isso que o número serve.
-          </p>
-        </div>
-
-        <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
-          Por isso ele nunca aparece sozinho, e não existe &ldquo;nota de
-          corte&rdquo; automática: ninguém é eliminado pelo número.
-        </p>
-      </section>
-
-      {/* ─── As cinco dimensões, em português de gente ──────────────────── */}
-      <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">As cinco coisas que ele mede</h2>
-        <p className="mt-2 t-corpo-sm leading-relaxed text-muted-foreground">
-          Todo mundo tem um pouco de cada uma. Não existe lado bom e lado ruim —
-          existe o que a vaga pede.
+        <h2 className="text-base font-semibold">Os quatro testes</h2>
+        <p className="mt-2 t-corpo leading-relaxed text-muted-foreground">
+          Quase tudo o que muda de uma vaga para outra — o tempo, se existe
+          número, quais avisos aparecem — depende de quais destes você aplicou.
         </p>
         <dl className="mt-4 divide-y">
-          {FATORES.map((f) => (
-            <div key={f} className="flex flex-wrap gap-x-4 gap-y-1 py-2.5">
-              <dt className="w-52 shrink-0 text-sm font-medium">
-                {NOMES_DE_FATOR[f].ui}
+          {TESTES.map((t) => (
+            <div key={t.nome} className="py-3">
+              <dt className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-medium">{t.nome}</span>
+                <span className="leitura shrink-0 t-legenda text-muted-foreground">
+                  {t.tempo}
+                </span>
               </dt>
-              <dd className="min-w-0 flex-1 t-corpo text-muted-foreground">
-                {EM_MIUDOS[f]}
+              <dd className="mt-1 t-corpo leading-relaxed text-muted-foreground">
+                {t.faz}
               </dd>
             </div>
           ))}
         </dl>
+      </section>
+
+      {/* ─── O número grande: onde mora quase todo mal-entendido ────────── */}
+      <section className="mt-8 rounded-xl border bg-card p-6">
+        <h2 className="text-base font-semibold">
+          O número grande, e o que fazer com ele
+        </h2>
+        <p className="mt-3 t-corpo leading-relaxed">
+          Quando a vaga aplica o Prumo ou o Big Five, cada resposta ganha um
+          número de 0 a 100 — tipo{" "}
+          <span className="leitura font-semibold text-marca">72,4</span>. Ele
+          chama <strong className="font-semibold">aderência</strong> e responde
+          uma pergunta só:{" "}
+          <em>o quanto esta pessoa se parece com o que ESTA vaga pediu.</em>{" "}
+          Vaga que aplique só DISC e julgamento situacional não tem esse número,
+          de propósito — sem as cinco dimensões não há o que comparar.
+        </p>
+
+        <div className="mt-4 rounded-lg border border-dashed p-4">
+          <p className="t-corpo-sm leading-relaxed">
+            <strong className="font-semibold">O que fazer com ele:</strong> use
+            para escolher <em>por quem começar</em> a conversar quando há trinta
+            pessoas e uma tarde. É ordem de prioridade, não nota de aprovação.
+          </p>
+          <p className="mt-2 t-corpo-sm leading-relaxed text-muted-foreground">
+            E não compare o número de duas vagas diferentes: são réguas
+            diferentes. Dentro da mesma vaga a comparação vale.
+          </p>
+        </div>
+
+        <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
+          Por isso ele nunca aparece sem o selo de confiança ao lado, e não
+          existe nota de corte automática em lugar nenhum do sistema.
+        </p>
       </section>
 
       {/* ─── Confiança: o que fazer quando a resposta parece estranha ───── */}
@@ -185,31 +253,37 @@ export default function PaginaComoFunciona() {
         <p className="mt-3 t-corpo leading-relaxed">
           Ao lado do número tem um selo — <strong>alta</strong>,{" "}
           <strong>média</strong> ou <strong>baixa</strong>. Ele não fala da
-          pessoa: fala do <em>jeito como ela respondeu</em>.
+          pessoa: fala do <em>jeito como ela respondeu</em>. O sistema olha três
+          coisas:
         </p>
         <ul className="mt-4 space-y-2 t-corpo leading-relaxed">
           <li className="flex gap-2.5">
             <span className="mt-2 size-1.5 shrink-0 rounded-full bg-dentro" />
             <span>
-              Respondeu depressa demais, tipo dois segundos por tela? O sistema
-              avisa.
+              <strong className="font-medium">Pressa.</strong> Respondeu em
+              menos de dois segundos por tela, do começo ao fim?
             </span>
           </li>
           <li className="flex gap-2.5">
             <span className="mt-2 size-1.5 shrink-0 rounded-full bg-marca-forte" />
             <span>
-              Marcou tudo igual, a mesma resposta do início ao fim? Avisa também.
+              <strong className="font-medium">Padrão uniforme.</strong> Marcou a
+              mesma coisa em quase tudo?
             </span>
           </li>
           <li className="flex gap-2.5">
             <span className="mt-2 size-1.5 shrink-0 rounded-full bg-fora" />
             <span>
-              Duas perguntas parecidas com respostas que se contradizem? Avisa.
+              <strong className="font-medium">Incoerência.</strong> Algumas
+              perguntas aparecem repetidas de outro jeito ao longo da prova; o
+              aviso soa quando as respostas divergem no conjunto delas — um par
+              solto não dispara nada.
             </span>
           </li>
         </ul>
         <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
-          Selo baixo <strong className="font-semibold">não elimina ninguém</strong>{" "}
+          Esses avisos existem para o Big Five e o DISC.{" "}
+          <strong className="font-semibold">Selo baixo não elimina ninguém</strong>{" "}
           e não quer dizer que a pessoa mentiu. Quer dizer: leia com reserva e
           confirme na conversa.
         </p>
@@ -221,10 +295,11 @@ export default function PaginaComoFunciona() {
           O roteiro de entrevista é a parte mais útil
         </h2>
         <p className="mt-3 t-corpo leading-relaxed">
-          Em toda resposta o Prumo escreve perguntas feitas{" "}
-          <em>para aquela pessoa naquela vaga</em>, e explica por que cada uma
-          está ali. Elas pedem um caso que aconteceu de verdade — &ldquo;me conta
-          de um prazo que você perdeu&rdquo; — e não uma opinião.
+          Em toda resposta o Prumo monta uma lista de perguntas e explica por que
+          cada uma está ali. Elas saem de um banco escrito à mão, e o sistema
+          escolhe as que se aplicam <em>àquela pessoa naquela vaga</em>. Pedem um
+          caso que aconteceu de verdade — &ldquo;me conta de um prazo que você
+          perdeu&rdquo; — e não uma opinião.
         </p>
         <p className="mt-3 t-corpo leading-relaxed text-muted-foreground">
           Dá para copiar tudo com um clique e levar para a conversa, ou baixar o
@@ -268,7 +343,7 @@ export default function PaginaComoFunciona() {
           {[
             {
               p: "A pessoa pode mentir para se dar bem?",
-              r: "Pode tentar, e o sistema costuma perceber: existem perguntas repetidas de outro jeito e uma checagem de quem responde “sempre o melhor”. Quando isso acontece, o selo de confiança cai e o roteiro passa a sugerir confirmar aqueles pontos na conversa.",
+              r: "Pode tentar, e às vezes o sistema percebe: há perguntas repetidas de outro jeito e uma checagem de quem responde “sempre o melhor”. Quando algo assim aparece, o selo de confiança cai e o roteiro passa a sugerir confirmar aqueles pontos na conversa. Não é detector de mentira: é um aviso para você ouvir com mais atenção.",
             },
             {
               p: "Preciso ser psicólogo para usar?",
@@ -279,12 +354,16 @@ export default function PaginaComoFunciona() {
               r: "Não. O resultado é de quem aplicou o teste. A pessoa vê só que terminou, e nada mais.",
             },
             {
+              p: "E se a pessoa responder de novo depois?",
+              r: "Depende do teste. O Prumo tem banco grande e sorteia perguntas diferentes a cada aplicação, então refazer mede mudança de verdade. Big Five, DISC e julgamento situacional aplicam o banco inteiro — são 20, 12 e 8 questões fixas —, então repetir logo em seguida mede também a memória da prova anterior. Se for reaplicar, deixe um tempo passar.",
+            },
+            {
               p: "Serve para quem já trabalha aqui?",
               r: "Serve — para montar time, entender atrito entre duas pessoas ou preparar uma promoção. Só não use como avaliação de desempenho: ele mede jeito de trabalhar, não resultado entregue.",
             },
             {
-              p: "E se a pessoa responder de novo depois?",
-              r: "Cada aplicação sorteia perguntas diferentes do banco, então refazer mede mudança de verdade — não memória da prova anterior.",
+              p: "Por que uma vaga minha não mostra número nenhum?",
+              r: "Porque a bateria dela não inclui Prumo nem Big Five, e são esses dois que produzem as cinco dimensões. Sem elas não há o que comparar com o perfil da vaga, e mostrar zero seria pior que não mostrar nada — zero se lê como “candidato péssimo”. O relatório dessa vaga traz o que o DISC e o julgamento situacional mediram.",
             },
           ].map((q) => (
             <details

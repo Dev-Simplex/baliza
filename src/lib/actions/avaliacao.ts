@@ -40,6 +40,7 @@ import {
   pontuarSjt,
   type RespostaSjt,
 } from "@/lib/instrument/sjt";
+import { qualidadeDosModulos, seloQueAcompanha } from "@/lib/analise/modulos";
 import { calcularFit, escorar } from "@/lib/instrument/scoring";
 import type { PerfilAlvo, RespostaDeCenario, Respostas } from "@/lib/instrument/types";
 
@@ -822,6 +823,26 @@ export async function concluirAvaliacao(token: string) {
   const fonte = escoresParaFit(modulos);
   const fit = fonte ? calcularFit(fonte.escores, perfilAlvo) : null;
 
+  /*
+   * O selo que acompanha o número, gravado com a MESMA regra que a leitura usa.
+   *
+   * Gravava-se só `prumo?.confianca`, então bateria de Big Five terminava com
+   * aderência calculada e selo nulo. A ficha do candidato disfarçava — ela
+   * deriva na hora —, mas a lista de candidatos e o ranking da vaga leem a
+   * coluna crua e exibiam o número SOZINHO, que é justamente o que o §4.4
+   * proíbe. É o mesmo defeito que o comentário do `scores`, logo abaixo,
+   * descreve para a outra coluna: passou batido três linhas adiante.
+   */
+  const qualidadeDaProva = qualidadeDosModulos(modulos, {
+    itens: avaliacao.responses,
+    blocos: avaliacao.scenarioResponses,
+  });
+  const selo = seloQueAcompanha(
+    prumo?.confianca ?? null,
+    fonte?.escores ?? null,
+    qualidadeDaProva,
+  );
+
   await prisma.$transaction([
     prisma.assessment.update({
       where: { id: avaliacao.id },
@@ -848,7 +869,7 @@ export async function concluirAvaliacao(token: string) {
               contribuicoes: fit.contribuicoes,
             } as never)
           : (null as never),
-        confidence: (prumo?.confianca ?? null) as never,
+        confidence: (selo ?? null) as never,
         archetypeId: prumo?.arquetipo.id ?? null,
         archetypeMixedWith: prumo?.arquetipo.segundoId ?? null,
       },

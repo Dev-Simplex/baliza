@@ -97,8 +97,18 @@ export function LinhaDeCandidato({
             </div>
           )}
 
+          {/* §4.4 ESTRUTURAL, e não só no comentário acima.
+              O comentário já dizia "o número não aparece sem o selo" — e a
+              linha abaixo desenhava o número incondicionalmente. A garantia
+              existia no texto e não no código, e um revisor achou o caso ao
+              vivo: uma resposta de bateria Big Five exibia 58,1 nu no ranking
+              e na lista, enquanto a ficha da mesma pessoa mostrava o selo
+              (ela deriva na hora; a lista lê a coluna crua).
+              A causa foi corrigida na escrita — ver `seloQueAcompanha` —, mas a
+              trava fica aqui também: regra que depende de um dado estar
+              preenchido não é regra, é sorte. Sem selo, traço. */}
           <span className="leitura w-12 shrink-0 text-right t-corpo font-semibold sm:w-14">
-            {escore === null ? "—" : numero(escore, 1)}
+            {escore === null || !confianca ? "—" : numero(escore, 1)}
           </span>
         </div>
 

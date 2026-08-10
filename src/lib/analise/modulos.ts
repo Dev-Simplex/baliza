@@ -86,6 +86,65 @@ export type LeituraDaAvaliacao = {
   perguntasDeModulo: PerguntaDeModulo[];
 };
 
+// ─── A regra do §4.4, num lugar só ─────────────────────────────────────────
+
+/**
+ * Os alertas de qualidade dos módulos do manual, quando a bateria os tem.
+ *
+ * Só as respostas do Big Five e do DISC: as do Prumo têm o próprio índice de
+ * confiança, calculado no encerramento, e não passam por aqui.
+ */
+export function qualidadeDosModulos(
+  modulos: ResultadosPorModulo,
+  respostas: LinhasDeResposta,
+): QualidadeDasRespostas | null {
+  if (!modulos.BIG_FIVE && !modulos.DISC) return null;
+
+  return avaliarQualidade({
+    bigFive: (respostas.itens ?? [])
+      .filter((r) => ITEM_BIG_FIVE_POR_ID.has(r.itemId))
+      .map((r) => ({ itemId: r.itemId, valor: r.value, tempoMs: r.elapsedMs })),
+    disc: (respostas.blocos ?? [])
+      .filter((r) => BLOCO_DISC_POR_ID.has(r.blockId))
+      .map((r) => ({ blocoId: r.blockId, tempoMs: r.elapsedMs })),
+  });
+}
+
+/**
+ * §4.4 do produto: o fit NUNCA aparece sozinho.
+ *
+ * O selo do Prumo vem gravado em `confidence`. Quando os cinco fatores vieram
+ * do Big Five, essa coluna não tem o que guardar — o `calcularConfianca` lê
+ * itens de desejabilidade, pares do banco e convergência com cenários, e nada
+ * disso existe no Mini-IPIP. O substituto é o selo derivado dos alertas de
+ * qualidade; sem ele a aderência apareceria nua, e fit sem selo vira nota de
+ * aprovação.
+ *
+ * ─── Por que isto virou função exportada ──────────────────────────────────
+ * Porque a regra estava só na LEITURA. `concluirAvaliacao` gravava
+ * `confidence: prumo?.confianca ?? null`, então uma bateria de Big Five
+ * terminava com número e coluna vazia. A ficha do candidato disfarçava (ela
+ * chama `lerAvaliacao`, que derivava na hora), mas a lista de candidatos e o
+ * ranking da vaga leem a coluna crua — e exibiam a aderência SOZINHA, que é
+ * exatamente o que o §4.4 proíbe. Um revisor achou o caso ao vivo: 58,1 sem
+ * selo, na tela, hoje.
+ *
+ * A ironia é que o commit que gravou `scores` para o Big Five documenta esse
+ * mesmo defeito três linhas acima do `confidence` que deixou passar.
+ *
+ * Agora escrita e leitura chamam a mesma função. Quem gravar um selo novo não
+ * precisa lembrar de duas regras iguais em lugares diferentes.
+ */
+export function seloQueAcompanha(
+  confiancaDoPrumo: SeloDeConfianca | null,
+  escores: Record<Fator, number> | null,
+  qualidade: QualidadeDasRespostas | null,
+): SeloDeConfianca | null {
+  return (
+    confiancaDoPrumo ?? (escores && qualidade ? seloDoBigFive(qualidade) : null)
+  );
+}
+
 // ─── Montagem ──────────────────────────────────────────────────────────────
 
 export function lerAvaliacao(
@@ -115,22 +174,7 @@ export function lerAvaliacao(
   const escores =
     fonte?.escores ?? ((avaliacao.scores as Record<Fator, number> | null) ?? null);
 
-  // Só as respostas dos módulos do manual: as do Prumo têm o próprio índice de
-  // confiança, calculado no encerramento, e não passam por aqui.
-  const respostasDosModulos = {
-    bigFive: (respostas.itens ?? [])
-      .filter((r) => ITEM_BIG_FIVE_POR_ID.has(r.itemId))
-      .map((r) => ({ itemId: r.itemId, valor: r.value, tempoMs: r.elapsedMs })),
-    disc: (respostas.blocos ?? [])
-      .filter((r) => BLOCO_DISC_POR_ID.has(r.blockId))
-      .map((r) => ({ blocoId: r.blockId, tempoMs: r.elapsedMs })),
-  };
-
-  const temModuloComAlerta = Boolean(modulos.BIG_FIVE || modulos.DISC);
-  const qualidade = temModuloComAlerta
-    ? avaliarQualidade(respostasDosModulos)
-    : null;
-
+  const qualidade = qualidadeDosModulos(modulos, respostas);
   const confianca = avaliacao.confidence as SeloDeConfianca | null;
 
   return {
@@ -139,18 +183,7 @@ export function lerAvaliacao(
     ficha,
     escores,
     origemDosFatores: fonte?.origem ?? (escores ? "PRUMO" : null),
-    /*
-     * §4.4 do produto: o fit NUNCA aparece sozinho.
-     *
-     * O selo do Prumo vem gravado em `confidence`. Quando os cinco fatores
-     * vieram do Big Five, essa coluna é nula — o `calcularConfianca` lê itens
-     * de desejabilidade, pares do banco e convergência com cenários, e nada
-     * disso existe no Mini-IPIP. Sem substituto, a aderência apareceria nua, e
-     * fit sem selo vira nota de aprovação.
-     */
-    selo:
-      confianca ??
-      (escores && qualidade ? seloDoBigFive(qualidade) : null),
+    selo: seloQueAcompanha(confianca, escores, qualidade),
     qualidade,
     perguntasDeModulo: perguntasDosModulos(ficha, {
       pesoDoFator: perfilAlvo
