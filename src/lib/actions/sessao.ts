@@ -48,6 +48,28 @@ export async function concluirTutorialDeEntrada() {
   revalidatePath("/dashboard");
 }
 
+/**
+ * Faz a apresentação de entrada abrir de novo no próximo carregamento.
+ *
+ * Existe porque ela é de uso único por decisão de projeto — e uso único sem
+ * caminho de volta vira armadilha: quem clicou em "Pular" no primeiro minuto,
+ * antes de saber o que estava pulando, não teria como rever. Ficar no menu do
+ * usuário é o lugar certo: é onde se procura o que é "meu" e não da empresa.
+ */
+export async function reverTutorialDeEntrada() {
+  const sessao = await auth();
+  const userId = sessao?.user?.id;
+  if (!userId) return;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { welcomeTourAt: null },
+  });
+
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
+
 export async function sair() {
   const sessao = await auth();
 
