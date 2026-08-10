@@ -1,609 +1,296 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Minus } from "lucide-react";
 
-import { AlternarTema } from "@/components/alternar-tema";
-import { Marca } from "@/components/marca";
-import { ComparacaoDeVisao } from "@/components/site/comparacao-de-visao";
-import { BotaoLink } from "@/components/ui/botao-link";
-import { ARQUETIPOS } from "@/lib/instrument/archetypes";
-import { CENARIOS_POR_PROVA, TOTAL_DE_ITENS } from "@/lib/instrument/form";
-import { ITENS } from "@/lib/instrument/items";
-import { PRESETS } from "@/lib/instrument/presets";
-import { FATORES, NOMES_DE_FATOR } from "@/lib/instrument/types";
+import "./palco.css";
+import { PrumoInterativo } from "@/components/site/prumo-interativo";
+import { NarrativaDoScroll, RevelaAoEntrar } from "@/components/site/narrativa";
 
 export const metadata: Metadata = {
-  title: "Prumo — não contrate nunca mais com vendas nos olhos",
+  title: "Prumo — toda vaga tem um prumo",
+  description:
+    "Não medimos pessoas. Medimos a aderência entre pessoas e oportunidades.",
 };
+
+/**
+ * A página inicial.
+ *
+ * ─── O que ela deixou de ser ──────────────────────────────────────────────
+ * Eram 609 linhas e dez seções: herói, métricas, como funciona, benefícios, o
+ * que medimos, depoimentos, perguntas, chamada final. Uma landing de SaaS
+ * competente e absolutamente igual a todas as outras — e um produto cujo
+ * argumento é "olhe com mais cuidado antes de decidir" não pode se apresentar
+ * com o mesmo template de quem vende assinatura.
+ *
+ * ─── A ideia que a página inteira existe para transmitir ──────────────────
+ * O prumo de pedreiro tem UMA referência: a gravidade. Por isso ele julga —
+ * a parede está torta ou reta. Este produto tem uma referência POR VAGA, e por
+ * isso não julga ninguém: a mesma pessoa fica perto do que uma vaga pede e
+ * longe do que outra pede.
+ *
+ * O objeto no centro da tela é o argumento. Ele é sempre o MESMO peso; o que
+ * muda é o ponto de equilíbrio para onde ele vai. Quem olhar por vinte segundos
+ * entende a tese sem ler uma linha — e é por isso que o texto pode ser tão
+ * pouco.
+ *
+ * ─── Por que não há Three.js ──────────────────────────────────────────────
+ * Três.js mais React Three Fiber custam entre 600 KB e 1 MB de JavaScript para
+ * desenhar um peso e um fio. Numa página cujo trabalho é PARECER premium, o
+ * primeiro sinal de qualidade é abrir rápido. O prumo é canvas 2D com pêndulo
+ * amortecido de verdade — mesma imagem, alguns KB, e roda liso no celular.
+ */
+
+/**
+ * O mesmo perfil, três referências.
+ *
+ * Os números são ilustrativos e a página diz isso no rodapé da seção. Poderiam
+ * sair de uma resposta real do banco, mas a página inicial é pública: exibir
+ * aderência real de alguém, mesmo sem nome, é dado de candidato circulando sem
+ * necessidade nenhuma.
+ */
+const VAGAS = [
+  { nome: "Desenvolvedor front-end", fit: 94, rotulo: "alta aderência" },
+  { nome: "Gerente comercial", fit: 61, rotulo: "aderência parcial" },
+  { nome: "Analista de dados", fit: 87, rotulo: "alta aderência" },
+] as const;
 
 export default function PaginaInicial() {
   return (
-    <div className="min-h-svh">
+    <div className="palco relative min-h-svh overflow-x-clip">
       <Cabecalho />
-      <Hero />
-      <OQueFicaTapado />
-      <FaixaDeMetricas />
-      <ComoFunciona />
-      <Beneficios />
-      <OQueMedimos />
-      <Depoimentos />
-      <Perguntas />
-      <ChamadaFinal />
+      <Palco />
+      <NarrativaDoScroll />
+      <AReferenciaMudou />
+      <NaoEAprovarOuReprovar />
       <Rodape />
     </div>
   );
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────────
+   Cabeçalho — três palavras e nada mais.
+   ───────────────────────────────────────────────────────────────────────── */
 
 function Cabecalho() {
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <Marca />
+    <header className="fixed inset-x-0 top-0 z-30 flex items-center justify-between px-6 py-5 sm:px-10">
+      <Link href="/" className="palco-dado !text-[var(--palco-tinta)]">
+        Prumo
+      </Link>
 
-        <nav className="hidden items-center gap-7 t-corpo-sm text-muted-foreground md:flex">
-          <a href="#funciona" className="hover:text-foreground">
-            Como funciona
-          </a>
-          <a href="#medimos" className="hover:text-foreground">
-            O que medimos
-          </a>
-          <a href="#perguntas" className="hover:text-foreground">
-            Perguntas
-          </a>
-        </nav>
-
-        <div className="flex items-center gap-2.5">
-          <AlternarTema className="hidden sm:inline-flex" />
-          <Link
-            href="/entrar"
-            className="hidden t-corpo-sm text-muted-foreground hover:text-foreground sm:block"
-          >
-            Entrar
-          </Link>
-          <BotaoLink href="/cadastrar" size="sm">
-            Criar conta
-          </BotaoLink>
-        </div>
-      </div>
+      <nav className="flex items-center gap-6">
+        <Link
+          href="/como-funciona"
+          className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
+        >
+          Conhecer o Prumo
+        </Link>
+        <Link
+          href="/entrar"
+          className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
+        >
+          Entrar
+        </Link>
+      </nav>
     </header>
   );
 }
 
-function Hero() {
+/* ─────────────────────────────────────────────────────────────────────────
+   O palco: uma tela inteira, um objeto, quatro linhas de texto.
+   ───────────────────────────────────────────────────────────────────────── */
+
+function Palco() {
   return (
-    <section className="relative overflow-hidden border-b">
-      <div className="regua-fina absolute inset-x-0 top-0 h-px opacity-60" />
-
-      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
-        <div className="max-w-3xl">
-          <p className="etiqueta">Mapeamento comportamental para recrutamento</p>
-
-          <h1 className="mt-5 t-display">
-            Não contrate nunca mais com vendas nos olhos.
-          </h1>
-
-          <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-muted-foreground">
-            Cole um link na sua vaga. Em seis minutos o candidato responde. Você
-            recebe o ranking com a aderência explicada — e as perguntas exatas
-            para fazer a cada um.
-          </p>
-
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <BotaoLink href="/cadastrar" size="lg" className="h-11 gap-2 px-5 t-corpo">
-              Experimentar gratuitamente
-              <ArrowRight className="size-4" />
-            </BotaoLink>
-            <a
-              href="#funciona"
-              className="t-corpo text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
-              Ver como funciona
-            </a>
-          </div>
-
-          <p className="mt-4 t-corpo-sm text-muted-foreground">
-            Sem cartão e sem limite de uso. Do cadastro ao primeiro link, dois minutos.
-          </p>
-        </div>
-
-        {/* O mesmo candidato, visto de dois jeitos. É o argumento do produto
-            inteiro numa imagem — e usa dados que saem do motor de verdade. */}
-        <div className="mt-12">
-          <ComparacaoDeVisao />
-        </div>
+    <section className="relative h-svh w-full">
+      {/* O objeto ocupa a tela inteira e fica ATRÁS do texto: o fio desce do
+          topo e precisa de altura total para a queda parecer queda. */}
+      <div className="absolute inset-0 z-0">
+        <PrumoInterativo vagas={[...VAGAS]} />
       </div>
-    </section>
-  );
-}
 
-function OQueFicaTapado() {
-  // Nomear o que não se vê é mais forte que prometer o que se vê. Cada linha é
-  // uma fonte de informação que o recrutador JÁ usa — e o limite dela.
-  const pontosCegos = [
-    {
-      fonte: "O currículo",
-      mostra: "o que a pessoa fez",
-      esconde: "como ela faz, e o que acontece quando aperta",
-    },
-    {
-      fonte: "A entrevista",
-      mostra: "quem se apresenta bem",
-      esconde: "quem entrega depois que a conversa acaba",
-    },
-    {
-      fonte: "A referência",
-      mostra: "o que o gestor anterior quer dizer",
-      esconde: "o motivo pelo qual a pessoa saiu",
-    },
-    {
-      fonte: "A intuição",
-      mostra: "o seu próprio viés, de volta",
-      esconde: "todo mundo que não se parece com você",
-    },
-  ];
+      {/* Microcopy nos cantos. É o que dá o ar de instrumento: um aparelho de
+          medição tem etiquetas, e nenhuma delas grita. */}
+      <p className="palco-dado absolute left-6 top-1/2 z-10 hidden -translate-y-1/2 [writing-mode:vertical-rl] lg:block">
+        Reference / 001
+      </p>
+      <p className="palco-dado absolute right-6 top-1/2 z-10 hidden -translate-y-1/2 rotate-180 [writing-mode:vertical-rl] lg:block">
+        Profile / analysis
+      </p>
 
-  return (
-    <section className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <p className="etiqueta">O ponto cego</p>
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          Ninguém contrata mal por falta de esforço. Contrata mal por falta de
-          informação.
-        </h2>
-
-        <ul className="mt-14 divide-y border-t">
-          {pontosCegos.map((ponto) => (
-            <li
-              key={ponto.fonte}
-              className="grid gap-2 py-5 md:grid-cols-[13rem_1fr_1fr] md:gap-8"
-            >
-              <p className="text-base font-semibold">{ponto.fonte}</p>
-              <p className="t-corpo leading-relaxed text-muted-foreground">
-                mostra {ponto.mostra}
-              </p>
-              <p className="t-corpo leading-relaxed">
-                <span className="text-fora">esconde</span>{" "}
-                <span className="text-muted-foreground">{ponto.esconde}</span>
-              </p>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-10 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
-          Nada disso é substituível — e o Prumo não substitui. Ele acrescenta a
-          única coisa que faltava: uma medida comparável entre pessoas, com a
-          conta aberta do lado. Você continua entrevistando. Só para de
-          entrevistar no escuro.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function FaixaDeMetricas() {
-  // Números sobre o INSTRUMENTO, verificáveis no próprio código — não sobre
-  // clientes. Métrica de vitrine que não se sustenta é a primeira coisa que um
-  // comprador de RH testa.
-  const metricas = [
-    { valor: `${ITENS.length}`, rotulo: "itens no banco" },
-    { valor: `${TOTAL_DE_ITENS}`, rotulo: "itens por aplicação" },
-    { valor: "~6", rotulo: "minutos por candidato" },
-    { valor: `${PRESETS.length}`, rotulo: "perfis-alvo prontos" },
-    { valor: `${ARQUETIPOS.length}`, rotulo: "arquétipos de leitura" },
-  ];
-
-  return (
-    <section className="border-b bg-superficie-2/60">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-y-8 px-5 py-12 sm:px-8 md:grid-cols-5">
-        {metricas.map((m) => (
-          <div key={m.rotulo}>
-            <p className="leitura text-[1.75rem] leading-none font-semibold">
-              {m.valor}
+      {/* O texto vive no rodapé da tela, e não no meio: o meio é do objeto.
+          Empurrar a fala para a margem é o que faz a composição respirar. */}
+      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-14 sm:px-10">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-md">
+            <h1 className="palco-declaracao text-2xl sm:text-3xl">
+              Toda vaga tem um prumo.
+            </h1>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--palco-tinta-fraca)]">
+              Não medimos pessoas. Medimos a aderência entre pessoas e
+              oportunidades.
             </p>
-            <p className="etiqueta mt-2">{m.rotulo}</p>
           </div>
-        ))}
-      </div>
-    </section>
-  );
-}
 
-function ComoFunciona() {
-  const passos = [
-    {
-      titulo: "Crie a vaga e escolha o perfil-alvo",
-      texto:
-        "Sete perfis prontos, do atendimento à liderança, cada um com as faixas que aquele trabalho realmente pede. Você ajusta o que quiser — e o que não quiser fica como está.",
-    },
-    {
-      titulo: "Mande o link",
-      texto:
-        "Um link, um QR Code ou um e-mail. O candidato não cria conta, não instala nada e responde pelo celular em cerca de seis minutos.",
-    },
-    {
-      titulo: "Receba o ranking e o roteiro",
-      texto:
-        "A aderência vem com a conta que a gerou: o que puxou pra cima, o que puxou pra baixo e o quanto disso é confiável. E as perguntas de entrevista para cada candidato.",
-    },
-  ];
+          <Link href="/como-funciona" className="palco-botao shrink-0">
+            Explorar Prumo
+            <span className="seta" aria-hidden>
+              →
+            </span>
+          </Link>
+        </div>
 
-  return (
-    <section id="funciona" className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <p className="etiqueta">Como funciona</p>
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          Três passos, e o terceiro é o que você compra.
-        </h2>
+        <div className="palco-regua mx-auto mt-10 max-w-5xl" />
 
-        {/* A numeração aqui carrega informação: é uma sequência real e a ordem
-            importa. Por isso ela existe — não como enfeite. */}
-        <ol className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
-          {passos.map((passo, i) => (
-            <li key={passo.titulo} className="relative">
-              <div className="flex items-center gap-3">
-                <span className="leitura t-corpo-sm text-marca">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="h-px flex-1 bg-border" />
-              </div>
-              <h3 className="mt-5 text-[1.0625rem] leading-snug font-semibold">
-                {passo.titulo}
-              </h3>
-              <p className="mt-3 t-corpo leading-relaxed text-muted-foreground">
-                {passo.texto}
-              </p>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
-  );
-}
-
-function Beneficios() {
-  const itens = [
-    {
-      titulo: "O número vem com a conta",
-      texto:
-        "Toda aderência mostra as três dimensões que puxaram pra cima, as três que puxaram pra baixo e as que foram descartadas de propósito. Ninguém decide sobre gente com uma caixa-preta.",
-    },
-    {
-      titulo: "Um selo que diz o quanto confiar",
-      texto:
-        "Cinco sinais indicam quando alguém respondeu pensando em causar boa impressão. Nenhum concorrente mostra isso. Nós mostramos — e sem acusar o candidato.",
-    },
-    {
-      titulo: "Faixa ótima, não quanto-mais-melhor",
-      texto:
-        "Cooperação altíssima atrapalha em negociação. Abertura altíssima frustra em conferência. O modelo penaliza os dois lados quando o trabalho pede o meio.",
-    },
-    {
-      titulo: "Ordena, nunca elimina",
-      texto:
-        "Não existe e não vai existir corte automático. A lista é sugestão de prioridade de conversa, e a decisão continua sendo de quem entrevista.",
-    },
-    {
-      titulo: "O resultado é seu, da sua empresa",
-      texto:
-        "O mapeamento fica no seu painel, para você conduzir a conversa. O candidato responde, é avisado de que o resultado vai para você, e continua podendo pedir os próprios dados quando quiser.",
-    },
-    {
-      titulo: "Reaplicar mede mudança, não memória",
-      texto:
-        `O banco tem ${ITENS.length} itens e cada aplicação sorteia 44. Candidato recorrente recebe itens que ainda não viu.`,
-    },
-  ];
-
-  return (
-    <section className="border-b bg-superficie-2/60">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <p className="etiqueta">Diferenciais</p>
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          O produto não é o teste. É a decisão do dia seguinte.
-        </h2>
-
-        <div className="mt-14 grid gap-x-10 gap-y-11 md:grid-cols-2 lg:grid-cols-3">
-          {itens.map((item) => (
-            <div key={item.titulo}>
-              <h3 className="text-base leading-snug font-semibold">
-                {item.titulo}
-              </h3>
-              <p className="mt-2.5 t-corpo leading-relaxed text-muted-foreground">
-                {item.texto}
-              </p>
-            </div>
-          ))}
+        <div className="mx-auto mt-4 flex max-w-5xl items-center justify-between">
+          <p className="palco-dado">Prumo® — Inteligência para recrutamento</p>
+          <p className="palco-dado hidden sm:block">Role para descobrir</p>
         </div>
       </div>
     </section>
   );
 }
 
-function OQueMedimos() {
+/* ─────────────────────────────────────────────────────────────────────────
+   A pessoa não mudou. A referência mudou.
+   ───────────────────────────────────────────────────────────────────────── */
+
+function AReferenciaMudou() {
   return (
-    <section id="medimos" className="border-b">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:gap-16">
-        <div>
-          <p className="etiqueta">O instrumento</p>
-          <h2 className="mt-4 t-titulo">
-            Cinco dimensões, medidas do jeito que dá pra defender.
+    <section className="relative z-10 px-6 py-32 sm:px-10 sm:py-48">
+      <div className="mx-auto max-w-5xl">
+        <RevelaAoEntrar>
+          <h2 className="palco-declaracao max-w-2xl text-3xl sm:text-5xl">
+            A pessoa não mudou.
+            <br />
+            <span className="text-[var(--palco-tinta-fraca)]">
+              A referência mudou.
+            </span>
           </h2>
+        </RevelaAoEntrar>
 
-          <p className="mt-6 t-corpo leading-relaxed text-muted-foreground">
-            O instrumento é derivado do IPIP, que é de domínio público e mede o
-            mesmo modelo de cinco fatores que o mercado vende como diferencial
-            proprietário. A prova tem duas partes: {TOTAL_DE_ITENS} afirmações que geram
-            o escore comparável entre pessoas, e {CENARIOS_POR_PROVA} situações
-            de trabalho que servem para conferir se as duas histórias batem.
+        {/* Leitura de instrumento, e não cartões. Cada vaga é uma linha com uma
+            régua que se preenche até o valor — a mesma gramática do medidor que
+            o produto usa lá dentro, para a página não prometer uma estética que
+            o sistema não cumpre. */}
+        <div className="mt-20">
+          <p className="palco-dado">Candidato / 001</p>
+
+          <ul className="mt-6">
+            {VAGAS.map((v, i) => (
+              <RevelaAoEntrar key={v.nome} atraso={0.08 * i}>
+                <li className="border-t border-[var(--palco-linha)] py-7">
+                  <div className="flex flex-wrap items-baseline justify-between gap-4">
+                    <p className="palco-declaracao text-xl text-[var(--palco-tinta)] sm:text-2xl">
+                      {v.nome}
+                    </p>
+                    <p className="flex items-baseline gap-3">
+                      <span className="palco-dado">{v.rotulo}</span>
+                      <span
+                        className="text-3xl font-light tabular-nums text-[var(--palco-cobre)] sm:text-4xl"
+                        style={{ fontFamily: "var(--fonte-mono)" }}
+                      >
+                        {v.fit}
+                        <span className="text-base align-super">%</span>
+                      </span>
+                    </p>
+                  </div>
+
+                  {/* A régua é o dado, não decoração: a largura É o número. */}
+                  <div
+                    className="mt-5 h-px w-full bg-[var(--palco-linha)]"
+                    aria-hidden
+                  >
+                    <div
+                      className="h-px bg-[var(--palco-cobre)]"
+                      style={{ width: `${v.fit}%`, opacity: 0.7 }}
+                    />
+                  </div>
+                </li>
+              </RevelaAoEntrar>
+            ))}
+          </ul>
+
+          <p className="mt-10 max-w-md text-sm leading-relaxed text-[var(--palco-tinta-tenue)]">
+            As mesmas respostas, lidas contra três vagas diferentes. Números
+            ilustrativos.
           </p>
-
-          <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
-            O escore das situações nunca entra no ranking. Ele compara dimensões
-            dentro da mesma pessoa, e responder &ldquo;a Maria é mais organizada
-            que o João?&rdquo; com esse tipo de escore é estatisticamente
-            inválido — um erro comum no mercado.
-          </p>
-
-          <p className="mt-8 rounded-xl border-l-2 border-marca bg-secondary/50 px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
-            Este é um questionário de autopercepção de comportamento no trabalho.
-            Não é teste psicológico, avaliação psicológica, laudo nem
-            diagnóstico, e não mede inteligência nem capacidade técnica.
-          </p>
-        </div>
-
-        <ul className="space-y-5 self-center">
-          {FATORES.map((f) => (
-            <li key={f} className="rounded-xl border bg-card p-5">
-              <div className="flex items-baseline gap-2.5">
-                <span className="etiqueta">{f}</span>
-                <h3 className="text-base font-semibold">
-                  {NOMES_DE_FATOR[f].ui}
-                </h3>
-              </div>
-              <p className="mt-2 t-corpo-sm text-muted-foreground">
-                {NOMES_DE_FATOR[f].facetas
-                  .map((faceta) => faceta[0].toUpperCase() + faceta.slice(1))
-                  .join(" · ")}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-/**
- * ATENÇÃO — CONTEÚDO DE EXEMPLO.
- *
- * Estes depoimentos são ilustrativos e foram escritos para mostrar o formato da
- * seção. NÃO são de clientes reais. Troque por depoimentos verdadeiros, com
- * autorização de quem falou, antes de publicar. Depoimento inventado numa
- * página de vendas é problema jurídico e de reputação, não licença poética.
- */
-const DEPOIMENTOS_DE_EXEMPLO = [
-  {
-    texto:
-      "A parte que mudou o processo não foi o ranking — foi chegar na entrevista já sabendo o que perguntar pra cada pessoa.",
-    autor: "Coordenação de RH",
-    contexto: "indústria, 180 pessoas",
-  },
-  {
-    texto:
-      "O selo de confiança pegou dois candidatos que responderam o que achavam que a gente queria ouvir. Isso sozinho pagou a ferramenta.",
-    autor: "Gerência de Gente",
-    contexto: "varejo, 40 lojas",
-  },
-  {
-    texto:
-      "Parei de contratar vendedor simpático que não fecha. A faixa de cooperação explicou uma coisa que eu sentia e não sabia nomear.",
-    autor: "Direção Comercial",
-    contexto: "serviços B2B",
-  },
-];
-
-function Depoimentos() {
-  return (
-    <section className="border-b bg-superficie-2/60">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="etiqueta">O que muda na prática</p>
-          <span className="rounded-full border border-fora/40 bg-fora/10 px-2.5 py-1 t-legenda font-medium text-fora">
-            Exemplos ilustrativos
-          </span>
-        </div>
-
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          Três situações que o produto resolve.
-        </h2>
-
-        {/* O aviso fica na tela, e não só no comentário do código, porque é a
-            tela que engana. Depoimento inventado numa página de vendas é
-            problema jurídico e de reputação — e o leitor não abre o fonte para
-            descobrir que a frase é nossa. */}
-        <p className="mt-4 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
-          As falas abaixo foram escritas por nós para mostrar o formato da
-          conversa que o produto muda. <strong className="font-medium text-foreground">
-            Não são clientes reais</strong> e não representam resultado de
-          ninguém. Quando houver depoimento de verdade, com autorização de quem
-          falou, ele entra aqui — com nome e empresa.
-        </p>
-
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {DEPOIMENTOS_DE_EXEMPLO.map((d) => (
-            <figure key={d.autor} className="rounded-xl border border-dashed bg-card p-6">
-              <blockquote className="t-corpo leading-relaxed">
-                &ldquo;{d.texto}&rdquo;
-              </blockquote>
-              <figcaption className="mt-5 border-t pt-4">
-                <p className="etiqueta text-fora">Exemplo escrito por nós</p>
-                <p className="mt-1.5 t-corpo-sm font-medium">{d.autor}</p>
-                <p className="etiqueta mt-1">{d.contexto}</p>
-              </figcaption>
-            </figure>
-          ))}
         </div>
       </div>
     </section>
   );
 }
 
-const PERGUNTAS_FREQUENTES = [
-  {
-    p: "Isso é um teste psicológico?",
-    r: "Não. É um questionário de autopercepção de comportamento no trabalho, com itens de domínio público. Não é avaliação psicológica, não emite laudo e não substitui o trabalho de um psicólogo. A aplicação de testes psicológicos é atividade privativa de psicólogo no Brasil, e o produto foi desenhado inteiro para ficar fora desse território — inclusive no vocabulário.",
-  },
-  {
-    p: "Dá para o candidato burlar respondendo o que acha que queremos ouvir?",
-    r: "Dá, como em qualquer instrumento de autorrelato — e é por isso que medimos exatamente isso. Cinco sinais alimentam um selo de confiança: afirmações que quase ninguém sustenta, itens equivalentes respondidos de forma divergente, sequências longas de resposta idêntica, tempo por item baixo demais para ler, e divergência entre as afirmações e as situações. Quando o selo cai, o relatório avisa e sugere o que confirmar na entrevista.",
-  },
-  {
-    p: "Quanto tempo o candidato leva?",
-    r: `Cerca de seis minutos: ${TOTAL_DE_ITENS} afirmações rápidas e ${CENARIOS_POR_PROVA} situações de trabalho. Responde pelo celular, sem criar conta, e pode fechar e continuar depois pelo mesmo link — as respostas são salvas a cada clique.`,
-  },
-  {
-    p: "O que acontece com os dados de quem responde?",
-    r: "Ficam guardados pelo prazo que a empresa definir (12 meses por padrão) e depois são apagados. Nenhum dado sensível é coletado em nenhuma etapa: nada de origem, religião, opinião política, saúde ou biometria. O candidato pode pedir acesso, correção ou exclusão dos próprios dados a qualquer momento, e quem responde é a sua empresa, como controladora.",
-  },
-  {
-    p: "Vocês eliminam candidatos automaticamente?",
-    r: "Não, e não vamos passar a fazer. O produto ordena por aderência e explica o porquê de cada posição; a decisão continua sendo de quem entrevista. Não existe funcionalidade de corte por nota, e a ausência dela é uma escolha de projeto.",
-  },
-  {
-    p: "Serve para o meu tipo de vaga?",
-    r: `Vem com ${PRESETS.length} perfis-alvo prontos — atendimento, prospecção, pós-venda, administrativo, técnico, liderança e operação — e cada um é editável. Se nenhum servir, você monta o seu ajustando as faixas de cada dimensão.`,
-  },
-  {
-    p: "Dá para integrar com o sistema que já usamos?",
-    r: "Ainda não. Hoje o caminho é o link da vaga e a leitura direto no painel. Integração com ATS e ERP está no plano de evolução, não no produto atual.",
-  },
-];
+/* ─────────────────────────────────────────────────────────────────────────
+   Não é sobre aprovar ou reprovar.
+   ───────────────────────────────────────────────────────────────────────── */
 
-function Perguntas() {
+function NaoEAprovarOuReprovar() {
   return (
-    <section id="perguntas" className="border-b bg-superficie-2/60">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[20rem_1fr]">
-        <div>
-          <p className="etiqueta">Perguntas frequentes</p>
-          <h2 className="mt-4 t-titulo">
-            O que costumam perguntar antes de testar.
+    <section className="relative z-10 px-6 py-32 sm:px-10 sm:py-48">
+      <div className="mx-auto max-w-5xl">
+        <RevelaAoEntrar>
+          <h2 className="palco-declaracao max-w-2xl text-3xl sm:text-5xl">
+            Não é sobre aprovar ou reprovar.
           </h2>
-        </div>
+        </RevelaAoEntrar>
 
-        <div className="divide-y border-t">
-          {PERGUNTAS_FREQUENTES.map((item) => (
-            <details key={item.p} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-medium">
-                {item.p}
-                <span className="mt-1 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                  <Minus className="size-4 rotate-90 group-open:rotate-0" />
-                </span>
-              </summary>
-              <p className="mt-3 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
-                {item.r}
-              </p>
-            </details>
-          ))}
-        </div>
+        <RevelaAoEntrar atraso={0.1}>
+          {/* Quatro negações, uma por linha. Em lista, cada uma tem peso; em
+              parágrafo corrido, viram ruído e o leitor pula. */}
+          <ul className="mt-14 space-y-4 text-lg font-light leading-relaxed text-[var(--palco-tinta-fraca)] sm:text-xl">
+            <li>O Prumo não define quem é bom ou ruim.</li>
+            <li>Não é teste de QI.</li>
+            <li>Não é prova de conhecimento.</li>
+            <li>Não elimina candidatos.</li>
+          </ul>
+        </RevelaAoEntrar>
+
+        <RevelaAoEntrar atraso={0.2}>
+          <div className="mt-24">
+            <div className="palco-regua" />
+            <p className="palco-declaracao mt-14 text-4xl sm:text-6xl">
+              Ele mostra <span className="text-[var(--palco-cobre)]">contexto</span>.
+            </p>
+          </div>
+        </RevelaAoEntrar>
       </div>
     </section>
   );
 }
 
-function ChamadaFinal() {
-  return (
-    <section className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-24 text-center sm:px-8">
-        <h2 className="mx-auto max-w-2xl t-display">
-          Tire a venda antes da próxima contratação.
-        </h2>
-        <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
-          Crie a conta, publique uma vaga e mande o link para três candidatos
-          hoje mesmo. Você vê o ranking ainda esta semana — e chega na entrevista
-          sabendo o que perguntar.
-        </p>
-        <BotaoLink
-          href="/cadastrar"
-          size="lg"
-          className="mt-9 h-11 gap-2 px-6 t-corpo"
-        >
-          Experimentar gratuitamente
-          <ArrowRight className="size-4" />
-        </BotaoLink>
-      </div>
-    </section>
-  );
-}
+/* ─────────────────────────────────────────────────────────────────────────
+   Rodapé — o mínimo que a lei e a educação pedem.
+   ───────────────────────────────────────────────────────────────────────── */
 
 function Rodape() {
   return (
-    <footer className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
-      <div className="flex flex-wrap items-start justify-between gap-10">
-        <div className="max-w-xs">
-          <Marca />
-          <p className="mt-4 t-corpo-sm leading-relaxed text-muted-foreground">
-            Mapeamento comportamental para processos seletivos. Mostra o que
-            currículo e entrevista não mostram — e devolve as perguntas certas.
-          </p>
+    <footer className="relative z-10 px-6 pb-14 pt-24 sm:px-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="palco-regua" />
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+          <p className="palco-dado">Prumo® — Inteligência para recrutamento</p>
+          <nav className="flex gap-6">
+            <Link
+              href="/como-funciona"
+              className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
+            >
+              Como funciona
+            </Link>
+            <Link
+              href="/privacidade"
+              className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
+            >
+              Privacidade
+            </Link>
+            <Link
+              href="/termos"
+              className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
+            >
+              Termos
+            </Link>
+          </nav>
         </div>
-
-        <div className="grid grid-cols-2 gap-x-14 gap-y-8 sm:grid-cols-3">
-          <ColunaDoRodape
-            titulo="Produto"
-            itens={[
-              { rotulo: "Como funciona", href: "#funciona" },
-              { rotulo: "O que medimos", href: "#medimos" },
-            ]}
-          />
-          <ColunaDoRodape
-            titulo="Conta"
-            itens={[
-              { rotulo: "Entrar", href: "/entrar" },
-              { rotulo: "Criar conta", href: "/cadastrar" },
-            ]}
-          />
-          <ColunaDoRodape
-            titulo="Legal"
-            itens={[
-              { rotulo: "Privacidade", href: "/privacidade" },
-              { rotulo: "Termos", href: "/termos" },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <p className="etiqueta">© {new Date().getFullYear()} Prumo</p>
-        <AlternarTema />
       </div>
     </footer>
-  );
-}
-
-function ColunaDoRodape({
-  titulo,
-  itens,
-}: {
-  titulo: string;
-  itens: Array<{ rotulo: string; href: string }>;
-}) {
-  return (
-    <div>
-      <p className="etiqueta">{titulo}</p>
-      <ul className="mt-3.5 space-y-2.5">
-        {itens.map((item) => (
-          <li key={item.rotulo}>
-            <Link
-              href={item.href}
-              className="t-corpo-sm text-muted-foreground hover:text-foreground"
-            >
-              {item.rotulo}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }

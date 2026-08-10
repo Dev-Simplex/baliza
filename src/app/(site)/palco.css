@@ -1,0 +1,143 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   O PALCO — a direção de arte da página inicial, e só dela.
+
+   Tudo aqui vive dentro de `.palco`, e isso não é organização: é isolamento
+   necessário. O produto tem tema claro e escuro, e o usuário escolhe. A página
+   inicial NÃO tem escolha — ela é preta sempre, porque a experiência inteira
+   (o prumo iluminado, a granulação, o espaço negativo) só existe no escuro.
+   Um visitante com o sistema em tema claro veria a mesma página em cinza-sujo,
+   com o prumo apagado, e concluiria que o site está quebrado.
+
+   Escopar em vez de forçar `.dark` no `<html>`: forçar mexeria no tema do
+   aplicativo inteiro, e quem clicasse em "Entrar" cairia no painel com o tema
+   trocado sem ter pedido.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.palco {
+  /* Três pretos, não um. A diferença entre eles é quase invisível de propósito:
+     é ela que dá profundidade sem desenhar nenhuma borda. */
+  --palco-fundo: #050505;
+  --palco-superficie: #0a0a0a;
+  --palco-elevado: #111111;
+
+  /* Branco quebrado, nunca #fff: branco puro sobre preto puro vibra na borda
+     das letras e cansa em texto corrido. */
+  --palco-tinta: #e8e6e3;
+  --palco-tinta-fraca: rgba(232, 230, 227, 0.45);
+  --palco-tinta-tenue: rgba(232, 230, 227, 0.26);
+  --palco-linha: rgba(232, 230, 227, 0.08);
+
+  /* Cobre. Aparece em pouquíssimos lugares — o número da aderência, a seta do
+     botão, uma régua. Destaque que aparece em tudo deixa de destacar. */
+  --palco-cobre: #bc6c32;
+  --palco-cobre-fraco: rgba(188, 108, 50, 0.35);
+
+  background: var(--palco-fundo);
+  color: var(--palco-tinta);
+  color-scheme: dark;
+}
+
+/* ─── Granulação ──────────────────────────────────────────────────────────
+   Ruído em SVG embutido, não imagem: são ~400 bytes contra uma textura de
+   dezenas de KB, e não há requisição nenhuma. A opacidade é baixíssima porque
+   o efeito certo é aquele que ninguém percebe conscientemente — ele tira o
+   aspecto de "preto de tela desligada" e dá superfície ao fundo. */
+.palco::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)'/%3E%3C/svg%3E");
+}
+
+/* ─── Tipografia ──────────────────────────────────────────────────────────
+   Duas vozes, e nenhuma fonte nova.
+
+   O projeto já carrega Inter Tight e JetBrains Mono. O briefing pedia "sans
+   moderna + mono para dados técnicos", que é exatamente esse par — e adicionar
+   Space Grotesk custaria mais uma busca no Google Fonts em tempo de build,
+   que já falhou duas vezes hoje. Pendurar a PÁGINA INICIAL nisso seria trocar
+   robustez por preferência de nome. */
+
+/* A voz das afirmações. Peso leve e entrelinha curta: em corpo grande, o texto
+   fino lê como afirmação calma; negrito no escuro lê como grito. */
+.palco-declaracao {
+  font-family: var(--fonte-ui), system-ui, sans-serif;
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+/* A voz dos dados. Maiúscula, espaçada, minúscula em tamanho — é o carimbo de
+   instrumento de medição, e é o que dá o ar de laboratório sem desenhar nada. */
+.palco-dado {
+  font-family: var(--fonte-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--palco-tinta-tenue);
+}
+
+/* ─── Régua ───────────────────────────────────────────────────────────────
+   Um fio de cabelo que atravessa a composição. É o elemento que amarra a
+   página ao objeto: o prumo é um fio, e a página inteira é feita de fios. */
+.palco-regua {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--palco-linha) 12%,
+    var(--palco-linha) 88%,
+    transparent
+  );
+}
+
+/* ─── O botão ─────────────────────────────────────────────────────────────
+   Borda fina, sem preenchimento, sem sombra. No hover a seta anda e o cobre
+   acende — a animação inteira cabe em dois elementos. */
+.palco-botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--palco-linha);
+  padding: 0.75rem 1.25rem;
+  font-family: var(--fonte-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--palco-tinta-fraca);
+  transition:
+    color 0.4s ease,
+    border-color 0.4s ease;
+}
+
+.palco-botao:hover,
+.palco-botao:focus-visible {
+  color: var(--palco-tinta);
+  border-color: var(--palco-cobre-fraco);
+}
+
+.palco-botao .seta {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.palco-botao:hover .seta,
+.palco-botao:focus-visible .seta {
+  transform: translateX(0.35rem);
+  color: var(--palco-cobre);
+}
+
+/* Quem pediu menos movimento recebe menos movimento — inclusive aqui, onde o
+   deslocamento é pequeno. A regra não admite exceção "porque é sutil". */
+@media (prefers-reduced-motion: reduce) {
+  .palco-botao .seta {
+    transition: none;
+  }
+  .palco-botao:hover .seta,
+  .palco-botao:focus-visible .seta {
+    transform: none;
+  }
+}
