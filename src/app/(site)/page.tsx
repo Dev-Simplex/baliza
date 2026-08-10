@@ -2,72 +2,64 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import "./palco.css";
-import { PrumoInterativo } from "@/components/site/prumo-interativo";
+import { Heroi } from "@/components/site/heroi";
 import { NarrativaDoScroll, RevelaAoEntrar } from "@/components/site/narrativa";
 
 export const metadata: Metadata = {
-  title: "Prumo — toda vaga tem um prumo",
+  title: "Prumo — não existe perfil ideal",
   description:
-    "Não medimos pessoas. Medimos a aderência entre pessoas e oportunidades.",
+    "Existe o perfil certo para cada vaga. O Prumo mostra o encontro entre uma pessoa e uma oportunidade.",
 };
 
 /**
  * A página inicial.
  *
- * ─── O que ela deixou de ser ──────────────────────────────────────────────
- * Eram 609 linhas e dez seções: herói, métricas, como funciona, benefícios, o
- * que medimos, depoimentos, perguntas, chamada final. Uma landing de SaaS
- * competente e absolutamente igual a todas as outras — e um produto cujo
- * argumento é "olhe com mais cuidado antes de decidir" não pode se apresentar
- * com o mesmo template de quem vende assinatura.
+ * ─── A tese, e por que ela precisa ser DESCOBERTA ─────────────────────────
+ * O prumo de pedreiro tem uma referência só, a gravidade, e por isso julga: a
+ * parede está torta ou reta. Este produto tem uma referência POR VAGA, e por
+ * isso não julga ninguém.
  *
- * ─── A ideia que a página inteira existe para transmitir ──────────────────
- * O prumo de pedreiro tem UMA referência: a gravidade. Por isso ele julga —
- * a parede está torta ou reta. Este produto tem uma referência POR VAGA, e por
- * isso não julga ninguém: a mesma pessoa fica perto do que uma vaga pede e
- * longe do que outra pede.
+ * Um bloco de texto dizendo isso convence pouco. Um objeto que se realinha
+ * sozinho a cada vaga, mostrando 92% e depois 61% para o MESMO peso, convence
+ * antes de qualquer frase — e é por isso que a página quase não tem texto.
  *
- * O objeto no centro da tela é o argumento. Ele é sempre o MESMO peso; o que
- * muda é o ponto de equilíbrio para onde ele vai. Quem olhar por vinte segundos
- * entende a tese sem ler uma linha — e é por isso que o texto pode ser tão
- * pouco.
- *
- * ─── Por que não há Three.js ──────────────────────────────────────────────
- * Três.js mais React Three Fiber custam entre 600 KB e 1 MB de JavaScript para
- * desenhar um peso e um fio. Numa página cujo trabalho é PARECER premium, o
- * primeiro sinal de qualidade é abrir rápido. O prumo é canvas 2D com pêndulo
- * amortecido de verdade — mesma imagem, alguns KB, e roda liso no celular.
+ * ─── Sobre o 3D ──────────────────────────────────────────────────────────
+ * Eu havia feito a versão anterior em canvas 2D e argumentado contra Three.js
+ * pelo peso. O dono do produto pediu 3D em wireframe duas vezes, com detalhe.
+ * É decisão dele. O custo foi mitigado, não escondido: a cena inteira entra por
+ * importação dinâmica, então o texto chega primeiro.
  */
 
 /**
  * O mesmo perfil, três referências.
  *
- * Os números são ilustrativos e a página diz isso no rodapé da seção. Poderiam
- * sair de uma resposta real do banco, mas a página inicial é pública: exibir
- * aderência real de alguém, mesmo sem nome, é dado de candidato circulando sem
- * necessidade nenhuma.
+ * Números ilustrativos, e a página diz isso. Poderiam sair do banco, mas a
+ * página inicial é pública: exibir aderência real de alguém, mesmo sem nome, é
+ * dado de candidato circulando sem necessidade.
  */
 const VAGAS = [
-  { nome: "Desenvolvedor front-end", fit: 94, rotulo: "alta aderência" },
-  { nome: "Gerente comercial", fit: 61, rotulo: "aderência parcial" },
-  { nome: "Analista de dados", fit: 87, rotulo: "alta aderência" },
+  { nome: "Desenvolvedor full stack", fit: 92 },
+  { nome: "Gestor de projetos", fit: 74 },
+  { nome: "Executivo comercial", fit: 61 },
 ] as const;
 
 export default function PaginaInicial() {
   return (
     <div className="palco relative min-h-svh overflow-x-clip">
       <Cabecalho />
-      <Palco />
+      <Heroi vagas={[...VAGAS]} />
       <NarrativaDoScroll />
-      <AReferenciaMudou />
-      <NaoEAprovarOuReprovar />
+      <NaoJulga />
+      <OMesmoPerfil />
+      <TodaVagaTemUmPrumo />
+      <OQueOPrumoNaoFaz />
       <Rodape />
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Cabeçalho — três palavras e nada mais.
+   Cabeçalho — texto técnico com borda, não navbar.
    ───────────────────────────────────────────────────────────────────────── */
 
 function Cabecalho() {
@@ -77,18 +69,12 @@ function Cabecalho() {
         Prumo
       </Link>
 
-      <nav className="flex items-center gap-6">
-        <Link
-          href="/como-funciona"
-          className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
-        >
-          Conhecer o Prumo
+      <nav className="flex items-center gap-2 sm:gap-3">
+        <Link href="/como-funciona" className="palco-chip">
+          [ Empresa ]
         </Link>
-        <Link
-          href="/entrar"
-          className="palco-dado transition-colors hover:text-[var(--palco-tinta)]"
-        >
-          Entrar
+        <Link href="/entrar" className="palco-chip">
+          [ Entrar ]
         </Link>
       </nav>
     </header>
@@ -96,161 +82,198 @@ function Cabecalho() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   O palco: uma tela inteira, um objeto, quatro linhas de texto.
+   2 — O Prumo não julga.
    ───────────────────────────────────────────────────────────────────────── */
 
-function Palco() {
+function NaoJulga() {
   return (
-    <section className="relative h-svh w-full">
-      {/* O objeto ocupa a tela inteira e fica ATRÁS do texto: o fio desce do
-          topo e precisa de altura total para a queda parecer queda. */}
-      <div className="absolute inset-0 z-0">
-        <PrumoInterativo vagas={[...VAGAS]} />
-      </div>
-
-      {/* Microcopy nos cantos. É o que dá o ar de instrumento: um aparelho de
-          medição tem etiquetas, e nenhuma delas grita. */}
-      <p className="palco-dado absolute left-6 top-1/2 z-10 hidden -translate-y-1/2 [writing-mode:vertical-rl] lg:block">
-        Reference / 001
-      </p>
-      <p className="palco-dado absolute right-6 top-1/2 z-10 hidden -translate-y-1/2 rotate-180 [writing-mode:vertical-rl] lg:block">
-        Profile / analysis
-      </p>
-
-      {/* O texto vive no rodapé da tela, e não no meio: o meio é do objeto.
-          Empurrar a fala para a margem é o que faz a composição respirar. */}
-      <div className="absolute inset-x-0 bottom-0 z-10 px-6 pb-14 sm:px-10">
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-md">
-            <h1 className="palco-declaracao text-2xl sm:text-3xl">
-              Toda vaga tem um prumo.
-            </h1>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-[var(--palco-tinta-fraca)]">
-              Não medimos pessoas. Medimos a aderência entre pessoas e
-              oportunidades.
-            </p>
-          </div>
-
-          <Link href="/como-funciona" className="palco-botao shrink-0">
-            Explorar Prumo
-            <span className="seta" aria-hidden>
-              →
-            </span>
-          </Link>
-        </div>
-
-        <div className="palco-regua mx-auto mt-10 max-w-5xl" />
-
-        <div className="mx-auto mt-4 flex max-w-5xl items-center justify-between">
-          <p className="palco-dado">Prumo® — Inteligência para recrutamento</p>
-          <p className="palco-dado hidden sm:block">Role para descobrir</p>
-        </div>
+    <section className="relative z-10 px-6 py-40 sm:px-10 sm:py-56">
+      <div className="mx-auto max-w-5xl">
+        <RevelaAoEntrar>
+          <p className="palco-dado">Profile_analysis</p>
+          <h2 className="palco-declaracao mt-6 text-4xl sm:text-6xl">
+            O Prumo não julga.
+          </h2>
+          <p className="palco-declaracao mt-4 text-4xl text-[var(--palco-cobre)] sm:text-6xl">
+            Ele compara.
+          </p>
+        </RevelaAoEntrar>
       </div>
     </section>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   A pessoa não mudou. A referência mudou.
+   3 — O mesmo perfil.
    ───────────────────────────────────────────────────────────────────────── */
 
-function AReferenciaMudou() {
+function OMesmoPerfil() {
   return (
     <section className="relative z-10 px-6 py-32 sm:px-10 sm:py-48">
       <div className="mx-auto max-w-5xl">
         <RevelaAoEntrar>
-          <h2 className="palco-declaracao max-w-2xl text-3xl sm:text-5xl">
-            A pessoa não mudou.
+          <p className="palco-dado">Reference: vacancy</p>
+          <h2 className="palco-declaracao mt-6 text-3xl sm:text-5xl">
+            O mesmo perfil.
+          </h2>
+        </RevelaAoEntrar>
+
+        {/* Leitura de instrumento, não cartões: cada vaga é uma linha, e a régua
+            de cobre É o número — a largura carrega o dado, não uma decoração ao
+            lado dele. */}
+        <ul className="mt-20">
+          {VAGAS.map((v, i) => (
+            <RevelaAoEntrar key={v.nome} atraso={0.08 * i}>
+              <li className="border-t border-[var(--palco-linha)] py-7">
+                <div className="flex flex-wrap items-baseline justify-between gap-4">
+                  <p className="flex items-baseline gap-4">
+                    <span className="palco-dado">
+                      Vaga {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="palco-declaracao text-xl text-[var(--palco-tinta)] sm:text-2xl">
+                      {v.nome}
+                    </span>
+                  </p>
+                  <span
+                    className="text-3xl font-light tabular-nums text-[var(--palco-cobre)] sm:text-4xl"
+                    style={{ fontFamily: "var(--fonte-mono)" }}
+                  >
+                    {v.fit}
+                    <span className="align-super text-base">%</span>
+                  </span>
+                </div>
+
+                <div className="mt-5 h-px w-full bg-[var(--palco-linha)]" aria-hidden>
+                  <div
+                    className="h-px bg-[var(--palco-cobre)]"
+                    style={{ width: `${v.fit}%`, opacity: 0.7 }}
+                  />
+                </div>
+              </li>
+            </RevelaAoEntrar>
+          ))}
+        </ul>
+
+        <RevelaAoEntrar atraso={0.1}>
+          <p className="palco-declaracao mt-24 text-2xl sm:text-4xl">
+            A pessoa é a mesma.
             <br />
             <span className="text-[var(--palco-tinta-fraca)]">
               A referência mudou.
             </span>
-          </h2>
-        </RevelaAoEntrar>
-
-        {/* Leitura de instrumento, e não cartões. Cada vaga é uma linha com uma
-            régua que se preenche até o valor — a mesma gramática do medidor que
-            o produto usa lá dentro, para a página não prometer uma estética que
-            o sistema não cumpre. */}
-        <div className="mt-20">
-          <p className="palco-dado">Candidato / 001</p>
-
-          <ul className="mt-6">
-            {VAGAS.map((v, i) => (
-              <RevelaAoEntrar key={v.nome} atraso={0.08 * i}>
-                <li className="border-t border-[var(--palco-linha)] py-7">
-                  <div className="flex flex-wrap items-baseline justify-between gap-4">
-                    <p className="palco-declaracao text-xl text-[var(--palco-tinta)] sm:text-2xl">
-                      {v.nome}
-                    </p>
-                    <p className="flex items-baseline gap-3">
-                      <span className="palco-dado">{v.rotulo}</span>
-                      <span
-                        className="text-3xl font-light tabular-nums text-[var(--palco-cobre)] sm:text-4xl"
-                        style={{ fontFamily: "var(--fonte-mono)" }}
-                      >
-                        {v.fit}
-                        <span className="text-base align-super">%</span>
-                      </span>
-                    </p>
-                  </div>
-
-                  {/* A régua é o dado, não decoração: a largura É o número. */}
-                  <div
-                    className="mt-5 h-px w-full bg-[var(--palco-linha)]"
-                    aria-hidden
-                  >
-                    <div
-                      className="h-px bg-[var(--palco-cobre)]"
-                      style={{ width: `${v.fit}%`, opacity: 0.7 }}
-                    />
-                  </div>
-                </li>
-              </RevelaAoEntrar>
-            ))}
-          </ul>
-
-          <p className="mt-10 max-w-md text-sm leading-relaxed text-[var(--palco-tinta-tenue)]">
-            As mesmas respostas, lidas contra três vagas diferentes. Números
-            ilustrativos.
           </p>
-        </div>
+          <p className="mt-8 max-w-md text-sm leading-relaxed text-[var(--palco-tinta-tenue)]">
+            Números ilustrativos.
+          </p>
+        </RevelaAoEntrar>
       </div>
     </section>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Não é sobre aprovar ou reprovar.
+   4 — Toda vaga tem um prumo.
    ───────────────────────────────────────────────────────────────────────── */
 
-function NaoEAprovarOuReprovar() {
+const CADEIA = [
+  { rotulo: "Vaga", texto: "o que aquele trabalho exige de comportamento" },
+  { rotulo: "Referência", texto: "o peso de cada dimensão nessa vaga" },
+  { rotulo: "Perfil", texto: "como a pessoa respondeu, sem certo nem errado" },
+  { rotulo: "Aderência", texto: "a distância entre os dois" },
+] as const;
+
+function TodaVagaTemUmPrumo() {
   return (
     <section className="relative z-10 px-6 py-32 sm:px-10 sm:py-48">
       <div className="mx-auto max-w-5xl">
         <RevelaAoEntrar>
-          <h2 className="palco-declaracao max-w-2xl text-3xl sm:text-5xl">
-            Não é sobre aprovar ou reprovar.
+          <h2 className="palco-declaracao text-3xl sm:text-5xl">
+            Toda vaga tem um prumo.
           </h2>
         </RevelaAoEntrar>
 
-        <RevelaAoEntrar atraso={0.1}>
-          {/* Quatro negações, uma por linha. Em lista, cada uma tem peso; em
-              parágrafo corrido, viram ruído e o leitor pula. */}
-          <ul className="mt-14 space-y-4 text-lg font-light leading-relaxed text-[var(--palco-tinta-fraca)] sm:text-xl">
-            <li>O Prumo não define quem é bom ou ruim.</li>
-            <li>Não é teste de QI.</li>
-            <li>Não é prova de conhecimento.</li>
-            <li>Não elimina candidatos.</li>
-          </ul>
+        {/* A cadeia desce como um fio: cada elo é um degrau, ligado ao seguinte
+            por um traço vertical. É a forma do objeto virada diagrama, e por
+            isso não precisa de setas nem caixas. */}
+        <ol className="mt-20 max-w-2xl">
+          {CADEIA.map((elo, i) => (
+            <RevelaAoEntrar key={elo.rotulo} atraso={0.1 * i}>
+              <li className="relative pb-12 pl-8">
+                {i < CADEIA.length - 1 && (
+                  <span
+                    aria-hidden
+                    className="absolute left-[3px] top-3 h-full w-px bg-[var(--palco-linha)]"
+                  />
+                )}
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-2 size-[7px] rounded-full"
+                  style={{
+                    background:
+                      i === CADEIA.length - 1
+                        ? "var(--palco-cobre)"
+                        : "var(--palco-tinta-tenue)",
+                  }}
+                />
+                <p className="palco-dado">{elo.rotulo}</p>
+                <p className="mt-2 text-lg font-light leading-relaxed text-[var(--palco-tinta-fraca)]">
+                  {elo.texto}
+                </p>
+              </li>
+            </RevelaAoEntrar>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   5 — O que o Prumo não faz.
+   ───────────────────────────────────────────────────────────────────────── */
+
+const NEGACOES = [
+  "Não é teste de QI.",
+  "Não é prova de conhecimento.",
+  "Não diz quem é bom ou ruim.",
+  "Não reprova ninguém.",
+] as const;
+
+function OQueOPrumoNaoFaz() {
+  return (
+    <section className="relative z-10 px-6 py-32 sm:px-10 sm:py-48">
+      <div className="mx-auto max-w-5xl">
+        <RevelaAoEntrar>
+          <h2 className="palco-declaracao text-3xl sm:text-5xl">
+            O que o Prumo não faz.
+          </h2>
         </RevelaAoEntrar>
 
-        <RevelaAoEntrar atraso={0.2}>
-          <div className="mt-24">
+        <ul className="mt-16">
+          {NEGACOES.map((n, i) => (
+            <RevelaAoEntrar key={n} atraso={0.07 * i}>
+              <li className="border-t border-[var(--palco-linha)] py-6 text-xl font-light text-[var(--palco-tinta-fraca)] sm:text-2xl">
+                {n}
+              </li>
+            </RevelaAoEntrar>
+          ))}
+        </ul>
+
+        <RevelaAoEntrar atraso={0.15}>
+          <div className="mt-28">
             <div className="palco-regua" />
-            <p className="palco-declaracao mt-14 text-4xl sm:text-6xl">
-              Ele mostra <span className="text-[var(--palco-cobre)]">contexto</span>.
+            <p className="palco-declaracao mt-14 max-w-3xl text-3xl sm:text-5xl">
+              Ele apenas mostra o{" "}
+              <span className="text-[var(--palco-cobre)]">encontro</span> entre
+              uma pessoa e uma oportunidade.
             </p>
+
+            <Link href="/como-funciona" className="palco-botao mt-14">
+              Entrar na lista
+              <span className="seta" aria-hidden>
+                →
+              </span>
+            </Link>
           </div>
         </RevelaAoEntrar>
       </div>
@@ -259,7 +282,7 @@ function NaoEAprovarOuReprovar() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Rodapé — o mínimo que a lei e a educação pedem.
+   Rodapé.
    ───────────────────────────────────────────────────────────────────────── */
 
 function Rodape() {
