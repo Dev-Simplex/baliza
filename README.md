@@ -1,19 +1,27 @@
-# Prumo
+# Baliza
 
-> Mapeamento comportamental para processos seletivos.
+> Inteligência comportamental para recrutamento.
+> **Veja além do currículo. Decida com referência.**
 
-O prumo é o instrumento de precisão mais antigo que existe: um peso na ponta de
-um fio, que diz onde está o vertical verdadeiro. **"Fora de prumo"** já significa,
-em português corrente, exatamente o que este produto mede — fora do alinhamento
-que aquele trabalho pede. O nome, o símbolo e o gráfico principal dizem a mesma
-coisa, de propósito.
+Uma baliza é uma marca de referência: ela não diz para onde ir, diz onde você
+está em relação a alguma coisa. Aqui essa alguma coisa é **a vaga**.
+
+O conceito da marca é **FIT**, e ele é literal no símbolo: duas metades voltadas
+uma para a outra — à esquerda o candidato, à direita a vaga — e entre elas um
+vazio que só existe porque as duas estão em relação. Esse vazio é a aderência.
+O nome, o símbolo e o gráfico principal (`src/components/faixa.tsx`) dizem a
+mesma coisa, de propósito.
+
+> A Baliza não decide por você. A Baliza dá referência para decidir melhor.
 
 **A frase do produto:**
 
-> Cole um link na sua vaga. Em oito minutos o candidato responde.
-> Você recebe o ranking — e as perguntas exatas que precisa fazer pra cada um.
+> Cole um link na sua vaga. Em cerca de seis minutos o candidato responde.
+> Você recebe o ranking — e as perguntas exatas que precisa fazer para cada um.
 
 O produto não é o teste. É a decisão do dia seguinte.
+
+**Empresa mãe, quando necessário:** Baliza by SPXIA. Nunca "BalizaSPX".
 
 ---
 
@@ -44,8 +52,12 @@ pnpm exec tsx prisma/manutencao.ts --aplicar   # aplica — no cron, 1x por dia
 
 | Perfil | E-mail | Senha |
 |---|---|---|
-| Empresa (dona da conta) | `recrutador@acme.com` | `prumo123` |
-| Operação da plataforma | `admin@prumo.app` | `prumo123` |
+| Empresa (dona da conta) | `recrutador@acme.com` | `baliza123` |
+| Operação da plataforma | `admin@baliza.app` | `baliza123` |
+
+Em banco já semeado antes do rebrand o operador antigo (`admin@prumo.app`)
+continua existindo: o `upsert` casa por e-mail e não renomeia. Apague-o à mão
+se ele incomodar.
 
 **Atenção em desenvolvimento:** abra por `localhost:3300`, não por
 `127.0.0.1:3300`. O Next 16 bloqueia recursos de dev vindos de outra origem — a
@@ -101,6 +113,8 @@ src/
 
   components/
     faixa.tsx        O ELEMENTO-ASSINATURA: o medidor de faixa
+    marca.tsx        A marca, desenhada a partir dos vetores aprovados
+    marca-vetor.ts   Geometria oficial, extraída de public/brand/*.svg
     app/             painel do recrutador
     teste/           fluxo do candidato
     ui/              shadcn (Base UI — usa `render`, não `asChild`)
@@ -254,10 +268,18 @@ quem é: cai direto no questionário e ainda deixa a vaga saber quem foi chamado
 não respondeu. Sem SMTP configurado o envio **não acontece e não finge que
 aconteceu** — a ação devolve o link para a tela oferecer o caminho manual.
 
-### Por que "fora da faixa" é argila e não vermelho
+### Por que "fora da faixa" é argila e não vermelho, e nunca laranja
 
 Cor é vocabulário. O produto se proíbe de dizer "reprovado"; a paleta não pode
 dizer por ele. Fora da faixa é atenção, não alarme.
+
+O laranja-sinal (`#FF5A1F`) é a cor da MARCA, e por isso nunca codifica
+qualidade: ele identifica a Baliza — marca, CTA primário, foco, seleção, item
+ativo de navegação e o marcador da pessoa na faixa. Quem codifica dado é o par
+dentro/fora, e ele vive longe da marca de propósito. Um candidato jamais é
+pintado de laranja, e o selo de confiança "média" é cinza justamente por isso.
+
+O sistema inteiro está documentado no topo de `src/app/globals.css`.
 
 ---
 

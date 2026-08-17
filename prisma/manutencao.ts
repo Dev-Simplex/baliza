@@ -19,7 +19,7 @@
  *   pnpm exec tsx prisma/manutencao.ts --aplicar   # aplica
  *
  * No servidor, uma vez por dia é de sobra — retenção se mede em meses:
- *   0 4 * * *  cd /caminho/do/prumo && pnpm exec tsx prisma/manutencao.ts --aplicar
+ *   0 4 * * *  cd /caminho/da/baliza && pnpm exec tsx prisma/manutencao.ts --aplicar
  *
  * O padrão é SIMULAR, e não aplicar, porque a rotina 1 apaga dado de pessoa:
  * quem roda tem que poder olhar a conta antes de ela acontecer.

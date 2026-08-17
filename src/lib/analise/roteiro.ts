@@ -50,7 +50,7 @@ const LIMITE_DE_PERGUNTAS = 7;
 /**
  * Prioridade das perguntas vindas dos módulos do manual (Big Five, DISC, SJT).
  *
- * Acima do topo da faixa das dimensões do Prumo (100 + perda × 100, teto 200)
+ * Acima do topo da faixa das dimensões da Baliza (100 + perda × 100, teto 200)
  * para as obrigatórias, e no meio dela para as demais: uma escolha [0] no SJT é
  * o achado mais concreto que a bateria produz — a pessoa disse o que faria numa
  * situação de trabalho, e escolheu a pior das quatro ações.
@@ -72,7 +72,7 @@ export function montarRoteiro(entrada: {
    */
   perguntasDeModulo?: PerguntaDeModulo[];
   /**
-   * A bateria não mede os cinco fatores (nem Prumo nem Big Five).
+   * A bateria não mede os cinco fatores (nem Baliza nem Big Five).
    *
    * Muda o resumo: sem aderência, "todas as dimensões ficaram dentro da faixa"
    * seria uma afirmação sobre uma conta que não foi feita.
@@ -272,5 +272,5 @@ function resumirGap(foraDaFaixa: ContribuicaoDeFit[], semAderencia: boolean) {
     })
     .join(", ");
 
-  return `${foraDaFaixa.length} ${foraDaFaixa.length === 1 ? "dimensão ficou fora de prumo" : "dimensões ficaram fora de prumo"} para esta vaga: ${nomes}. O roteiro sonda exatamente esses pontos.`;
+  return `${foraDaFaixa.length} ${foraDaFaixa.length === 1 ? "dimensão ficou fora da faixa" : "dimensões ficaram fora da faixa"} para esta vaga: ${nomes}. O roteiro sonda exatamente esses pontos.`;
 }

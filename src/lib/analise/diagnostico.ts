@@ -272,7 +272,7 @@ function montarRiscos(
     });
   }
 
-  // Dimensões fora de prumo, pela PERDA de aderência — é onde a conversa
+  // Dimensões fora da faixa, pela PERDA de aderência — é onde a conversa
   // rende mais, e é a mesma ordenação que o roteiro usa. Duas telas que
   // ordenam o mesmo achado de formas diferentes fazem quem lê achar que
   // perdeu alguma coisa.

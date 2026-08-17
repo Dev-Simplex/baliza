@@ -532,7 +532,7 @@ export function pontuarBigFive(respostas: RespostasBigFive): ApuracaoBigFive {
  *
  * A conversão faz duas coisas, e é por elas que ela existe num lugar só:
  *
- *   1. TROCA O ALFABETO. O Mini-IPIP usa O/C/E/A/N; o Prumo usa C/E/X/A/O, onde
+ *   1. TROCA O ALFABETO. O Mini-IPIP usa O/C/E/A/N; a Baliza usa C/E/X/A/O, onde
  *      `E` é Estabilidade e Extroversão é `X`. Gravar sem traduzir escreveria a
  *      Extroversão do candidato na coluna da Estabilidade — erro que ninguém
  *      percebe olhando o número.

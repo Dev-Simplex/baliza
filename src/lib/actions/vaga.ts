@@ -173,7 +173,7 @@ export async function alternarModoDaVaga(jobId: string, aberta: boolean) {
  * do que a edição de perfil-alvo faz, porque lá a régua muda para todos (o fit
  * é recalculado) e aqui a PROVA mudaria, que é coisa que não se refaz.
  *
- * Consequência que a tela precisa dizer: tirar o Prumo e o Big Five de uma vaga
+ * Consequência que a tela precisa dizer: tirar a Baliza e o Big Five de uma vaga
  * deixa as próximas respostas sem aderência — não com aderência zero.
  */
 export async function atualizarBateriaDaVaga(

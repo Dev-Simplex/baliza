@@ -53,7 +53,7 @@ import type { Fator } from "@/lib/instrument/types";
  *   · abrir o SJT por competência, porque o score geral esconde zero (§4.5);
  *   · marcar toda alternativa [0] escolhida, mesmo com score alto (§4.6);
  *   · devolver o alfabeto do Big Five ao do manual (o resultado é gravado na
- *     convenção do Prumo, e "X" não é nome de fator para ninguém);
+ *     convenção da Baliza, e "X" não é nome de fator para ninguém);
  *   · virar tudo isso em pergunta de entrevista (§5.3).
  *
  * ─── ATENÇÃO: este módulo é de servidor ────────────────────────────────────
@@ -66,9 +66,9 @@ import type { Fator } from "@/lib/instrument/types";
 // ─── Big Five ──────────────────────────────────────────────────────────────
 
 /**
- * Volta do alfabeto do Prumo para o do manual.
+ * Volta do alfabeto da Baliza para o do manual.
  *
- * `ResultadoBigFive.fatores` é gravado na convenção do Prumo (C/E/X/A/O), com o
+ * `ResultadoBigFive.fatores` é gravado na convenção da Baliza (C/E/X/A/O), com o
  * Neuroticismo já invertido em Estabilidade — foi `paraResultadoDeModuloBigFive`
  * quem traduziu, e por bons motivos (o fit lê os cinco fatores de uma régua
  * só). Para a FICHA, o manual pede de volta os rótulos dele: O, C, E
@@ -296,7 +296,7 @@ export type FichaDeModulos = {
 /**
  * A ficha do analista para os módulos do manual.
  *
- * O Prumo não entra aqui: ele já tem a página inteira (faixas, radar,
+ * A Baliza não entra aqui: ele já tem a página inteira (faixas, radar,
  * arquétipo, nuances). Esta ficha é o que existe AO LADO dele — ou no lugar
  * dele, quando a vaga não o aplicou.
  */

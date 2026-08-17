@@ -101,7 +101,7 @@ export type FichaDeTeste = {
 export const CATALOGO_DE_TESTES: Record<Teste, FichaDeTeste> = {
   PRUMO: {
     id: "PRUMO",
-    nome: "Prumo — mapeamento completo",
+    nome: "Mapeamento Baliza",
     resumo:
       "Os cinco fatores com facetas, arquétipo e selo de confiança. É o único que sozinho já produz a aderência à vaga.",
     formato: "Afirmações de 1 a 5 e situações de trabalho",
@@ -118,7 +118,7 @@ export const CATALOGO_DE_TESTES: Record<Teste, FichaDeTeste> = {
     id: "BIG_FIVE",
     nome: "Big Five (Mini-IPIP)",
     resumo:
-      "Os cinco fatores em versão curta e de domínio público. Mede o mesmo terreno do Prumo com um quarto do tempo — e menos nuance.",
+      "Os cinco fatores em versão curta e de domínio público. Mede o mesmo terreno do Mapeamento Baliza com um quarto do tempo — e menos nuance.",
     formato: "20 afirmações de 1 a 5",
     telas: 20,
     segundos: 5 * 60, // manual §1: 4–5 min
@@ -192,7 +192,7 @@ export function normalizarBateria(entrada: readonly unknown[]): Bateria {
  * Lê a bateria de onde ela veio do banco (coluna de enum) ou de um JSON antigo.
  *
  * Nunca devolve vazio: linha sem bateria é linha gravada antes desta coluna
- * existir, e o comportamento dela sempre foi o Prumo. Diferente da entrada do
+ * existir, e o comportamento dela sempre foi a Baliza. Diferente da entrada do
  * formulário, aqui o default é a leitura correta do passado, não um palpite.
  */
 export function lerBateria(valor: unknown): Bateria {
@@ -268,15 +268,15 @@ export function fontesDeFatores(bateria: readonly Teste[]): Teste[] {
 // ─── Resultado por módulo ──────────────────────────────────────────────────
 
 /**
- * Letras do Big Five como o manual as escreve (§2.1) — que NÃO são as do Prumo.
+ * Letras do Big Five como o manual as escreve (§2.1) — que NÃO são as da Baliza.
  *
  * Duas colisões, e as duas silenciosas se ninguém as declarar:
- *   · `E` no manual é Extroversão; no Prumo, `E` é Estabilidade e Extroversão é `X`.
- *   · `N` (Neuroticismo) não existe no Prumo: o equivalente é `E`, e é o INVERSO
+ *   · `E` no manual é Extroversão; na Baliza, `E` é Estabilidade e Extroversão é `X`.
+ *   · `N` (Neuroticismo) não existe na Baliza: o equivalente é `E`, e é o INVERSO
  *     (manual §2.4, passo 4: score_EE = 100 − score_N).
  *
  * Por isso a conversão mora aqui, num lugar só, e o resultado do Big Five já é
- * gravado na convenção do Prumo — com o N transformado em EE ANTES de entrar.
+ * gravado na convenção da Baliza — com o N transformado em EE ANTES de entrar.
  * "Neuroticismo" não aparece em tela nenhuma (manual §6.4).
  */
 export type FatorBigFive = "O" | "C" | "E" | "A" | "N";
@@ -297,7 +297,7 @@ export const FATOR_PRUMO_DE_BIG_FIVE: Record<FatorBigFive, Fator> = {
   N: "E", // Neuroticismo (inverso) → Estabilidade sob Pressão
 };
 
-/** O único fator do Big Five que precisa ser invertido para virar fator Prumo. */
+/** O único fator do Big Five que precisa ser invertido para virar fator Baliza. */
 export const FATOR_BIG_FIVE_INVERTIDO: FatorBigFive = "N";
 
 export type DimensaoDisc = "D" | "I" | "S" | "C";
@@ -318,7 +318,7 @@ export const NOMES_DE_DISC: Record<DimensaoDisc, { nome: string; foco: string }>
   };
 
 /**
- * O que o Prumo grava quando responde a própria prova.
+ * O que a Baliza grava quando responde a própria prova.
  *
  * Os cinco fatores já estão na coluna `Assessment.scores` desde sempre; o
  * módulo repete o número aqui porque `moduleResults` precisa ser lido inteiro,
@@ -327,13 +327,13 @@ export const NOMES_DE_DISC: Record<DimensaoDisc, { nome: string; foco: string }>
  */
 export type ResultadoPrumo = {
   teste: "PRUMO";
-  /** 0–100 por fator, na convenção do Prumo. */
+  /** 0–100 por fator, na convenção da Baliza. */
   fatores: Record<Fator, number>;
 };
 
 export type ResultadoBigFive = {
   teste: "BIG_FIVE";
-  /** 0–100 já convertido para a convenção do Prumo, com N virado EE. */
+  /** 0–100 já convertido para a convenção da Baliza, com N virado EE. */
   fatores: Record<Fator, number>;
   /** Bruto do manual (4–20 por fator), guardado para auditar a conta. */
   brutos: Record<FatorBigFive, number>;
@@ -440,7 +440,7 @@ export function lerResultados(valor: unknown): ResultadosPorModulo {
 /**
  * De onde saem os cinco fatores para o cálculo de aderência — ou `null`.
  *
- * Com Prumo e Big Five juntos na bateria, ganha o Prumo: 34 itens contra 20,
+ * Com Baliza e Big Five juntos na bateria, ganha a Baliza: 34 itens contra 20,
  * com facetas e sinal de consistência. Misturar os dois (média) produziria um
  * número que não corresponde a nenhum dos dois instrumentos e que ninguém
  * conseguiria explicar ao candidato — e explicabilidade não é opcional aqui

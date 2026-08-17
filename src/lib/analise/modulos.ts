@@ -54,9 +54,9 @@ export type LinhaDeAvaliacao = {
 
 /** As respostas brutas, como saem das três tabelas de resposta. */
 export type LinhasDeResposta = {
-  /** `ItemResponse` — afirmações Likert do Prumo E do Big Five. */
+  /** `ItemResponse` — afirmações Likert da Baliza E do Big Five. */
   itens?: Array<{ itemId: string; value: number; elapsedMs: number | null }>;
-  /** `ScenarioResponse` — blocos MAIS/MENOS do Prumo E do DISC. */
+  /** `ScenarioResponse` — blocos MAIS/MENOS da Baliza E do DISC. */
   blocos?: Array<{ blockId: string; elapsedMs: number | null }>;
 };
 
@@ -91,7 +91,7 @@ export type LeituraDaAvaliacao = {
 /**
  * Os alertas de qualidade dos módulos do manual, quando a bateria os tem.
  *
- * Só as respostas do Big Five e do DISC: as do Prumo têm o próprio índice de
+ * Só as respostas do Big Five e do DISC: as da Baliza têm o próprio índice de
  * confiança, calculado no encerramento, e não passam por aqui.
  */
 export function qualidadeDosModulos(
@@ -113,7 +113,7 @@ export function qualidadeDosModulos(
 /**
  * §4.4 do produto: o fit NUNCA aparece sozinho.
  *
- * O selo do Prumo vem gravado em `confidence`. Quando os cinco fatores vieram
+ * O selo da Baliza vem gravado em `confidence`. Quando os cinco fatores vieram
  * do Big Five, essa coluna não tem o que guardar — o `calcularConfianca` lê
  * itens de desejabilidade, pares do banco e convergência com cenários, e nada
  * disso existe no Mini-IPIP. O substituto é o selo derivado dos alertas de

@@ -231,8 +231,8 @@ export async function desempenhoPorVaga(organizationId: string) {
 
   return vagas.map((vaga) => {
     const concluidas = vaga.assessments.filter((a) => a.status === "COMPLETED");
-    // A média de aderência é só de quem TEM aderência: bateria sem Prumo nem
-    // Big Five não produz os cinco fatores e grava `fitScore` nulo. Somar
+    // A média de aderência é só de quem TEM aderência: bateria sem o Mapeamento
+    // Baliza nem o Big Five não produz os cinco fatores e grava `fitScore` nulo. Somar
     // `?? 0` transformaria a ausência em nota zero e afundaria a média da vaga.
     const comAderencia = concluidas.filter((a) => a.fitScore != null);
     const soma = comAderencia.reduce((a, b) => a + (b.fitScore ?? 0), 0);

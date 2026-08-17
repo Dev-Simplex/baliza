@@ -316,14 +316,14 @@ export type SeloDeConfianca = {
  * ─── Por que existe, e por que não chega a "alta" ──────────────────────────
  * Regra do §4.4 do produto, que não cai: o fit NUNCA aparece sozinho — vem
  * sempre com o selo ao lado, senão vira nota de aprovação. Só que o selo do
- * Prumo é calculado pelo `calcularConfianca`, que lê itens de desejabilidade
+ * O Mapeamento Baliza é calculado pelo `calcularConfianca`, que lê itens de desejabilidade
  * social, pares de consistência do banco e a convergência entre afirmações e
  * cenários. Nada disso existe no Mini-IPIP.
  *
  * Uma bateria só com Big Five produz os cinco fatores e, portanto, produz
  * aderência (`escoresParaFit`) — mas com `confidence` nulo. Deixar o número
  * aparecer sem selo quebraria a regra; carimbar "Alta" com três checagens onde
- * o Prumo faz cinco prometeria uma verificação que não houve.
+ * o Mapeamento Baliza faz cinco prometeria uma verificação que não houve.
  *
  * Então o selo do Big Five é montado a partir dos alertas do §6.3 e tem teto
  * MÉDIA. Zero alerta não vira "alta": vira "média, e aqui está o porquê".
@@ -333,7 +333,7 @@ export const SELO_MAXIMO_DO_BIG_FIVE: SeloDeConfianca["selo"] = "media";
 const TEXTO_DO_SELO_BIG_FIVE: Record<SeloDeConfianca["selo"], string> = {
   alta: "",
   media:
-    "A aderência veio do Big Five (20 itens), não do Prumo. Os três controles de qualidade do manual não acusaram nada — mas são três, contra os cinco do Prumo, e por isso este selo não passa de média. Trate como pista e confirme na entrevista.",
+    "A aderência veio do Big Five (20 itens), não do Mapeamento Baliza. Os três controles de qualidade do manual não acusaram nada — mas são três, contra os cinco do Mapeamento Baliza, e por isso este selo não passa de média. Trate como pista e confirme na entrevista.",
   baixa:
     "O padrão de respostas do Big Five levantou sinal de atenção. Não elimina ninguém e não invalida a prova: significa ler o resultado com reserva e confirmar os pontos na entrevista.",
 };
@@ -348,7 +348,7 @@ export const NOME_DO_ALERTA: Record<ChaveDeAlerta, string> = {
 export function seloDoBigFive(
   qualidade: QualidadeDasRespostas,
 ): SeloDeConfianca {
-  // Um alerta já derruba para baixa. O critério é mais duro que o do Prumo
+  // Um alerta já derruba para baixa. O critério é mais duro que o do Mapeamento Baliza
   // (onde um sinal ainda dá "média") porque aqui o teto já é média: sem o
   // degrau de cima, o degrau de baixo é o único jeito de o selo se mexer.
   const selo: SeloDeConfianca["selo"] =
@@ -361,7 +361,7 @@ export function seloDoBigFive(
     sinais: qualidade.alertas.map((a) => a.chave),
     texto: qualidade.avaliavel
       ? TEXTO_DO_SELO_BIG_FIVE[selo]
-      : "A aderência veio do Big Five (20 itens), não do Prumo. As respostas brutas já foram apagadas pelo prazo de retenção, então os controles de qualidade do manual não puderam ser conferidos.",
+      : "A aderência veio do Big Five (20 itens), não do Mapeamento Baliza. As respostas brutas já foram apagadas pelo prazo de retenção, então os controles de qualidade do manual não puderam ser conferidos.",
   };
 }
 

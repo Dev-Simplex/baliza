@@ -26,13 +26,13 @@ const FATORES_NEUTROS = { C: 50, E: 50, X: 50, A: 50, O: 50 };
 
 describe("catálogo", () => {
   /**
-   * `baterias.ts` repete os números do Prumo em vez de importar `form.ts` —
+   * `baterias.ts` repete os números da Baliza em vez de importar `form.ts` —
    * importar arrastaria o banco de 128 itens para o pacote do navegador, e a
    * tela de seleção da vaga é componente de cliente. O preço da cópia é este
    * teste: se alguém mexer no tamanho da prova, os dois lados divergem aqui e
    * não em produção.
    */
-  it("o Prumo do catálogo bate com a forma de verdade", () => {
+  it("a Baliza do catálogo bate com a forma de verdade", () => {
     expect(CATALOGO_DE_TESTES.PRUMO.telas).toBe(TOTAL_DE_TELAS);
     expect(CATALOGO_DE_TESTES.PRUMO.segundos).toBe(
       TOTAL_DE_ITENS * SEGUNDOS_POR_AFIRMACAO +
@@ -54,7 +54,7 @@ describe("catálogo", () => {
     expect(comGabarito).toEqual(["SJT"]);
   });
 
-  it("Prumo e Big Five são as únicas fontes dos cinco fatores", () => {
+  it("Baliza e Big Five são as únicas fontes dos cinco fatores", () => {
     const fontes = TESTES.filter((t) => CATALOGO_DE_TESTES[t].produzFatores);
     expect(fontes).toEqual(["PRUMO", "BIG_FIVE"]);
   });
@@ -85,7 +85,7 @@ describe("leitura do banco", () => {
    * A garantia que sustenta a migração: vaga e avaliação gravadas antes da
    * coluna existir se comportam como sempre se comportaram.
    */
-  it("linha sem bateria vira Prumo", () => {
+  it("linha sem bateria vira Baliza", () => {
     expect(lerBateria(null)).toEqual(["PRUMO"]);
     expect(lerBateria(undefined)).toEqual(["PRUMO"]);
     expect(lerBateria([])).toEqual(["PRUMO"]);
@@ -107,7 +107,7 @@ describe("validação da escolha do recrutador", () => {
     expect(r.ok).toBe(false);
   });
 
-  it("recusa bateria que só tem valor inválido — não vira Prumo por engano", () => {
+  it("recusa bateria que só tem valor inválido — não vira Baliza por engano", () => {
     const r = validarBateria(["ENEAGRAMA"]);
     expect(r.ok).toBe(false);
   });
@@ -138,7 +138,7 @@ describe("custo da bateria", () => {
 });
 
 describe("aderência", () => {
-  it("Prumo ou Big Five ligam o ranking", () => {
+  it("Baliza ou Big Five ligam o ranking", () => {
     expect(produzFatores(["PRUMO"])).toBe(true);
     expect(produzFatores(["BIG_FIVE", "SJT"])).toBe(true);
   });
@@ -153,7 +153,7 @@ describe("aderência", () => {
     expect(escoresParaFit({})).toBeNull();
   });
 
-  it("com os dois na bateria, o Prumo é a fonte — não a média dos dois", () => {
+  it("com os dois na bateria, a Baliza é a fonte — não a média dos dois", () => {
     const resultados: ResultadosPorModulo = {
       PRUMO: { teste: "PRUMO", fatores: { ...FATORES_NEUTROS, C: 80 } },
       BIG_FIVE: {
@@ -183,15 +183,15 @@ describe("aderência", () => {
 describe("mapa de fator do Big Five", () => {
   /**
    * As duas colisões que este mapa existe para evitar: `E` é Extroversão no
-   * manual e Estabilidade no Prumo, e `N` não tem equivalente direto — vira
+   * manual e Estabilidade na Baliza, e `N` não tem equivalente direto — vira
    * `E` (Estabilidade), invertido.
    */
-  it("E do manual é X do Prumo; N do manual é E do Prumo", () => {
+  it("E do manual é X da Baliza; N do manual é E da Baliza", () => {
     expect(FATOR_PRUMO_DE_BIG_FIVE.E).toBe("X");
     expect(FATOR_PRUMO_DE_BIG_FIVE.N).toBe("E");
   });
 
-  it("cobre os cinco fatores do Prumo, sem sobrar nem faltar", () => {
+  it("cobre os cinco fatores da Baliza, sem sobrar nem faltar", () => {
     const destinos = Object.values(FATOR_PRUMO_DE_BIG_FIVE);
     expect(new Set(destinos).size).toBe(5);
     for (const f of FATORES) expect(destinos).toContain(f);

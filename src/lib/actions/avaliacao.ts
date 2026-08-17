@@ -239,7 +239,7 @@ export async function criarAvaliacao(opcoes: {
 
   const semente = `${opcoes.candidateId}:${opcoes.jobId}:${Date.now()}`;
   // A prova inteira da bateria é sorteada aqui, de uma vez: as afirmações do
-  // Prumo e do Big Five em `itemOrder`, os blocos das situações, do DISC e do
+  // Baliza e do Big Five em `itemOrder`, os blocos das situações, do DISC e do
   // SJT em `scenarioOrder`. A separação de volta é por banco, em
   // `forma-da-bateria.ts` — que é o único lugar que sabe montar e desmontar.
   const forma = montarProvaDaBateria({ semente, bateria, excluir: jaVistos });
@@ -413,7 +413,7 @@ export async function iniciarAvaliacao(token: string) {
  * ações de salvamento.
  *
  * Ele existe para que as três façam a MESMA pergunta ao mesmo lugar. Enquanto a
- * prova era só o Prumo, cada ação conferia a sua coluna (`itemOrder` de um
+ * prova era só a Baliza, cada ação conferia a sua coluna (`itemOrder` de um
  * lado, `scenarioOrder` do outro) e isso bastava. Com quatro testes, "esta
  * pergunta é desta pessoa?" depende da bateria congelada e do banco de cada
  * teste; deixar cada ação responder por conta própria seria o começo de três
@@ -483,7 +483,7 @@ function tempoDentroDoTeto(tempoMs?: number) {
 }
 
 /**
- * Salvamento automático de uma afirmação de 1 a 5 — Prumo e Big Five.
+ * Salvamento automático de uma afirmação de 1 a 5 — Baliza e Big Five.
  *
  * Chamada a cada clique. É upsert: a pessoa pode voltar e trocar a resposta
  * antes de concluir, e o registro não duplica.
@@ -532,12 +532,12 @@ export async function salvarResposta(
 }
 
 /**
- * Salvamento de um bloco de MAIS/MENOS — as situações do Prumo e o DISC.
+ * Salvamento de um bloco de MAIS/MENOS — as situações da Baliza e o DISC.
  *
  * Os dois gravam aqui porque a resposta tem a mesma forma: uma escolha
  * "primeira/MAIS" e uma "última/MENOS", obrigatoriamente diferentes. A regra
  * das duas diferentes é do manual do DISC (§3.2, "As duas escolhas devem ser
- * diferentes") e é a mesma invariante que o escore ipsativo do Prumo sempre
+ * diferentes") e é a mesma invariante que o escore ipsativo da Baliza sempre
  * exigiu — a tela impede, e esta linha é a que garante quando a tela não é a
  * única a chamar.
  */
@@ -689,7 +689,7 @@ export async function concluirAvaliacao(token: string) {
   });
 
   // A bateria conclui INTEIRA ou não conclui. Os blocos entram na mesma
-  // conferência que as afirmações — as situações do Prumo não entram no ranking
+  // conferência que as afirmações — as situações da Baliza não entram no ranking
   // (§5: escore ipsativo compara dimensões dentro da pessoa, não pessoas entre
   // si), mas alimentam a leitura qualitativa, e um teste inteiro em branco
   // viraria um relatório com um módulo faltando que ninguém pediria de volta.
@@ -747,7 +747,7 @@ export async function concluirAvaliacao(token: string) {
   // ─── Escoragem por módulo ───────────────────────────────────────────────
   //
   // Cada teste é escorado com as respostas DELE, pelo módulo dele. As
-  // afirmações do Prumo e do Big Five moram na mesma tabela, então separar
+  // afirmações da Baliza e do Big Five moram na mesma tabela, então separar
   // pelas listas da prova não é zelo: passar item de um para a equação do outro
   // produziria escore com denominador errado nos dois.
   //
@@ -810,7 +810,7 @@ export async function concluirAvaliacao(token: string) {
       modulos.DISC = pontuarDiscPlanilha(respostas);
     } else {
     // `firstActionId` é o MAIS e `lastActionId` é o MENOS — a mesma coluna que
-    // guarda "faria primeiro / deixaria por último" nas situações do Prumo.
+    // guarda "faria primeiro / deixaria por último" nas situações da Baliza.
     const respostasDisc: RespostaDisc[] = prova.porTeste.DISC.blocos
       .map((id) => ({ id, par: parPorBloco.get(id) }))
       .filter((b) => Boolean(b.par))
@@ -888,11 +888,11 @@ export async function concluirAvaliacao(token: string) {
         durationMs: duracaoMs,
         moduleResults: modulos as never,
         // A COLUNA `scores` guarda a MESMA fonte que decidiu o fit, não só a do
-        // Prumo. Gravar só o Prumo aqui deixava a bateria de Big Five com fit
+        // Baliza. Gravar só a Baliza aqui deixava a bateria de Big Five com fit
         // calculado e `scores` nulo — e `scores` é o que o resto do produto lê
         // (média por fator do painel, relatórios). O candidato apareceria no
         // ranking com nota e sumiria dos agregados, sem ninguém entender por quê.
-        // `escoresParaFit` já prefere o Prumo quando ele existe, então para toda
+        // `escoresParaFit` já prefere a Baliza quando ele existe, então para toda
         // vaga que existe hoje isto grava exatamente o que gravava antes.
         scores: (fonte?.escores ?? null) as never,
         facetNotes: (prumo?.facetas ?? null) as never,

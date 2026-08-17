@@ -427,7 +427,7 @@ describe("resultado gravado (contrato de baterias.ts)", () => {
     expect(CATALOGO_DE_TESTES.BIG_FIVE.produzFatores).toBe(true);
   });
 
-  it("traduz o alfabeto do Mini-IPIP para o do Prumo (E→X, N→E)", () => {
+  it("traduz o alfabeto do Mini-IPIP para o da Baliza (E→X, N→E)", () => {
     // Candidata do §5.1: O 56 · C 63 · E 75 · A 69 · EE 81.
     const apuracao = pontuarBigFive(
       respostasComValores({

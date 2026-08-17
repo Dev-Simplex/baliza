@@ -82,7 +82,7 @@ function dados(parcial: Partial<DadosDoRelatorio> = {}): DadosDoRelatorio {
     respondidoEm: "10/08/2026",
     duracao: "9 min",
     aderencia: "72,4",
-    resumoDoGap: "2 dimensões ficaram fora de prumo para esta vaga.",
+    resumoDoGap: "2 dimensões ficaram fora da faixa para esta vaga.",
     selo: {
       nivel: "media",
       rotulo: "Média",

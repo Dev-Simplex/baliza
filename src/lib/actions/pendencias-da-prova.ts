@@ -17,8 +17,8 @@
  * escore aguenta, porque a escoragem ignora id desconhecido em vez de estourar.
  *
  * ─── Três listas, porque são três tabelas ──────────────────────────────────
- * Com a bateria, a prova pode ter afirmações (Prumo, Big Five), blocos de
- * MAIS/MENOS (situações do Prumo, palavras do DISC) e escolha única (SJT) — e
+ * Com a bateria, a prova pode ter afirmações (Baliza, Big Five), blocos de
+ * MAIS/MENOS (situações da Baliza, palavras do DISC) e escolha única (SJT) — e
  * cada família grava numa tabela diferente. A conferência é a mesma para as
  * três, e o total é o que tranca a porta: a bateria só conclui INTEIRA. Deixar
  * um teste de fora da conta seria concluir a prova sem ele e gerar um relatório

@@ -120,6 +120,6 @@ describe("montarRoteiro — a regra nº 6", () => {
     });
 
     expect(roteiro.resumoDoGap).toContain("abaixo");
-    expect(roteiro.resumoDoGap).toContain("fora de prumo");
+    expect(roteiro.resumoDoGap).toContain("fora da faixa");
   });
 });

@@ -143,14 +143,19 @@ function simularRespostas(
 async function semearDemonstracao() {
   console.log("→ demonstração");
 
-  const senha = await bcrypt.hash("prumo123", 10);
+  const senha = await bcrypt.hash("baliza123", 10);
 
   // Operador da plataforma — vive fora de qualquer empresa.
+  //
+  // O e-mail mudou junto com a marca. `upsert` casa por e-mail, então um banco
+  // de desenvolvimento já semeado ganha este usuário SEM perder o antigo
+  // (`admin@prumo.app`) — apague-o à mão se ele incomodar. Em banco novo não
+  // existe questão nenhuma.
   await prisma.user.upsert({
-    where: { email: "admin@prumo.app" },
+    where: { email: "admin@baliza.app" },
     create: {
-      name: "Operação Prumo",
-      email: "admin@prumo.app",
+      name: "Operação Baliza",
+      email: "admin@baliza.app",
       passwordHash: senha,
       isPlatformAdmin: true,
       role: "OWNER",
@@ -345,8 +350,8 @@ async function semearDemonstracao() {
   }
 
   console.log(`  empresa Acme Indústrias, 3 vagas, ${criadas} avaliações novas`);
-  console.log("  login empresa: recrutador@acme.com / prumo123");
-  console.log("  login plataforma: admin@prumo.app / prumo123");
+  console.log("  login empresa: recrutador@acme.com / baliza123");
+  console.log("  login plataforma: admin@baliza.app / baliza123");
 }
 
 async function main() {

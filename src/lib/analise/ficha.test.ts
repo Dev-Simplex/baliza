@@ -33,7 +33,7 @@ import { montarRoteiro } from "@/lib/analise/roteiro";
 /**
  * Big Five do exemplo: O 56 · C 63 · E 75 · A 69 · EE 81.
  *
- * Gravado como o módulo grava — na convenção do Prumo, com o N já invertido em
+ * Gravado como o módulo grava — na convenção da Baliza, com o N já invertido em
  * Estabilidade. Daí `E: 81` (Estabilidade) e `X: 75` (Extroversão).
  */
 const BIG_FIVE_DO_MANUAL: ResultadoBigFive = {
@@ -97,7 +97,7 @@ describe("bloco do Big Five", () => {
     const bloco = montarBlocoBigFive(BIG_FIVE_DO_MANUAL);
     const porChave = new Map(bloco.notas.map((n) => [n.chave, n]));
 
-    // A colisão que o alfabeto do Prumo cria: lá, `E` é Estabilidade.
+    // A colisão que o alfabeto da Baliza cria: lá, `E` é Estabilidade.
     expect(porChave.get("E")?.rotulo).toBe("Extroversão");
     expect(porChave.get("E")?.score).toBe(75);
     expect(porChave.get("EE")?.rotulo).toBe("Estabilidade Emocional");
@@ -316,7 +316,7 @@ describe("perguntas sugeridas (§5.3)", () => {
     expect(montarFichaDeModulos({}).temAlgum).toBe(false);
   });
 
-  it("resultado só do Prumo não vira ficha de módulo", () => {
+  it("resultado só da Baliza não vira ficha de módulo", () => {
     const ficha = montarFichaDeModulos({
       PRUMO: { teste: "PRUMO", fatores: { C: 70, E: 60, X: 55, A: 50, O: 45 } },
     });

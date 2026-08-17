@@ -1,4 +1,4 @@
-// Prumo — mapeamento comportamental para processos seletivos.
+// Baliza — inteligência comportamental para recrutamento.
 //
 // Regra de arquitetura: TUDO que pertence a uma empresa carrega `organizationId`
 // e é lido exclusivamente pelos helpers de `src/lib/tenant.ts`. Consulta que
@@ -166,7 +166,9 @@ enum JobStatus {
 
 /// Os testes que uma vaga pode aplicar. Ver src/lib/instrument/baterias.ts.
 ///
-/// PRUMO é o instrumento da casa — 34 afirmações + 5 situações, cinco fatores —
+/// PRUMO é o identificador do instrumento da casa (hoje "Mapeamento Baliza"):
+/// 34 afirmações + 5 situações, cinco fatores. O NOME mudou com a marca; o
+/// valor do enum não, porque ele é dado gravado em toda vaga já criada.
 /// e continua existindo inteiro: virar "uma opção entre quatro" não fatiou nada
 /// dele. Os outros três vêm do manual de testes comportamentais.
 enum InstrumentoDeTeste {
@@ -197,7 +199,7 @@ model Job {
 
   // Quais testes esta vaga aplica, na ordem de aplicação. O default garante que
   // toda vaga criada antes desta coluna existir continue se comportando
-  // exatamente como antes: só o Prumo.
+  // exatamente como antes: só o instrumento da casa.
   //
   // Enum e não Json de propósito — o banco recusa "BIGFIVE" digitado errado, e
   // errar aqui não dá erro de tela: dá uma prova sem aquele teste.
@@ -446,8 +448,8 @@ model Assessment {
 // nunca pelo teste que a fez. Tabela por teste seria quatro cópias da mesma
 // coluna e quatro caminhos de leitura para manter em pé.
 //
-//   · Likert 1..5, uma pergunta por vez  → ItemResponse   (Prumo, Big Five)
-//   · bloco com um MAIS e um MENOS       → ScenarioResponse (Prumo, DISC)
+//   · Likert 1..5, uma pergunta por vez  → ItemResponse   (Baliza, Big Five)
+//   · bloco com um MAIS e um MENOS       → ScenarioResponse (Baliza, DISC)
 //   · uma alternativa entre várias       → ChoiceResponse  (SJT)
 //
 // Os `id` de item e de bloco são globais e prefixados por teste (`bf_…`,
@@ -502,7 +504,7 @@ model ScenarioResponse {
 ///     "MENOS". Só encaixaria escrevendo um valor de mentira ali — e aí toda
 ///     leitura de MAIS/MENOS passaria a ver uma segunda escolha que a pessoa
 ///     nunca fez. Afrouxar a coluna para nullable seria pior: tiraria do banco
-///     a invariante que sustenta o DISC e o Prumo.
+///     a invariante que sustenta o DISC e o Mapeamento Baliza.
 ///
 /// Guarda só o id da alternativa escolhida. A pontuação ({2,1,1,0}) e a
 /// competência ficam no gabarito, no servidor: nunca vão ao front do candidato,

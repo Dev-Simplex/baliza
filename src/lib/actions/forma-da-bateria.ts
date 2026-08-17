@@ -50,7 +50,7 @@ import { ESCALA_LIKERT } from "@/lib/instrument/types";
  * ─── O problema que este arquivo resolve ───────────────────────────────────
  * A forma da prova (quais perguntas, em que ordem) é sorteada quando o convite
  * nasce e fica congelada: retomar tem que mostrar a mesma prova, e o escore de
- * duas sessões não pode misturar dois sorteios. Isso já valia para o Prumo.
+ * duas sessões não pode misturar dois sorteios. Isso já valia para a Baliza.
  * Agora a prova pode ter até quatro testes, e a pergunta "esta pergunta é
  * mesmo desta pessoa?" precisa continuar tendo UMA resposta — a mesma para a
  * tela que desenha, para a ação que grava e para o encerramento que confere.
@@ -62,8 +62,8 @@ import { ESCALA_LIKERT } from "@/lib/instrument/types";
  *
  * ─── Onde a forma fica guardada ────────────────────────────────────────────
  * Nas duas colunas que já existem, sem coluna nova: `itemOrder` guarda tudo que
- * é afirmação de 1 a 5 (Prumo e Big Five) e `scenarioOrder` guarda tudo que é
- * bloco (situações do Prumo, blocos de palavras do DISC, cenários do SJT). É a
+ * é afirmação de 1 a 5 (Baliza e Big Five) e `scenarioOrder` guarda tudo que é
+ * bloco (situações da Baliza, blocos de palavras do DISC, cenários do SJT). É a
  * mesma divisão que o schema já faz nas tabelas de resposta, e os ids são
  * globais e distinguíveis por banco — `c_org_1`, `bf07`, `disc-b03`,
  * `sjt-c05` —, então separar de volta é consulta a mapa, nunca palpite por
@@ -136,7 +136,7 @@ export type ProvaGuardada = { itens: string[]; blocos: string[] };
  * Sorteia a prova inteira da bateria, uma vez, no nascimento do convite.
  *
  * `excluir` é o histórico de itens que esta pessoa já viu em provas anteriores,
- * e só o Prumo o usa: ele tem banco grande o bastante para repetir pouco. Big
+ * e só a Baliza o usa: ele tem banco grande o bastante para repetir pouco. Big
  * Five, DISC e SJT aplicam o banco inteiro (20, 12 e 8), então "não repetir"
  * ali significaria aplicar menos que o instrumento pede — e aí o escore deixa
  * de ser o do manual.
@@ -181,7 +181,7 @@ export type ProvaDaBateria = {
   porTeste: Record<Teste, { itens: string[]; blocos: string[] }>;
   /** Tudo que grava em `ItemResponse`. */
   itens: string[];
-  /** Tudo que grava em `ScenarioResponse` (Prumo e DISC). */
+  /** Tudo que grava em `ScenarioResponse` (Baliza e DISC). */
   cenarios: string[];
   /** Tudo que grava em `ChoiceResponse` (SJT). */
   escolhas: string[];
@@ -257,7 +257,7 @@ export function lerProvaDaBateria(entrada: {
 // ─── As etapas que o candidato atravessa ───────────────────────────────────
 
 const CURTO: Record<Teste, string> = {
-  PRUMO: "Prumo",
+  PRUMO: "Baliza",
   BIG_FIVE: "Big Five",
   DISC: "DISC",
   ESTILO_EMOCIONAL: "Emocional",
@@ -265,7 +265,7 @@ const CURTO: Record<Teste, string> = {
 };
 
 /**
- * O Prumo é o único sem instrução no manual — ele é da casa. O texto abaixo
+ * A Baliza é o único sem instrução no manual — ele é da casa. O texto abaixo
  * ocupa o mesmo lugar dos outros três e diz a mesma coisa que eles: não existe
  * resposta certa, e a única resposta útil é a sincera.
  */

@@ -2,7 +2,7 @@
  * Preenche `confidence` nas avaliações que a escrita antiga deixou sem selo.
  *
  * A aderência nunca pode aparecer sem o selo (§4.4), e `concluirAvaliacao`
- * gravava só o selo do Prumo — bateria de Big Five terminava com número e
+ * gravava só o selo do Mapeamento Baliza — bateria de Big Five terminava com número e
  * coluna vazia. A causa já está corrigida na escrita; isto é para o que ficou
  * gravado antes.
  *
