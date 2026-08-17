@@ -120,8 +120,8 @@ describe("validação da escolha do recrutador", () => {
 
 describe("custo da bateria", () => {
   it("soma telas e tempo dos testes marcados", () => {
-    expect(telasDaBateria(["BIG_FIVE", "DISC"])).toBe(32);
-    expect(minutosDaBateria(["BIG_FIVE", "DISC"])).toBe(11);
+    expect(telasDaBateria(["BIG_FIVE", "DISC"])).toBe(45);
+    expect(minutosDaBateria(["BIG_FIVE", "DISC"])).toBe(13);
   });
 
   it("bateria vazia não custa nada", () => {

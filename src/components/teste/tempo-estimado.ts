@@ -31,11 +31,15 @@ export const SEGUNDOS_POR_BLOCO_DE_PALAVRAS = 30;
 
 /** Ler um cenário inteiro e comparar 4 condutas possíveis — a tela mais cara. */
 export const SEGUNDOS_POR_CENARIO = 90;
+export const SEGUNDOS_POR_ESCOLHA_CURTA = 19;
+export const SEGUNDOS_POR_BINARIA = 10;
 
 export const SEGUNDOS_POR_TIPO: Record<TipoDePergunta, number> = {
   likert: SEGUNDOS_POR_AFIRMACAO,
   ordenar: SEGUNDOS_POR_SITUACAO,
   "mais-menos": SEGUNDOS_POR_BLOCO_DE_PALAVRAS,
+  "escolha-curta": SEGUNDOS_POR_ESCOLHA_CURTA,
+  binaria: SEGUNDOS_POR_BINARIA,
   escolha: SEGUNDOS_POR_CENARIO,
 };
 

@@ -39,7 +39,13 @@ import type { Fator } from "./types";
  * Os outros três seguem a ordem recomendada pelo manual (§1): Big Five → DISC →
  * SJT, do mais leve e impessoal ao mais custoso de responder.
  */
-export const TESTES = ["PRUMO", "BIG_FIVE", "DISC", "SJT"] as const;
+export const TESTES = [
+  "PRUMO",
+  "BIG_FIVE",
+  "DISC",
+  "ESTILO_EMOCIONAL",
+  "SJT",
+] as const;
 
 export type Teste = (typeof TESTES)[number];
 
@@ -124,9 +130,20 @@ export const CATALOGO_DE_TESTES: Record<Teste, FichaDeTeste> = {
     nome: "DISC — estilo de trabalho",
     resumo:
       "Como a pessoa tende a trabalhar e se comunicar. Descreve estilo, não competência: é contexto para a entrevista, não nota.",
-    formato: "12 blocos: em cada um, a palavra que MAIS e a que MENOS combinam",
-    telas: 12,
-    segundos: 6 * 60, // manual §1: 5–6 min
+    formato: "25 perguntas, uma alternativa por tela",
+    telas: 25,
+    segundos: 8 * 60,
+    produzFatores: false,
+    temGabarito: false,
+  },
+  ESTILO_EMOCIONAL: {
+    id: "ESTILO_EMOCIONAL",
+    nome: "Estilo Emocional do Cérebro",
+    resumo:
+      "Mapeia resiliência, atitude, intuição social, autopercepção, sensibilidade ao contexto e atenção.",
+    formato: "60 afirmações de Verdadeiro ou Falso",
+    telas: 60,
+    segundos: 10 * 60,
     produzFatores: false,
     temGabarito: false,
   },
@@ -360,10 +377,25 @@ export type ResultadoSjt = {
   piores: Array<{ blocoId: string; competencia: string }>;
 };
 
+export type DimensaoEstiloEmocional =
+  | "RESILIENCIA"
+  | "ATITUDE"
+  | "INTUICAO_SOCIAL"
+  | "AUTOPERCEPCAO"
+  | "SENSIBILIDADE_CONTEXTO"
+  | "ATENCAO";
+
+export type ResultadoEstiloEmocional = {
+  teste: "ESTILO_EMOCIONAL";
+  pontos: Record<DimensaoEstiloEmocional, number>;
+  percentuais: Record<DimensaoEstiloEmocional, number>;
+};
+
 export type ResultadoDeModulo =
   | ResultadoPrumo
   | ResultadoBigFive
   | ResultadoDisc
+  | ResultadoEstiloEmocional
   | ResultadoSjt;
 
 /**
@@ -376,6 +408,7 @@ export type ResultadosPorModulo = {
   PRUMO?: ResultadoPrumo;
   BIG_FIVE?: ResultadoBigFive;
   DISC?: ResultadoDisc;
+  ESTILO_EMOCIONAL?: ResultadoEstiloEmocional;
   SJT?: ResultadoSjt;
 };
 

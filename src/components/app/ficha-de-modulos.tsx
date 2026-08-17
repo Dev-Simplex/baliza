@@ -1,6 +1,12 @@
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 
-import type { BlocoBigFive, BlocoDisc, BlocoSjt, FichaDeModulos } from "@/lib/analise/ficha";
+import type {
+  BlocoBigFive,
+  BlocoDisc,
+  BlocoEstiloEmocional,
+  BlocoSjt,
+  FichaDeModulos,
+} from "@/lib/analise/ficha";
 import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +136,43 @@ function CartaoDisc({ bloco }: { bloco: BlocoDisc }) {
   );
 }
 
+function CartaoEstiloEmocional({
+  bloco,
+}: {
+  bloco: BlocoEstiloEmocional;
+}) {
+  return (
+    <section className="rounded-xl border bg-card p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-sm font-semibold">Estilo Emocional do Cérebro</h2>
+        <span className="etiqueta">6 dimensões · 0–100</span>
+      </div>
+      <ul className="mt-4 space-y-3.5">
+        {bloco.dimensoes.map((dimensao) => (
+          <li key={dimensao.chave}>
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="t-corpo-sm">{dimensao.nome}</span>
+              <span className="leitura shrink-0 text-sm font-semibold">
+                {dimensao.score}
+              </span>
+            </div>
+            <div className="mt-1.5">
+              <Barra valor={dimensao.score} />
+            </div>
+            <p className="mt-1 t-legenda leading-relaxed text-muted-foreground">
+              {dimensao.leitura}
+            </p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 border-t pt-3 t-legenda leading-relaxed text-muted-foreground">
+        O resultado descreve tendências emocionais e de atenção. Não é diagnóstico
+        clínico nem nota de aprovação.
+      </p>
+    </section>
+  );
+}
+
 // ─── SJT ───────────────────────────────────────────────────────────────────
 
 function CartaoSjt({ bloco }: { bloco: BlocoSjt }) {
@@ -170,8 +213,11 @@ function CartaoSjt({ bloco }: { bloco: BlocoSjt }) {
               <span className="t-corpo-sm">
                 {c.curto}
                 {c.atencao && (
+                  // "Abaixo do limiar de atenção" era o rótulo aqui. É o nome
+                  // interno da regra, e quem usa leitor de tela ouvia jargão em
+                  // vez do fato.
                   <AlertTriangle
-                    aria-label="abaixo do limiar de atenção"
+                    aria-label="pontuação baixa nesta competência"
                     className="ml-1.5 inline size-3 align-[-1px] text-fora"
                   />
                 )}
@@ -187,15 +233,36 @@ function CartaoSjt({ bloco }: { bloco: BlocoSjt }) {
             </li>
           ))}
         </ul>
+
+        {/* O número por competência não se explica sozinho: sem esta linha,
+            um 38 ao lado de "Conflito" é lido como "esta pessoa é ruim de
+            conflito", e não como "esta é a pergunta que a entrevista precisa
+            fazer". A diferença entre as duas leituras é uma contratação. */}
+        {bloco.competencias.some((c) => c.atencao) && (
+          <p className="mt-3 t-legenda leading-relaxed text-muted-foreground">
+            Competência marcada é onde perguntar, não onde reprovar: o teste
+            mostra o que a pessoa escolheu em casos escritos, e a entrevista é
+            que mostra o que ela faz.
+          </p>
+        )}
       </div>
 
+      {/* ─── A resposta errada, e a leitura que ela NÃO autoriza ─────────
+          Este bloco era vermelho de erro e explicava a regra interna do
+          produto ("vai para o roteiro independentemente do score geral") — que
+          é verdadeira e não é o que quem entrevista precisa saber. O efeito
+          prático era o pior possível: uma escolha ruim em UM caso escrito,
+          pintada de alarme, virava impressão de falha de caráter antes da
+          conversa começar. É o único lugar do instrumento onde existe resposta
+          errada, e por isso é o único que precisa dizer, com todas as letras,
+          o que ela não quer dizer. Cor de atenção, não de reprovação. */}
       {bloco.piores.length > 0 && (
-        <div className="mt-4 rounded-lg border border-fora/40 bg-fora/5 px-4 py-3">
-          <p className="flex items-center gap-1.5 text-xs font-semibold text-fora">
+        <div className="mt-4 rounded-lg border border-marca/40 bg-marca-forte/[0.05] px-4 py-3">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-marca">
             <AlertTriangle className="size-3.5" />
             {bloco.piores.length === 1
-              ? "Escolheu a pior alternativa em 1 cenário"
-              : `Escolheu a pior alternativa em ${bloco.piores.length} cenários`}
+              ? "Escolheu a alternativa mais fraca em 1 cenário"
+              : `Escolheu a alternativa mais fraca em ${bloco.piores.length} cenários`}
           </p>
           <ul className="mt-2 space-y-1 t-corpo-sm">
             {bloco.piores.map((p) => (
@@ -204,10 +271,29 @@ function CartaoSjt({ bloco }: { bloco: BlocoSjt }) {
               </li>
             ))}
           </ul>
-          <p className="mt-2 t-legenda leading-relaxed text-muted-foreground">
-            Vai para o roteiro de entrevista independentemente do score geral. O
-            que se leva à conversa é a situação, nunca o cenário do teste — o
-            banco é reaplicado em outros processos.
+
+          <dl className="mt-3 space-y-2 t-legenda leading-relaxed">
+            <div>
+              <dt className="etiqueta text-marca">O que isso quer dizer</dt>
+              <dd className="text-muted-foreground">
+                Vale perguntar sobre uma situação parecida na entrevista. Já
+                está no roteiro, mesmo que o score geral seja alto.
+              </dd>
+            </div>
+            <div>
+              <dt className="etiqueta">O que isso não quer dizer</dt>
+              <dd className="text-muted-foreground">
+                Não é erro de caráter e não reprova ninguém. O teste mede uma
+                escolha num caso escrito, sem contexto e sem as pessoas
+                envolvidas — decidir mal no papel e bem na vida real é comum.
+                Peça um exemplo concreto antes de concluir qualquer coisa.
+              </dd>
+            </div>
+          </dl>
+
+          <p className="mt-2.5 t-legenda leading-relaxed text-muted-foreground">
+            Na conversa, descreva a situação com suas palavras: não cite o
+            cenário do teste, que é reaplicado em outros processos.
           </p>
         </div>
       )}
@@ -298,6 +384,10 @@ export function FichaDosModulos({
           {ficha.bigFive && <CartaoBigFive bloco={ficha.bigFive} />}
           {ficha.disc && <CartaoDisc bloco={ficha.disc} />}
         </div>
+      )}
+
+      {ficha.estiloEmocional && (
+        <CartaoEstiloEmocional bloco={ficha.estiloEmocional} />
       )}
 
       {qualidade && <CartaoDeQualidade qualidade={qualidade} />}

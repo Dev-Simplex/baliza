@@ -35,6 +35,14 @@ import {
   type RespostaDisc,
 } from "@/lib/instrument/disc";
 import {
+  BLOCO_DISC_PLANILHA_POR_ID,
+  pontuarDiscPlanilha,
+} from "@/lib/instrument/disc-planilha";
+import {
+  ITEM_ESTILO_EMOCIONAL_POR_ID,
+  pontuarEstiloEmocional,
+} from "@/lib/instrument/estilo-emocional";
+import {
   CENARIO_SJT_POR_ID,
   paraResultadoDeModuloSjt,
   pontuarSjt,
@@ -696,7 +704,10 @@ export async function concluirAvaliacao(token: string) {
     escolhasRespondidas: avaliacao.choiceResponses.map((r) => r.blockId),
     itemVisivel: (id) => ITEM_POR_ID.has(id) || ITEM_BIG_FIVE_POR_ID.has(id),
     cenarioVisivel: (id) => CENARIO_POR_ID.has(id) || BLOCO_DISC_POR_ID.has(id),
-    escolhaVisivel: (id) => CENARIO_SJT_POR_ID.has(id),
+    escolhaVisivel: (id) =>
+      CENARIO_SJT_POR_ID.has(id) ||
+      BLOCO_DISC_PLANILHA_POR_ID.has(id) ||
+      ITEM_ESTILO_EMOCIONAL_POR_ID.has(id),
   });
 
   const totalFaltando = pendencias.total;
@@ -785,6 +796,19 @@ export async function concluirAvaliacao(token: string) {
   }
 
   if (bateria.includes("DISC")) {
+    const blocosNovos = prova.porTeste.DISC.blocos.filter((id) =>
+      BLOCO_DISC_PLANILHA_POR_ID.has(id),
+    );
+    if (blocosNovos.length > 0) {
+      const respostas = blocosNovos
+        .map((id) => ({ blocoId: id, alternativaId: escolhaPorBloco.get(id) }))
+        .filter((resposta) => Boolean(resposta.alternativaId))
+        .map((resposta) => ({
+          blocoId: resposta.blocoId,
+          alternativaId: resposta.alternativaId!,
+        }));
+      modulos.DISC = pontuarDiscPlanilha(respostas);
+    } else {
     // `firstActionId` é o MAIS e `lastActionId` é o MENOS — a mesma coluna que
     // guarda "faria primeiro / deixaria por último" nas situações do Prumo.
     const respostasDisc: RespostaDisc[] = prova.porTeste.DISC.blocos
@@ -796,7 +820,19 @@ export async function concluirAvaliacao(token: string) {
         menosId: b.par!.ultima,
       }));
     const apuracao = tentarPontuar("DISC", () => pontuarDisc(respostasDisc));
-    if (apuracao) modulos.DISC = paraResultadoDeModuloDisc(apuracao);
+      if (apuracao) modulos.DISC = paraResultadoDeModuloDisc(apuracao);
+    }
+  }
+
+  if (bateria.includes("ESTILO_EMOCIONAL")) {
+    const respostas = prova.porTeste.ESTILO_EMOCIONAL.blocos
+      .map((id) => ({ itemId: id, alternativaId: escolhaPorBloco.get(id) }))
+      .filter((resposta) => Boolean(resposta.alternativaId))
+      .map((resposta) => ({
+        itemId: resposta.itemId,
+        alternativaId: resposta.alternativaId!,
+      }));
+    modulos.ESTILO_EMOCIONAL = pontuarEstiloEmocional(respostas);
   }
 
   if (bateria.includes("SJT")) {

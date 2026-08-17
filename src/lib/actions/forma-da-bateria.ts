@@ -21,6 +21,18 @@ import {
   INSTRUCAO_DISC,
   montarFormaDisc,
 } from "@/lib/instrument/disc";
+import {
+  BLOCO_DISC_PLANILHA_POR_ID,
+  INSTRUCAO_DISC_PLANILHA,
+  montarFormaDiscPlanilha,
+  opcoesDiscPlanilhaParaCandidato,
+} from "@/lib/instrument/disc-planilha";
+import {
+  INSTRUCAO_ESTILO_EMOCIONAL,
+  ITEM_ESTILO_EMOCIONAL_POR_ID,
+  ITENS_ESTILO_EMOCIONAL,
+  OPCOES_ESTILO_EMOCIONAL,
+} from "@/lib/instrument/estilo-emocional";
 import { montarForma, ordenarOpcoesDeCenario } from "@/lib/instrument/form";
 import { ITEM_POR_ID, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
 import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
@@ -84,6 +96,8 @@ export function testeDoItem(id: string): Teste | null {
 export function testeDoBloco(id: string): Teste | null {
   if (CENARIO_POR_ID.has(id)) return "PRUMO";
   if (BLOCO_DISC_POR_ID.has(id)) return "DISC";
+  if (BLOCO_DISC_PLANILHA_POR_ID.has(id)) return "DISC";
+  if (ITEM_ESTILO_EMOCIONAL_POR_ID.has(id)) return "ESTILO_EMOCIONAL";
   if (CENARIO_SJT_POR_ID.has(id)) return "SJT";
   return null;
 }
@@ -100,6 +114,12 @@ export function opcoesDoBloco(id: string): Set<string> {
 
   const bloco = BLOCO_DISC_POR_ID.get(id);
   if (bloco) return new Set(bloco.adjetivos.map((a) => a.id));
+
+  const blocoPlanilha = BLOCO_DISC_PLANILHA_POR_ID.get(id);
+  if (blocoPlanilha) return new Set(blocoPlanilha.opcoes.map((o) => o.id));
+
+  if (ITEM_ESTILO_EMOCIONAL_POR_ID.has(id))
+    return new Set(OPCOES_ESTILO_EMOCIONAL.map((o) => o.id));
 
   const sjt = CENARIO_SJT_POR_ID.get(id);
   if (sjt) return new Set(sjt.alternativas.map((a) => a.id));
@@ -143,7 +163,10 @@ export function montarProvaDaBateria(opcoes: {
     }
 
     if (teste === "BIG_FIVE") itens.push(...ordenarItensBigFive(opcoes.semente));
-    if (teste === "DISC") blocos.push(...montarFormaDisc(opcoes.semente).blocos);
+    if (teste === "DISC")
+      blocos.push(...montarFormaDiscPlanilha(opcoes.semente).blocos);
+    if (teste === "ESTILO_EMOCIONAL")
+      blocos.push(...ITENS_ESTILO_EMOCIONAL.map((item) => item.id));
     if (teste === "SJT") blocos.push(...montarFormaSjt(opcoes.semente).cenarios);
   }
 
@@ -219,8 +242,15 @@ export function lerProvaDaBateria(entrada: {
     bateria,
     porTeste,
     itens: bateria.flatMap((t) => porTeste[t].itens),
-    cenarios: [...blocosDe("PRUMO"), ...blocosDe("DISC")],
-    escolhas: [...blocosDe("SJT")],
+    cenarios: [
+      ...blocosDe("PRUMO"),
+      ...blocosDe("DISC").filter((id) => BLOCO_DISC_POR_ID.has(id)),
+    ],
+    escolhas: [
+      ...blocosDe("DISC").filter((id) => BLOCO_DISC_PLANILHA_POR_ID.has(id)),
+      ...blocosDe("ESTILO_EMOCIONAL"),
+      ...blocosDe("SJT"),
+    ],
   };
 }
 
@@ -230,6 +260,7 @@ const CURTO: Record<Teste, string> = {
   PRUMO: "Prumo",
   BIG_FIVE: "Big Five",
   DISC: "DISC",
+  ESTILO_EMOCIONAL: "Emocional",
   SJT: "Situações",
 };
 
@@ -277,8 +308,14 @@ export function montarEtapas(entrada: {
           : teste === "BIG_FIVE"
             ? INSTRUCAO_BIG_FIVE
             : teste === "DISC"
-              ? INSTRUCAO_DISC
-              : INSTRUCAO_SJT,
+              ? prova.porTeste.DISC.blocos.some((id) =>
+                  BLOCO_DISC_PLANILHA_POR_ID.has(id),
+                )
+                ? INSTRUCAO_DISC_PLANILHA
+                : INSTRUCAO_DISC
+              : teste === "ESTILO_EMOCIONAL"
+                ? INSTRUCAO_ESTILO_EMOCIONAL
+                : INSTRUCAO_SJT,
       enunciado:
         teste === "PRUMO"
           ? "O quanto isso combina com você no trabalho?"
@@ -312,6 +349,19 @@ function perguntasDoTeste(
   }
 
   if (teste === "DISC") {
+    const novos = forma.blocos
+      .map((id) => BLOCO_DISC_PLANILHA_POR_ID.get(id))
+      .filter((bloco) => Boolean(bloco));
+    if (novos.length > 0)
+      return novos.map(
+        (bloco): Pergunta => ({
+          tipo: "escolha-curta",
+          id: bloco!.id,
+          situacao: bloco!.pergunta,
+          opcoes: opcoesDiscPlanilhaParaCandidato(bloco!.id, semente),
+        }),
+      );
+
     // A ordem dos 4 adjetivos vem da semente, não do banco: no banco eles estão
     // sempre em D · I · S · C, e coluna fixa entregaria o mapeamento (§3.3).
     const adjetivos = montarFormaDisc(semente).adjetivos;
@@ -320,6 +370,20 @@ function perguntasDoTeste(
       blocos: forma.blocos,
       adjetivos,
     }).map((b): Pergunta => ({ tipo: "mais-menos", id: b.id, opcoes: b.adjetivos }));
+  }
+
+  if (teste === "ESTILO_EMOCIONAL") {
+    return forma.blocos
+      .map((id) => ITEM_ESTILO_EMOCIONAL_POR_ID.get(id))
+      .filter((item) => Boolean(item))
+      .map(
+        (item): Pergunta => ({
+          tipo: "binaria",
+          id: item!.id,
+          situacao: item!.texto,
+          opcoes: OPCOES_ESTILO_EMOCIONAL.map(({ id, texto }) => ({ id, texto })),
+        }),
+      );
   }
 
   // SJT. Mesma história das alternativas: no banco estão em ordem didática (a

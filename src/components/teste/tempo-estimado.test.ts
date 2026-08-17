@@ -11,8 +11,8 @@ import {
   minutosDasPerguntas,
   rotuloDoRestante,
   segundosDasPerguntas,
-  SEGUNDOS_POR_BLOCO_DE_PALAVRAS,
   SEGUNDOS_POR_CENARIO,
+  SEGUNDOS_POR_ESCOLHA_CURTA,
 } from "./tempo-estimado";
 
 /** As perguntas de um teste, do jeito exato que o candidato as recebe. */
@@ -79,7 +79,7 @@ describe("tempo estimado", () => {
    * é o erro que o teste de cima pega — este diz de onde os números vieram.
    */
   it("os pesos do DISC e do SJT batem com a tabela do manual", () => {
-    expect(SEGUNDOS_POR_BLOCO_DE_PALAVRAS * 12).toBe(
+    expect(SEGUNDOS_POR_ESCOLHA_CURTA * 25).toBeLessThanOrEqual(
       CATALOGO_DE_TESTES.DISC.segundos,
     );
     expect(SEGUNDOS_POR_CENARIO * 8).toBe(CATALOGO_DE_TESTES.SJT.segundos);

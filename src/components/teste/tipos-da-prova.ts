@@ -34,7 +34,13 @@ import type { Teste } from "@/lib/instrument/baterias";
 
 export type OpcaoDePergunta = { id: string; texto: string };
 
-export type TipoDePergunta = "likert" | "ordenar" | "mais-menos" | "escolha";
+export type TipoDePergunta =
+  | "likert"
+  | "ordenar"
+  | "mais-menos"
+  | "escolha-curta"
+  | "binaria"
+  | "escolha";
 
 export type Pergunta =
   | { tipo: "likert"; id: string; texto: string }
@@ -46,6 +52,12 @@ export type Pergunta =
       opcoes: OpcaoDePergunta[];
     }
   | { tipo: "mais-menos"; id: string; opcoes: OpcaoDePergunta[] }
+  | {
+      tipo: "escolha-curta" | "binaria";
+      id: string;
+      situacao: string;
+      opcoes: OpcaoDePergunta[];
+    }
   | { tipo: "escolha"; id: string; situacao: string; opcoes: OpcaoDePergunta[] };
 
 export type OpcaoDeEscala = { valor: number; rotulo: string };
@@ -108,6 +120,8 @@ export function perguntaRespondida(
       // é justamente o estado em que a pessoa marcou uma e achou que acabou.
       return Boolean(par && par.primeiraId && par.ultimaId && par.primeiraId !== par.ultimaId);
     }
+    case "escolha-curta":
+    case "binaria":
     case "escolha":
       return salvas.escolhas[pergunta.id] != null;
   }

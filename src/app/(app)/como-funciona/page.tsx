@@ -82,7 +82,7 @@ const EM_MIUDOS: Record<string, string> = {
   O: "Gosta de coisa nova, de mudar o jeito de fazer, de aprender.",
 };
 
-/** Os quatro testes, com o que cada um entrega e quanto custa de tempo. */
+/** Os testes, com o que cada um entrega e quanto custa de tempo. */
 const TESTES = [
   {
     nome: "Prumo",
@@ -96,8 +96,13 @@ const TESTES = [
   },
   {
     nome: "DISC",
-    tempo: "~6 min",
+    tempo: "~8 min",
     faz: "Estilo de trabalho — como a pessoa tende a agir, não o quanto ela serve. Não gera aderência.",
+  },
+  {
+    nome: "Estilo Emocional do Cérebro",
+    tempo: "~10 min",
+    faz: "Seis dimensões emocionais e de atenção. Descreve tendências e não gera aderência.",
   },
   {
     nome: "Julgamento situacional",

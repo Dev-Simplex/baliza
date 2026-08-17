@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { perguntaRespondida } from "@/components/teste/tipos-da-prova";
 import { CATALOGO_DE_TESTES, TESTES, type Teste } from "@/lib/instrument/baterias";
 import { INSTRUCAO_BIG_FIVE, ITEM_BIG_FIVE_POR_ID } from "@/lib/instrument/bigfive";
-import { BLOCO_DISC_POR_ID, INSTRUCAO_DISC } from "@/lib/instrument/disc";
+import {
+  BLOCO_DISC_PLANILHA_POR_ID,
+  INSTRUCAO_DISC_PLANILHA,
+} from "@/lib/instrument/disc-planilha";
+import { INSTRUCAO_ESTILO_EMOCIONAL } from "@/lib/instrument/estilo-emocional";
 import { ITEM_POR_ID } from "@/lib/instrument/items";
 import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
 import { CENARIO_SJT_POR_ID, INSTRUCAO_SJT } from "@/lib/instrument/sjt";
@@ -62,11 +66,18 @@ describe("montagem da prova", () => {
   });
 
   it("as etapas saem na ordem canônica, não na ordem em que foram pedidas", () => {
-    const { etapas } = provaCompleta(["SJT", "DISC", "PRUMO", "BIG_FIVE"]);
+    const { etapas } = provaCompleta([
+      "SJT",
+      "ESTILO_EMOCIONAL",
+      "DISC",
+      "PRUMO",
+      "BIG_FIVE",
+    ]);
     expect(etapas.map((e) => e.teste)).toEqual([
       "PRUMO",
       "BIG_FIVE",
       "DISC",
+      "ESTILO_EMOCIONAL",
       "SJT",
     ]);
   });
@@ -87,7 +98,7 @@ describe("montagem da prova", () => {
 });
 
 describe("leitura do que está guardado", () => {
-  it("separa as duas colunas do banco em quatro provas", () => {
+  it("separa as duas colunas do banco nas provas", () => {
     const { guardada, prova } = provaCompleta([...TESTES]);
 
     // Uma coluna só para as afirmações, outra só para os blocos — a mesma
@@ -96,13 +107,21 @@ describe("leitura do que está guardado", () => {
     expect(guardada.blocos.every((id) => testeDoBloco(id) !== null)).toBe(true);
 
     expect(prova.porTeste.BIG_FIVE.itens.every((id) => ITEM_BIG_FIVE_POR_ID.has(id))).toBe(true);
-    expect(prova.porTeste.DISC.blocos.every((id) => BLOCO_DISC_POR_ID.has(id))).toBe(true);
+    expect(
+      prova.porTeste.DISC.blocos.every((id) =>
+        BLOCO_DISC_PLANILHA_POR_ID.has(id),
+      ),
+    ).toBe(true);
     expect(prova.porTeste.SJT.blocos.every((id) => CENARIO_SJT_POR_ID.has(id))).toBe(true);
     expect(prova.porTeste.PRUMO.blocos.every((id) => CENARIO_POR_ID.has(id))).toBe(true);
 
     // E as três listas de destino não se misturam: o SJT grava noutra tabela.
     expect(prova.cenarios.some((id) => CENARIO_SJT_POR_ID.has(id))).toBe(false);
-    expect(prova.escolhas.every((id) => CENARIO_SJT_POR_ID.has(id))).toBe(true);
+    expect(prova.escolhas).toHaveLength(
+      CATALOGO_DE_TESTES.DISC.telas +
+        CATALOGO_DE_TESTES.ESTILO_EMOCIONAL.telas +
+        CATALOGO_DE_TESTES.SJT.telas,
+    );
   });
 
   it("id de teste fora da bateria congelada é ignorado", () => {
@@ -171,7 +190,10 @@ describe("o que chega à tela do candidato", () => {
     const porTeste = Object.fromEntries(etapas.map((e) => [e.teste, e]));
 
     expect(porTeste.BIG_FIVE.instrucao).toBe(INSTRUCAO_BIG_FIVE);
-    expect(porTeste.DISC.instrucao).toBe(INSTRUCAO_DISC);
+    expect(porTeste.DISC.instrucao).toBe(INSTRUCAO_DISC_PLANILHA);
+    expect(porTeste.ESTILO_EMOCIONAL.instrucao).toBe(
+      INSTRUCAO_ESTILO_EMOCIONAL,
+    );
     expect(porTeste.SJT.instrucao).toBe(INSTRUCAO_SJT);
     expect(porTeste.PRUMO.instrucao).toBeTruthy();
 
@@ -190,7 +212,8 @@ describe("o que chega à tela do candidato", () => {
 
     expect(tipos("PRUMO")).toEqual(new Set(["likert", "ordenar"]));
     expect(tipos("BIG_FIVE")).toEqual(new Set(["likert"]));
-    expect(tipos("DISC")).toEqual(new Set(["mais-menos"]));
+    expect(tipos("DISC")).toEqual(new Set(["escolha-curta"]));
+    expect(tipos("ESTILO_EMOCIONAL")).toEqual(new Set(["binaria"]));
     expect(tipos("SJT")).toEqual(new Set(["escolha"]));
   });
 

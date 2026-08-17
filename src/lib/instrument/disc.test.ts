@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CATALOGO_DE_TESTES } from "./baterias";
+import { TOTAL_DE_BLOCOS_DISC_PLANILHA } from "./disc-planilha";
 import {
   ADJETIVOS_POR_BLOCO_DISC,
   AMPLITUDE_DO_LIQUIDO_DISC,
@@ -426,8 +427,9 @@ describe("forma do DISC", () => {
 // ─── Ponte para `baterias.ts` ──────────────────────────────────────────────
 
 describe("resultado gravado (contrato de baterias.ts)", () => {
-  it("o catálogo promete as 12 telas que o banco entrega", () => {
-    expect(CATALOGO_DE_TESTES.DISC.telas).toBe(TOTAL_DE_BLOCOS_DISC);
+  it("o catálogo promete as 25 telas do modelo atual", () => {
+    expect(CATALOGO_DE_TESTES.DISC.telas).toBe(TOTAL_DE_BLOCOS_DISC_PLANILHA);
+    expect(TOTAL_DE_BLOCOS_DISC).toBe(12);
     expect(CATALOGO_DE_TESTES.DISC.temGabarito).toBe(false);
     // DISC mede estilo, não os cinco fatores — não alimenta a aderência.
     expect(CATALOGO_DE_TESTES.DISC.produzFatores).toBe(false);

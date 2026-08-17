@@ -9,10 +9,12 @@ import {
   type DimensaoDisc,
   type ResultadoBigFive,
   type ResultadoDisc,
+  type ResultadoEstiloEmocional,
   type ResultadoSjt,
   type ResultadosPorModulo,
   type Teste,
 } from "@/lib/instrument/baterias";
+import { DIMENSOES_ESTILO_EMOCIONAL } from "@/lib/instrument/estilo-emocional";
 import {
   FATORES_EXIBIDOS_BIG_FIVE,
   INTERPRETACAO_BIG_FIVE,
@@ -185,6 +187,37 @@ export function montarBlocoDisc(resultado: ResultadoDisc): BlocoDisc {
   };
 }
 
+// ─── Estilo Emocional do Cérebro ─────────────────────────────────────────
+
+export type BlocoEstiloEmocional = {
+  dimensoes: Array<{
+    chave: keyof ResultadoEstiloEmocional["percentuais"];
+    nome: string;
+    score: number;
+    leitura: string;
+  }>;
+};
+
+export function montarBlocoEstiloEmocional(
+  resultado: ResultadoEstiloEmocional,
+): BlocoEstiloEmocional {
+  return {
+    dimensoes: DIMENSOES_ESTILO_EMOCIONAL.map((dimensao) => {
+      const score = resultado.percentuais[dimensao.id];
+      const faixa = score >= 80 ? "alta" : score < 30 ? "baixa" : "intermediária";
+      const leitura =
+        dimensao.id === "RESILIENCIA"
+          ? score < 30
+            ? "Recuperação rápida diante de contratempos."
+            : score >= 80
+              ? "Recuperação mais lenta; impactos emocionais tendem a permanecer por mais tempo."
+              : "Recuperação emocional intermediária, variável conforme a situação."
+          : `${dimensao.nome} ${faixa} segundo a régua do instrumento.`;
+      return { chave: dimensao.id, nome: dimensao.nome, score, leitura };
+    }),
+  };
+}
+
 // ─── SJT ───────────────────────────────────────────────────────────────────
 
 export type CompetenciaDaFicha = {
@@ -254,6 +287,7 @@ export function montarBlocoSjt(resultado: ResultadoSjt): BlocoSjt {
 export type FichaDeModulos = {
   bigFive: BlocoBigFive | null;
   disc: BlocoDisc | null;
+  estiloEmocional?: BlocoEstiloEmocional | null;
   sjt: BlocoSjt | null;
   /** Algum módulo do manual foi aplicado? */
   temAlgum: boolean;
@@ -273,13 +307,17 @@ export function montarFichaDeModulos(
     ? montarBlocoBigFive(resultados.BIG_FIVE)
     : null;
   const disc = resultados.DISC ? montarBlocoDisc(resultados.DISC) : null;
+  const estiloEmocional = resultados.ESTILO_EMOCIONAL
+    ? montarBlocoEstiloEmocional(resultados.ESTILO_EMOCIONAL)
+    : null;
   const sjt = resultados.SJT ? montarBlocoSjt(resultados.SJT) : null;
 
   return {
     bigFive,
     disc,
+    estiloEmocional,
     sjt,
-    temAlgum: Boolean(bigFive || disc || sjt),
+    temAlgum: Boolean(bigFive || disc || estiloEmocional || sjt),
   };
 }
 

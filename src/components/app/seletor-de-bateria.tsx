@@ -125,8 +125,8 @@ export function SeletorDeBateria({
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fora" />
           <span>
             Sem o Prumo nem o Big Five, esta vaga <strong>não calcula
-            aderência</strong>: DISC descreve estilo e o SJT mede julgamento, e
-            nenhum dos dois vira os cinco fatores do perfil-alvo. O ranking
+            aderência</strong>: DISC e Estilo Emocional descrevem tendências, e
+            o SJT mede julgamento. Nenhum deles vira os cinco fatores do perfil-alvo. O ranking
             continua listando todo mundo, só que sem nota de aderência — em vez
             de mostrar zero, que se leria como candidato ruim.
           </span>

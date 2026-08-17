@@ -173,6 +173,7 @@ enum InstrumentoDeTeste {
   PRUMO
   BIG_FIVE
   DISC
+  ESTILO_EMOCIONAL
   SJT
 }
 

@@ -469,7 +469,11 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
         return;
       }
 
-      if (pergunta.tipo === "escolha") {
+      if (
+        pergunta.tipo === "escolha" ||
+        pergunta.tipo === "escolha-curta" ||
+        pergunta.tipo === "binaria"
+      ) {
         const n = Number(evento.key);
         if (Number.isInteger(n) && n >= 1 && n <= pergunta.opcoes.length) {
           evento.preventDefault();
@@ -911,6 +915,8 @@ function PerguntaDaVez({
         />
       );
 
+    case "escolha-curta":
+    case "binaria":
     case "escolha":
       return (
         <PerguntaDeEscolhaUnica
