@@ -1,93 +1,176 @@
 import Link from "next/link";
 
+import {
+  LOCKUP_LARANJA,
+  LOCKUP_TINTA,
+  LOCKUP_VIEWBOX,
+  SIMBOLO_CANDIDATO,
+  SIMBOLO_VAGA,
+  SIMBOLO_VIEWBOX,
+} from "@/components/marca-vetor";
 import { cn } from "@/lib/utils";
 
 /**
  * A marca.
  *
- * O símbolo é o próprio instrumento: o fio a prumo descendo, o peso de latão na
- * ponta, e a faixa alvo atravessando embaixo. A ponta do peso pousa DENTRO da
- * faixa — que é o estado que o produto procura.
+ * O símbolo é o conceito FIT desenhado: duas metades voltadas uma para a outra —
+ * à esquerda o candidato, à direita a vaga — e entre elas um vazio que só existe
+ * porque as duas estão em relação. Esse vazio é a aderência. Sozinha, nenhuma
+ * das metades quer dizer coisa alguma; é a mesma tese do produto, que nunca
+ * mostra um escore sem a vaga contra a qual ele foi lido.
  *
- * É o mesmo desenho do medidor (`components/faixa.tsx`) girado 90°: a leitura
- * na vertical, o alvo na horizontal. Nome, símbolo e gráfico dizendo a mesma
- * coisa, o que é a única razão de um símbolo existir.
+ * A metade do candidato usa `currentColor` e vira papel no tema escuro. A metade
+ * da vaga é laranja-sinal em qualquer tema: é a única cor que a marca tem, e
+ * marca que troca de cor conforme o fundo deixa de ser marca.
+ *
+ * Regra herdada do brand kit e que vale para todo uso: laranja-sinal identifica a
+ * MARCA. Ele nunca significa "bom" nem "ruim" — quem codifica dado é o par
+ * dentro/fora (`--dentro`, `--fora`), e os dois vivem longe daqui de propósito.
  */
-export function Simbolo({ className }: { className?: string }) {
+
+const ALTURA_DO_LOCKUP = {
+  sm: "h-4",
+  md: "h-5",
+  lg: "h-7",
+} as const;
+
+const ALTURA_DO_SIMBOLO = {
+  sm: "h-4",
+  md: "h-5",
+  lg: "h-7",
+} as const;
+
+export type TamanhoDaMarca = keyof typeof ALTURA_DO_LOCKUP;
+
+/**
+ * O símbolo isolado — favicon, barra lateral recolhida, avatar do produto,
+ * carregamento e telas onde o espaço horizontal é crítico.
+ */
+export function Simbolo({
+  className,
+  tamanho = "md",
+}: {
+  className?: string;
+  tamanho?: TamanhoDaMarca;
+}) {
   return (
     <svg
-      viewBox="0 0 20 20"
+      viewBox={SIMBOLO_VIEWBOX}
       aria-hidden
-      className={cn("size-5 shrink-0", className)}
-      fill="none"
+      focusable="false"
+      className={cn("w-auto shrink-0", ALTURA_DO_SIMBOLO[tamanho], className)}
     >
-      {/* faixa alvo */}
-      <rect
-        x="1.5"
-        y="13"
-        width="17"
-        height="3.6"
-        rx="1.8"
-        fill="var(--dentro)"
-        fillOpacity="0.22"
-      />
-      <path
-        d="M2.4 13.4v2.8M17.6 13.4v2.8"
-        stroke="var(--dentro)"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
+      <path d={SIMBOLO_CANDIDATO} fill="currentColor" fillRule="evenodd" />
+      <path d={SIMBOLO_VAGA} fill="var(--marca)" fillRule="evenodd" />
+    </svg>
+  );
+}
 
-      {/* o fio */}
+/**
+ * O símbolo se encaixando — para splash e carregamento.
+ *
+ * As duas metades entram de fora e se aproximam até o vazio central ganhar
+ * forma: é o FIT acontecendo, e não um logotipo girando. A animação é CSS puro
+ * (nada de `motion` num arquivo que a barra lateral e o rodapé importam), dura
+ * 700ms e não repete — ela conta uma coisa e para.
+ *
+ * `motion-reduce:animate-none` desliga as duas metades para quem pediu redução;
+ * o símbolo aparece inteiro e parado, que é o estado final de qualquer jeito.
+ */
+export function SimboloEncaixando({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <svg
+      viewBox={SIMBOLO_VIEWBOX}
+      role="img"
+      aria-label="Baliza — carregando"
+      className={cn("h-10 w-auto shrink-0 text-foreground", className)}
+    >
       <path
-        d="M10 2.2V9"
-        stroke="currentColor"
-        strokeOpacity="0.32"
-        strokeWidth="1.1"
-        strokeLinecap="round"
+        d={SIMBOLO_CANDIDATO}
+        fill="currentColor"
+        fillRule="evenodd"
+        className="origin-center animate-[baliza-encaixe-esquerda_700ms_cubic-bezier(0.32,0.72,0,1)_both] motion-reduce:animate-none"
       />
-
-      {/* o peso de latão — a ponta pousa dentro da faixa */}
       <path
-        d="M10 8.6 12.5 11.4 10 15.6 7.5 11.4Z"
-        fill="var(--marca-forte)"
+        d={SIMBOLO_VAGA}
+        fill="var(--marca)"
+        fillRule="evenodd"
+        className="origin-center animate-[baliza-encaixe-direita_700ms_cubic-bezier(0.32,0.72,0,1)_both] motion-reduce:animate-none"
       />
     </svg>
   );
 }
 
+/**
+ * O lockup horizontal — landing, contas, barra lateral no desktop, documentos.
+ *
+ * O wordmark é o vetor aprovado, e não um `<span>Baliza</span>` com a fonte da
+ * interface: o desenho das letras é parte da marca e não sobrevive a uma troca de
+ * fonte. O nome acessível vai no `aria-label`, porque para o leitor de tela o
+ * traçado não existe.
+ */
+export function Lockup({
+  className,
+  tamanho = "md",
+}: {
+  className?: string;
+  tamanho?: TamanhoDaMarca;
+}) {
+  return (
+    <svg
+      viewBox={LOCKUP_VIEWBOX}
+      role="img"
+      aria-label="Baliza"
+      className={cn("w-auto shrink-0", ALTURA_DO_LOCKUP[tamanho], className)}
+    >
+      <path d={LOCKUP_TINTA} fill="currentColor" fillRule="evenodd" />
+      <path d={LOCKUP_LARANJA} fill="var(--marca)" fillRule="evenodd" />
+    </svg>
+  );
+}
+
+/**
+ * A marca como elemento de interface.
+ *
+ * `href = null` devolve a marca sem link — para cabeçalho de documento, onde
+ * clicar não leva a lugar nenhum, e para dentro de outro link, onde aninhar
+ * âncoras é HTML inválido.
+ */
 export function Marca({
   className,
   href = "/",
   tamanho = "md",
+  variante = "lockup",
 }: {
   className?: string;
   href?: string | null;
-  tamanho?: "sm" | "md" | "lg";
+  tamanho?: TamanhoDaMarca;
+  /** `simbolo` para espaços estreitos; `lockup` traz o nome junto. */
+  variante?: "lockup" | "simbolo";
 }) {
-  const conteudo = (
-    <span
-      className={cn(
-        "inline-flex items-center gap-2 font-semibold tracking-tight",
-        tamanho === "sm" && "text-sm",
-        tamanho === "md" && "t-corpo",
-        tamanho === "lg" && "text-lg",
-        className,
-      )}
-      style={{ fontFamily: "var(--fonte-display)" }}
-    >
-      <Simbolo className={cn(tamanho === "lg" && "size-6")} />
-      Prumo
-    </span>
-  );
+  const marca =
+    variante === "simbolo" ? (
+      <span className={cn("inline-flex text-foreground", className)}>
+        <Simbolo tamanho={tamanho} />
+        <span className="sr-only">Baliza</span>
+      </span>
+    ) : (
+      <Lockup tamanho={tamanho} className={cn("text-foreground", className)} />
+    );
 
-  if (!href) return conteudo;
+  if (!href) return marca;
+
   return (
     <Link
       href={href}
-      className="rounded-sm"
+      aria-label="Baliza — início"
+      className="inline-flex rounded-sm transition-opacity hover:opacity-80"
     >
-      {conteudo}
+      {marca}
     </Link>
   );
 }

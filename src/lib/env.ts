@@ -11,7 +11,7 @@ const esquema = z.object({
     .min(32, "AUTH_SECRET precisa de pelo menos 32 caracteres"),
 
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3300"),
-  NEXT_PUBLIC_APP_NAME: z.string().default("Prumo"),
+  NEXT_PUBLIC_APP_NAME: z.string().default("Baliza"),
 
   // Quantos proxies nossos existem entre o público e este processo. Decide se
   // `x-forwarded-for` é origem ou é palpite — e, por tabela, se o limite por IP
@@ -27,7 +27,7 @@ const esquema = z.object({
   SMTP_PORT: z.string().optional().default("587"),
   SMTP_USER: z.string().optional().default(""),
   SMTP_PASSWORD: z.string().optional().default(""),
-  SMTP_FROM: z.string().optional().default("Prumo <nao-responda@localhost>"),
+  SMTP_FROM: z.string().optional().default("Baliza <nao-responda@localhost>"),
 });
 
 function carregar() {

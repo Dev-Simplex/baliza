@@ -1,16 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 
 import { Toaster } from "@/components/ui/sonner";
 import { TemaProvider } from "@/components/tema-provider";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({
-  variable: "--fonte-display",
-  subsets: ["latin"],
-  display: "swap",
-});
-
+/**
+ * Duas fontes, e só.
+ *
+ * Inter Tight carrega interface, títulos e corpo. Não há um segundo tipo de
+ * display: a Baliza tira autoridade de hierarquia e espaço, não de uma grotesca
+ * larga no topo da página — e uma fonte a menos é um arquivo a menos no caminho
+ * crítico de quem abre o questionário pelo celular no meio da rua.
+ *
+ * JetBrains Mono carrega o que é dado: escore, faixa, código de acesso, contagem,
+ * etiqueta. Ela existe aqui por uma razão só, que é `tabular-nums` — número que
+ * não muda de largura quando muda de valor. Coluna que dança tira a legibilidade
+ * de um ranking inteiro.
+ */
 const ui = Inter_Tight({
   variable: "--fonte-ui",
   subsets: ["latin"],
@@ -25,16 +32,17 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Prumo — não contrate nunca mais com vendas nos olhos",
-    template: "%s · Prumo",
+    default: "Baliza — Veja além do currículo. Decida com referência.",
+    template: "%s · Baliza",
   },
   description:
-    "Currículo mostra o que a pessoa fez. Entrevista mostra quem se apresenta bem. O Prumo mostra o que decide a contratação — com a conta aberta do lado.",
-  applicationName: "Prumo",
+    "Compare o perfil comportamental de cada candidato com o que a vaga realmente pede. Receba a aderência explicada, o nível de confiança da resposta e as perguntas certas para a entrevista.",
+  applicationName: "Baliza",
   openGraph: {
-    title: "Prumo — não contrate nunca mais com vendas nos olhos",
+    title: "Baliza — Veja além do currículo",
     description:
-      "Ranking com aderência explicada e roteiro de entrevista pronto. Seis minutos por candidato.",
+      "Pessoa + vaga. Aderência explicada, com faixa-alvo, confiança e roteiro de entrevista pronto.",
+    siteName: "Baliza",
     type: "website",
     locale: "pt_BR",
   },
@@ -42,8 +50,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fbfbfd" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0e14" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f4f1" },
+    { media: "(prefers-color-scheme: dark)", color: "#101010" },
   ],
 };
 
@@ -56,7 +64,7 @@ export default function RootLayout({
     // silenciosamente no serifado padrão do navegador.
     <html
       lang="pt-BR"
-      className={`${display.variable} ${ui.variable} ${mono.variable} h-full`}
+      className={`${ui.variable} ${mono.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col antialiased">

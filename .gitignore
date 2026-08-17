@@ -45,3 +45,7 @@ next-env.d.ts
 # Amostra de relatorio gerada localmente para conferencia visual. Nao versionar:
 # tem dado de candidato e e regenerada a cada teste.
 /public/exemplo-relatorio.pdf
+
+# Kit da marca. Os vetores aprovados vivem extraidos em public/brand/ —
+# versionar o .zip seria 4,6 MB de peso morto permanente no historico.
+/BALIZA_BRAND_KIT.zip
