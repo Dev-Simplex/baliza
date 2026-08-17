@@ -41,12 +41,24 @@ export function EsqueletoDeTexto({
   );
 }
 
+/** Uma célula da faixa de indicadores. Mesma altura e recuo da célula real. */
 export function EsqueletoDeIndicador() {
   return (
-    <div className="rounded-xl border bg-card p-4 shadow-baixa">
+    <div className="p-5">
       <Esqueleto className="h-2.5 w-20" />
-      <Esqueleto className="mt-3 h-7 w-14" />
+      <Esqueleto className="mt-3 h-8 w-16" />
       <Esqueleto className="mt-3 h-2.5 w-28" />
+    </div>
+  );
+}
+
+/** A faixa inteira — a moldura que os quatro indicadores dividem. */
+export function EsqueletoDaFaixaDeIndicadores({ celulas = 4 }: { celulas?: number }) {
+  return (
+    <div className="grid overflow-hidden rounded-xl border bg-card shadow-baixa divide-y divide-border sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
+      {Array.from({ length: celulas }, (_, i) => (
+        <EsqueletoDeIndicador key={i} />
+      ))}
     </div>
   );
 }
