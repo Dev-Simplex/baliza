@@ -1,9 +1,22 @@
 import { AlternarTema } from "@/components/alternar-tema";
 import { BarraLateral } from "@/components/app/barra-lateral";
 import { MenuDoUsuario } from "@/components/app/menu-do-usuario";
+import { NavegacaoMovel, SecaoAtual } from "@/components/app/navegacao-movel";
 import { prisma } from "@/lib/prisma";
 import { exigirTenant } from "@/lib/tenant";
 
+/**
+ * O shell do painel.
+ *
+ * Três planos, e a hierarquia sai deles sem precisar de sombra: a barra lateral
+ * é o plano mais fundo (o móvel), o conteúdo é o plano do meio (osso), e os
+ * cartões são o plano da frente (branco). No escuro a ordem se mantém — barra
+ * mais escura que o fundo, cartão mais claro — porque o que orienta o olho é o
+ * degrau entre planos, e ele não pode inverter quando o tema muda.
+ *
+ * A barra tem 240px: abaixo de 232 os rótulos começam a truncar em português, e
+ * acima de 248 ela rouba largura da tabela, que é onde o trabalho acontece.
+ */
 export default async function LayoutDoApp({
   children,
 }: {
@@ -17,9 +30,9 @@ export default async function LayoutDoApp({
   });
 
   return (
-    <div className="flex min-h-svh">
-      <aside className="hidden w-56 shrink-0 border-r bg-sidebar lg:block">
-        <div className="sticky top-0 h-svh">
+    <div className="flex min-h-svh bg-background">
+      <aside className="hidden w-60 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:block">
+        <div className="sticky top-0 h-svh overflow-y-auto">
           <BarraLateral ehAdminDaPlataforma={contexto.isPlatformAdmin} />
         </div>
       </aside>
@@ -30,16 +43,17 @@ export default async function LayoutDoApp({
             deixaria o PDF sem identificação nenhuma. */}
         <header
           data-impressao="ocultar"
-          className="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b bg-background/85 px-4 backdrop-blur-md sm:px-6"
+          className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b bg-background/80 px-3 backdrop-blur-md sm:px-6"
         >
-          <div className="lg:hidden">
-            <BarraLateralMovel ehAdminDaPlataforma={contexto.isPlatformAdmin} />
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            <div className="lg:hidden">
+              <NavegacaoMovel ehAdminDaPlataforma={contexto.isPlatformAdmin} />
+            </div>
+            <SecaoAtual />
           </div>
 
-          <div className="hidden lg:block" />
-
-          <div className="flex items-center gap-3">
-            <AlternarTema />
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <AlternarTema className="hidden sm:inline-flex" />
             <MenuDoUsuario
               nome={contexto.nome}
               email={contexto.email}
@@ -49,31 +63,10 @@ export default async function LayoutDoApp({
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-[88rem]">{children}</div>
+        </main>
       </div>
     </div>
-  );
-}
-
-/** No mobile a navegação vira gaveta — o conteúdo é que importa na tela pequena. */
-import { Menu } from "lucide-react";
-import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-
-function BarraLateralMovel({
-  ehAdminDaPlataforma,
-}: {
-  ehAdminDaPlataforma: boolean;
-}) {
-  return (
-    <Sheet>
-      <SheetTrigger className="grid size-9 place-items-center rounded-md border transition-colors hover:bg-secondary">
-        <Menu className="size-4" />
-        <span className="sr-only">Abrir navegação</span>
-      </SheetTrigger>
-      <SheetContent side="left" className="w-64 p-0">
-        <SheetTitle className="sr-only">Navegação</SheetTitle>
-        <BarraLateral ehAdminDaPlataforma={ehAdminDaPlataforma} />
-      </SheetContent>
-    </Sheet>
   );
 }

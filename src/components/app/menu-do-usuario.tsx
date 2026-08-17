@@ -51,9 +51,14 @@ export function MenuDoUsuario({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={`Conta de ${nome}`}
-        className="flex items-center gap-2 rounded-full p-0.5 pr-2 transition-colors hover:bg-secondary"
+        className="flex min-h-11 items-center gap-2 rounded-full px-1 transition-colors hover:bg-secondary sm:min-h-0 sm:p-0.5 sm:pr-2"
       >
-        <span className="grid size-7 place-items-center rounded-full bg-marca-forte/15 t-legenda font-semibold text-marca">
+        <span
+          className="grid size-8 shrink-0 place-items-center rounded-full t-legenda font-semibold text-marca sm:size-7"
+          style={{
+            background: "color-mix(in oklab, var(--marca-sinal) 14%, transparent)",
+          }}
+        >
           {iniciais(nome)}
         </span>
         <span className="hidden t-corpo-sm font-medium sm:inline">{nome}</span>

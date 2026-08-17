@@ -2,9 +2,31 @@
 
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { cn } from "@/lib/utils";
+
+/** Nunca notifica: o valor só muda uma vez, na hidratação. */
+const semInscricao = () => () => {};
+
+/**
+ * "Já hidratou?" sem `useEffect`.
+ *
+ * O padrão anterior (`useState(false)` + `useEffect(() => setMontado(true))`)
+ * fazia o que a regra `react-hooks/set-state-in-effect` proíbe: agendava um
+ * segundo render logo depois do primeiro, em toda montagem do seletor.
+ *
+ * `useSyncExternalStore` responde a mesma pergunta pelo caminho para o qual ela
+ * existe — um valor no servidor, outro no cliente — e o React resolve a
+ * diferença durante a própria hidratação, sem render extra.
+ */
+function useHidratado() {
+  return useSyncExternalStore(
+    semInscricao,
+    () => true,
+    () => false,
+  );
+}
 
 const OPCOES = [
   { valor: "light", Icone: Sun, rotulo: "Claro" },
@@ -12,13 +34,31 @@ const OPCOES = [
   { valor: "system", Icone: Monitor, rotulo: "Sistema" },
 ] as const;
 
-export function AlternarTema({ className }: { className?: string }) {
+/**
+ * O seletor de tema.
+ *
+ * Três estados explícitos em vez de um interruptor: "sistema" é um estado de
+ * verdade — a pessoa que deixa o telefone virar escuro às 18h quer isso aqui
+ * também — e um interruptor de duas posições não sabe representá-lo.
+ *
+ * `tamanho="confortavel"` existe para a gaveta do celular, onde o controle
+ * ganha 44px de alvo. No cabeçalho do desktop ele é compacto de propósito:
+ * trocar de tema é raro, e um controle grande ali competiria com as ações da
+ * página.
+ */
+export function AlternarTema({
+  className,
+  tamanho = "compacto",
+}: {
+  className?: string;
+  tamanho?: "compacto" | "confortavel";
+}) {
   const { theme, setTheme } = useTheme();
-  const [montado, setMontado] = useState(false);
+  // O tema resolvido só existe no cliente; marcar antes disso pisca o estado
+  // errado na hidratação.
+  const montado = useHidratado();
 
-  // O tema resolvido só existe no cliente; renderizar antes disso pisca o
-  // ícone errado na hidratação.
-  useEffect(() => setMontado(true), []);
+  const confortavel = tamanho === "confortavel";
 
   return (
     <div
@@ -41,14 +81,22 @@ export function AlternarTema({ className }: { className?: string }) {
             title={rotulo}
             onClick={() => setTheme(valor)}
             className={cn(
-              "grid size-7 place-items-center rounded-full transition-colors",
-              "",
+              "grid place-items-center rounded-full transition-colors",
+              confortavel ? "h-10 w-14" : "size-7",
               ativo
-                ? "bg-marca-forte/15 text-marca"
+                ? "text-marca"
                 : "text-muted-foreground hover:text-foreground",
             )}
+            style={
+              ativo
+                ? {
+                    background:
+                      "color-mix(in oklab, var(--marca-sinal) 14%, transparent)",
+                  }
+                : undefined
+            }
           >
-            <Icone className="size-3.5" />
+            <Icone className={confortavel ? "size-4" : "size-3.5"} />
           </button>
         );
       })}
