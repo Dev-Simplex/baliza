@@ -5,22 +5,33 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Prumo — sistema de design
+   Baliza — sistema de design
    ──────────────────────────────────────────────────────────────────────────
-   Metáfora: instrumento de medição. Latão, marcas de calibração, leitura
-   tabular. O produto mede posição relativa a uma faixa, e a identidade sai daí.
+   Conceito: FIT. Duas metades — a pessoa e a vaga — e entre elas um vazio que
+   é a aderência. A interface é a mesma tese: papel, dado e distância. Ela não
+   decide; ela dá referência para decidir.
 
-   Três regras que governam tudo abaixo:
+   Quatro regras governam tudo abaixo:
 
-   1. UMA cor de marca — latão. Teal e argila NÃO são cores de marca: são
-      codificação de dado (dentro / fora da faixa) e só aparecem em medidor,
-      selo e gráfico. Fora disso, a interface é neutra.
+   1. UMA cor de marca — laranja-sinal (#FF5A1F). Teal e argila NÃO são cores
+      de marca: são codificação de dado (dentro / fora da faixa) e só aparecem
+      em medidor, selo e gráfico. Fora disso a interface é osso, tinta e névoa.
 
-   2. Nenhum tamanho de fonte solto. Existe uma escala de oito degraus com
-      nome. Se um tamanho não está aqui, ele não deve existir na tela.
+   2. O laranja nunca significa "bom" nem "ruim". Ele significa "isto é a
+      Baliza": marca, CTA, foco, seleção, item ativo. Um candidato jamais é
+      reprovado em laranja.
 
-   3. Fora da faixa é ARGILA, nunca vermelho. O produto se proíbe de dizer
+   3. Nenhum tamanho de fonte solto. Existe uma escala com nome. Se um tamanho
+      não está aqui, ele não deve existir na tela.
+
+   4. Fora da faixa é ARGILA, nunca vermelho. O produto se proíbe de dizer
       "reprovado"; a paleta não pode dizer por ele.
+
+   Sobre o par `--marca` / `--marca-sinal`: laranja-sinal puro sobre osso dá
+   2,8:1 e reprova em AA como texto. Em vez de desbotar a marca, o sistema
+   separa os dois papéis — `--marca-sinal` é o pigmento (preenchimento, logo,
+   marcador, anel de foco), `--marca` é a mesma cor rebaixada até passar como
+   TEXTO (4,8:1 sobre osso). Nada de laranja escrito usa o pigmento puro.
    ══════════════════════════════════════════════════════════════════════════ */
 
 @theme inline {
@@ -33,6 +44,7 @@
 
   /* Marca e codificação de dado */
   --color-marca: var(--marca);
+  --color-marca-sinal: var(--marca-sinal);
   --color-marca-forte: var(--marca-forte);
   --color-marca-suave: var(--marca-suave);
   --color-dentro: var(--dentro);
@@ -45,6 +57,7 @@
   --color-superficie-2: var(--superficie-2);
   --color-linha: var(--linha);
   --color-linha-forte: var(--linha-forte);
+  --color-pedra: var(--pedra);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -76,10 +89,12 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
-  /* Raio — degraus com regra de uso:
-     lg  controles (botão, campo, pílula)
-     xl  cartões e painéis
-     2xl blocos de destaque (herói, modal grande) */
+  /* Raio — quatro degraus, e a regra de qual usar onde. Arredondar tudo por
+     igual apaga a diferença entre um botão e uma página.
+       lg  10px  controles: botão, campo, seleção, chip retangular
+       xl  14px  cartões e painéis
+       2xl 18px  blocos de destaque, modal, herói
+     `sm`/`md` existem para detalhes internos (anel de foco, marcador). */
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;
@@ -90,6 +105,20 @@
   --shadow-baixa: var(--sombra-1);
   --shadow-media: var(--sombra-2);
   --shadow-alta: var(--sombra-3);
+}
+
+/* ─── Pigmentos da marca ────────────────────────────────────────────────────
+   Vindos do brand kit, sem tradução. Não mudam com o tema — são tinta, não
+   papel. Tudo abaixo se serve daqui; nenhuma tela usa estes valores direto. */
+:root {
+  --baliza-ink: #151515;
+  --baliza-orange: #ff5a1f;
+  --baliza-bone: #f6f4f1;
+  --baliza-stone: #b7b3ac;
+  --baliza-fog: #e7e4e0;
+  --baliza-white: #ffffff;
+  --baliza-fit-positive: #2e7d6e;
+  --baliza-outside-attention: #a45a3f;
 }
 
 /* ─── Claro ─────────────────────────────────────────────────────────────── */
@@ -107,123 +136,154 @@
      com ela. */
   color-scheme: light;
 
-  /* `marca` é a cor de TEXTO e passa AA (5,45:1 sobre o papel).
-     `marca-forte` é só preenchimento — marcador, barra, ícone sobre sólido —
-     onde a regra de contraste de texto não se aplica. */
-  --marca: #8a5f17;
-  --marca-forte: #a97722;
-  --marca-suave: #f6efe0;
+  /* A fonte de display é a MESMA da interface, de propósito. A Baliza não
+     carrega o sotaque de uma grotesca larga: a autoridade vem da hierarquia e
+     do espaço, não de um segundo tipo. A variável sobrevive para que trocar
+     isso um dia seja uma linha, e não uma caçada. */
+  --fonte-display: var(--fonte-ui);
 
-  /* Codificação de dado. Silenciadas de propósito: informam, não decoram. */
-  --dentro: #1b6f65;
-  --dentro-suave: #e2efec;
-  --fora: #9e4d2c;
-  --fora-suave: #f8e9e2;
+  /* `marca` é a cor de TEXTO — laranja-sinal rebaixado até 4,8:1 sobre osso.
+     `marca-sinal` é o pigmento da marca, idêntico nos dois temas: logo,
+     preenchimento, marcador, anel de foco. `marca-forte` é o mesmo pigmento
+     sob outro nome, mantido porque a interface inteira já o chama assim. */
+  --marca: #c23d0e;
+  --marca-sinal: var(--baliza-orange);
+  --marca-forte: var(--baliza-orange);
+  --marca-suave: #fff0e9;
 
-  --superficie: #ffffff;
-  --superficie-2: #f5f6f8;
-  --linha: #e7e9ee;
-  --linha-forte: #d4d8e0;
+  /* Codificação de dado. Silenciadas de propósito: informam, não decoram.
+     `dentro` sai de #2E7D6E, um fio mais escuro para passar AA como texto. */
+  --dentro: #2c7767;
+  --dentro-suave: #e4f0ed;
+  --fora: var(--baliza-outside-attention);
+  --fora-suave: #f4e7e1;
 
-  --background: #fbfbfd;
-  --foreground: #0b0e14;
-  --card: #ffffff;
-  --card-foreground: #0b0e14;
-  --popover: #ffffff;
-  --popover-foreground: #0b0e14;
-  --primary: #0b0e14;
-  --primary-foreground: #fbfbfd;
-  --secondary: #f2f3f6;
-  --secondary-foreground: #0b0e14;
-  --muted: #f2f3f6;
-  --muted-foreground: #596273;
-  --accent: #f6efe0;
-  --accent-foreground: #6b4a11;
-  --destructive: #9e4d2c;
-  --border: #e7e9ee;
-  --input: #d4d8e0;
-  --ring: #a97722;
+  --superficie: var(--baliza-white);
+  --superficie-2: #efece8;
+  --linha: var(--baliza-fog);
+  --linha-forte: #d5d0c9;
+  --pedra: var(--baliza-stone);
 
-  /* Gráfico: uma cor. O radar de UMA pessoa não precisa de cinco cores — ele
-     precisa de uma forma legível. chart-2 é a série de COMPARAÇÃO (perfil-alvo,
-     média da base) e é neutra de propósito, para não competir com o candidato. */
-  --chart-1: #a97722;
-  --chart-2: #8d94a3;
-  --chart-3: #1b6f65;
-  --chart-4: #9e4d2c;
-  --chart-5: #596273;
+  /* Osso, e não branco clínico. O branco fica reservado para o que é objeto:
+     cartão, painel, campo. Assim uma lista de cartões tem plano de fundo. */
+  --background: var(--baliza-bone);
+  --foreground: var(--baliza-ink);
+  --card: var(--baliza-white);
+  --card-foreground: var(--baliza-ink);
+  --popover: var(--baliza-white);
+  --popover-foreground: var(--baliza-ink);
+  --primary: var(--baliza-ink);
+  --primary-foreground: var(--baliza-white);
+  --secondary: #edeae6;
+  --secondary-foreground: var(--baliza-ink);
+  --muted: #edeae6;
+  /* Escolhido pelo pior par em que aparece: 4,82:1 sobre `--secondary`. O tom
+     anterior (#6e6a64) dava 4,48 e reprovava AA por dois centésimos — e é a
+     cor de toda legenda dentro de bloco cinza, que é onde ela mais aparece. */
+  --muted-foreground: #696560;
+  --accent: #fff0e9;
+  --accent-foreground: #8a2f0d;
+  --destructive: #b42318;
+  --border: var(--baliza-fog);
+  --input: #d5d0c9;
+  --ring: var(--baliza-orange);
 
-  --sombra-1: 0 1px 2px -1px rgb(11 14 20 / 0.06), 0 1px 3px rgb(11 14 20 / 0.04);
-  --sombra-2: 0 2px 4px -2px rgb(11 14 20 / 0.06), 0 6px 16px -4px rgb(11 14 20 / 0.08);
-  --sombra-3: 0 4px 8px -4px rgb(11 14 20 / 0.08), 0 16px 40px -12px rgb(11 14 20 / 0.14);
+  /* Gráfico: uma cor forte. O radar de UMA pessoa não precisa de cinco cores —
+     ele precisa de uma forma legível. chart-2 é a série de COMPARAÇÃO
+     (perfil-alvo, média da base) e é neutra de propósito, para não competir
+     com o candidato. */
+  --chart-1: var(--baliza-orange);
+  --chart-2: #a8a39b;
+  --chart-3: #2c7767;
+  --chart-4: #a45a3f;
+  --chart-5: #6e6a64;
+
+  /* Sombras quase inexistentes: a hierarquia vem da linha e do plano de fundo.
+     Sombra aqui é para o que FLUTUA de verdade — menu, diálogo, popover. */
+  --sombra-1: 0 1px 2px -1px rgb(21 21 21 / 0.05);
+  --sombra-2: 0 1px 2px -1px rgb(21 21 21 / 0.05), 0 4px 12px -4px rgb(21 21 21 / 0.07);
+  --sombra-3: 0 2px 4px -2px rgb(21 21 21 / 0.06), 0 16px 40px -12px rgb(21 21 21 / 0.14);
 
   --radius: 0.625rem;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0b0e14;
-  --sidebar-primary: #0b0e14;
-  --sidebar-primary-foreground: #fbfbfd;
-  --sidebar-accent: #f2f3f6;
-  --sidebar-accent-foreground: #0b0e14;
-  --sidebar-border: #e7e9ee;
-  --sidebar-ring: #a97722;
+
+  /* A barra lateral fica um degrau ABAIXO do conteúdo: o painel é o objeto em
+     foco, a navegação é o móvel em que ele está apoiado. */
+  --sidebar: #f1eee9;
+  --sidebar-foreground: var(--baliza-ink);
+  --sidebar-primary: var(--baliza-ink);
+  --sidebar-primary-foreground: var(--baliza-white);
+  --sidebar-accent: #e6e2dc;
+  --sidebar-accent-foreground: var(--baliza-ink);
+  --sidebar-border: #e0dcd6;
+  --sidebar-ring: var(--baliza-orange);
 }
 
-/* ─── Escuro ────────────────────────────────────────────────────────────── */
+/* ─── Escuro ────────────────────────────────────────────────────────────────
+   Desenhado, não invertido. O escuro da Baliza é carvão neutro — nem azulado
+   nem esverdeado — porque o laranja-sinal é a única temperatura que a marca
+   tem e qualquer viés no cinza brigaria com ela. As superfícies sobem em
+   degraus de luz (fundo → cartão → elevado), e a linha é o que separa, nunca
+   a sombra: no escuro, sombra não existe. */
 .dark {
-  /* Ver a explicação no `:root`. É esta linha que conserta a lista ilegível. */
   color-scheme: dark;
 
-  --marca: #d9a951;
-  --marca-forte: #d4a24c;
-  --marca-suave: #2a2114;
+  --fonte-display: var(--fonte-ui);
 
-  --dentro: #4bb5a5;
-  --dentro-suave: #11271f;
-  --fora: #dd8258;
-  --fora-suave: #2b1810;
+  /* No escuro o laranja-sinal já passa AA como texto (6,1:1), mas `--marca`
+     abre um pouco mais: laranja puro em corpo de texto sobre carvão vibra. */
+  --marca: #ff8b60;
+  --marca-sinal: var(--baliza-orange);
+  --marca-forte: var(--baliza-orange);
+  --marca-suave: #2a1b15;
 
-  --superficie: #12161e;
-  --superficie-2: #171c25;
-  --linha: #222834;
-  --linha-forte: #323945;
+  --dentro: #5fbca9;
+  --dentro-suave: #14261f;
+  --fora: #e08a63;
+  --fora-suave: #2b1a12;
 
-  --background: #0b0e14;
-  --foreground: #f2f3f7;
-  --card: #12161e;
-  --card-foreground: #f2f3f7;
-  --popover: #161b24;
-  --popover-foreground: #f2f3f7;
-  --primary: #f2f3f7;
-  --primary-foreground: #0b0e14;
-  --secondary: #171c25;
-  --secondary-foreground: #f2f3f7;
-  --muted: #171c25;
-  --muted-foreground: #949cab;
-  --accent: #2a2114;
-  --accent-foreground: #d9a951;
-  --destructive: #dd8258;
-  --border: #222834;
-  --input: #2a303c;
-  --ring: #d4a24c;
+  --superficie: #171717;
+  --superficie-2: #1e1e1e;
+  --linha: #2b2b2b;
+  --linha-forte: #3d3d3d;
+  --pedra: #6e6a64;
 
-  --chart-1: #d4a24c;
-  --chart-2: #7b8494;
-  --chart-3: #4bb5a5;
-  --chart-4: #dd8258;
-  --chart-5: #949cab;
+  --background: #101010;
+  --foreground: #f7f5f2;
+  --card: #171717;
+  --card-foreground: #f7f5f2;
+  --popover: #1c1c1c;
+  --popover-foreground: #f7f5f2;
+  --primary: #f7f5f2;
+  --primary-foreground: #101010;
+  --secondary: #1e1e1e;
+  --secondary-foreground: #f7f5f2;
+  --muted: #1e1e1e;
+  --muted-foreground: #a19d97;
+  --accent: #2a1b15;
+  --accent-foreground: #ff8b60;
+  --destructive: #f0776b;
+  --border: #2b2b2b;
+  --input: #383838;
+  --ring: var(--baliza-orange);
 
-  --sombra-1: 0 1px 2px -1px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
-  --sombra-2: 0 2px 4px -2px rgb(0 0 0 / 0.4), 0 6px 16px -4px rgb(0 0 0 / 0.45);
-  --sombra-3: 0 4px 8px -4px rgb(0 0 0 / 0.5), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+  --chart-1: var(--baliza-orange);
+  --chart-2: #6e6a64;
+  --chart-3: #5fbca9;
+  --chart-4: #e08a63;
+  --chart-5: #a19d97;
 
-  --sidebar: #0e121a;
-  --sidebar-foreground: #f2f3f7;
-  --sidebar-primary: #d4a24c;
-  --sidebar-primary-foreground: #0b0e14;
-  --sidebar-accent: #171c25;
-  --sidebar-accent-foreground: #f2f3f7;
-  --sidebar-border: #222834;
-  --sidebar-ring: #d4a24c;
+  --sombra-1: 0 1px 2px -1px rgb(0 0 0 / 0.5);
+  --sombra-2: 0 1px 2px -1px rgb(0 0 0 / 0.5), 0 4px 12px -4px rgb(0 0 0 / 0.55);
+  --sombra-3: 0 2px 4px -2px rgb(0 0 0 / 0.5), 0 16px 40px -12px rgb(0 0 0 / 0.65);
+
+  --sidebar: #0b0b0b;
+  --sidebar-foreground: #f7f5f2;
+  --sidebar-primary: #f7f5f2;
+  --sidebar-primary-foreground: #101010;
+  --sidebar-accent: #1c1c1c;
+  --sidebar-accent-foreground: #f7f5f2;
+  --sidebar-border: #262626;
+  --sidebar-ring: var(--baliza-orange);
 }
 
 @layer base {
@@ -245,16 +305,19 @@
 
   /* ─── Foco: UM anel, definido uma vez ────────────────────────────────
      Antes cada componente declarava o seu, com valores diferentes. Agora tudo
-     que recebe foco pelo teclado herda daqui — e o anel nunca some. */
+     que recebe foco pelo teclado herda daqui — e o anel nunca some. Laranja
+     porque foco é presença da marca, não estado do dado. */
   :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 
+  /* Texto selecionado: tinta sobre laranja (5,9:1). Branco sobre laranja dá
+     3,1:1 e some justamente no trecho que a pessoa está lendo. */
   ::selection {
-    background: var(--marca-forte);
-    color: #fff;
+    background: var(--marca-sinal);
+    color: var(--baliza-ink);
   }
 
   /* ─── A lista do `<select>` precisa de fundo PRÓPRIO ───────────────────
@@ -277,15 +340,20 @@
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--linha-forte) transparent;
+    scrollbar-color: var(--pedra) transparent;
   }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
    Escala tipográfica
    ──────────────────────────────────────────────────────────────────────────
-   Oito degraus com nome. Display e título são fluidos (clamp), então escalam
-   sem breakpoint e nunca estouram no celular.
+   Nove degraus com nome, todos em Inter Tight, exceto os dois de leitura de
+   dado, que são JetBrains Mono. Display e título são fluidos (clamp), então
+   escalam sem breakpoint e nunca estouram no celular.
+
+   Peso: 400 corpo, 500 controle e rótulo, 600 título e número-chave. Não há
+   700 nem 800 — passado 600, a Inter Tight fecha os contraformas e a tela
+   deixa de parecer instrumento.
 
    Regra: nenhum `text-[Npx]` no código de tela. Se falta um degrau, ele entra
    aqui — não na página.
@@ -293,26 +361,26 @@
 @layer components {
   .t-display {
     font-family: var(--fonte-display);
-    font-size: clamp(2.25rem, 1.4rem + 3.6vw, 3.5rem);
-    line-height: 1.04;
-    letter-spacing: -0.032em;
+    font-size: clamp(2.375rem, 1.45rem + 3.9vw, 3.75rem);
+    line-height: 1.03;
+    letter-spacing: -0.035em;
     font-weight: 600;
     text-wrap: balance;
   }
 
   .t-titulo {
     font-family: var(--fonte-display);
-    font-size: clamp(1.75rem, 1.3rem + 2vw, 2.375rem);
-    line-height: 1.14;
-    letter-spacing: -0.026em;
+    font-size: clamp(1.6875rem, 1.25rem + 1.95vw, 2.375rem);
+    line-height: 1.12;
+    letter-spacing: -0.028em;
     font-weight: 600;
     text-wrap: balance;
   }
 
   .t-secao {
     font-family: var(--fonte-display);
-    font-size: 1.25rem;
-    line-height: 1.3;
+    font-size: 1.1875rem;
+    line-height: 1.32;
     letter-spacing: -0.018em;
     font-weight: 600;
   }
@@ -329,6 +397,25 @@
     line-height: 1.6;
   }
 
+  /* O parágrafo de abertura — o que vem logo abaixo de um display ou título e
+     precisa de um degrau a mais que o corpo para não parecer legenda. */
+  .t-corpo-lg {
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+
+  /* O enunciado do questionário.
+     Ele não é título de seção nem corpo: é a única frase da tela, e a pessoa
+     lê uma por vez, no celular, em movimento. Fica entre o título e o display,
+     e fluido para não estourar em 320px. */
+  .t-enunciado {
+    font-size: clamp(1.5rem, 1.25rem + 1.1vw, 1.875rem);
+    line-height: 1.28;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
   .t-corpo-sm {
     font-size: 0.8125rem;
     line-height: 1.55;
@@ -339,29 +426,44 @@
     line-height: 1.45;
   }
 
-  /* Etiqueta gravada no instrumento. */
+  /* O rótulo pequeno em versalete monoespaçado — a etiqueta do instrumento.
+     É o que diz "isto é um dado" antes mesmo de a pessoa ler o dado. */
   .t-etiqueta,
   .etiqueta {
     font-family: var(--fonte-mono);
     font-size: 0.6875rem;
     line-height: 1;
-    letter-spacing: 0.13em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted-foreground);
     font-weight: 500;
   }
 
-  /* Leitura de instrumento: número sempre tabular, para a coluna não dançar. */
+  /* Leitura de dado: número sempre tabular, para a coluna não dançar quando o
+     valor muda. Tudo que é escore, contagem, código ou faixa passa por aqui. */
   .leitura {
     font-family: var(--fonte-mono);
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1, "zero" 1;
     letter-spacing: -0.02em;
   }
+
+  /* O número que decide — aderência, total, média. Grande porque é o que a
+     pessoa veio ver, e tabular porque ele muda de linha para linha. */
+  .t-numero {
+    font-family: var(--fonte-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "zero" 1;
+    font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.25rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    font-weight: 600;
+  }
 }
 
 @layer utilities {
-  /* Régua de calibração — o fundo tickado dos medidores. */
+  /* Marcas de calibração — o fundo tickado dos medidores. Discretas: elas dão
+     escala ao trilho sem disputar com o dado que está em cima dele. */
   .regua {
     background-image: repeating-linear-gradient(
       to right,
@@ -387,15 +489,32 @@
     background-size: 32px 32px;
   }
 
-  .brilho-latao {
+  /* O halo do marcador na faixa. Curto e fechado: é para o olho encontrar o
+     ponto, não para o ponto brilhar. */
+  .brilho-marca {
     box-shadow:
-      0 0 0 3px color-mix(in oklab, var(--marca-forte) 16%, transparent),
-      0 1px 4px color-mix(in oklab, var(--marca-forte) 38%, transparent);
+      0 0 0 3px color-mix(in oklab, var(--marca-sinal) 14%, transparent),
+      0 1px 3px color-mix(in oklab, var(--marca-sinal) 32%, transparent);
   }
 
   /* Ritmo vertical das seções da página pública. */
   .secao {
-    padding-block: clamp(3.5rem, 2rem + 6vw, 5.5rem);
+    padding-block: clamp(3.5rem, 2rem + 6vw, 6rem);
+  }
+
+  /* Largura de leitura das páginas públicas e do questionário: uma coluna que
+     não obriga o olho a atravessar a tela para achar o começo da linha. */
+  .medida {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 72rem;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .medida {
+      padding-inline: 2rem;
+    }
   }
 
   /* Linha de lista clicável: realce discreto, sem pular. */
@@ -410,6 +529,32 @@
   .linha-clicavel:active {
     transform: scale(0.998);
   }
+
+  /* As duas metades do símbolo se aproximando — ver `SimboloEncaixando`.
+     Elas entram de fora, na direção de quem são: o candidato pela esquerda, a
+     vaga pela direita. O vazio central só existe no fim. */
+  @keyframes baliza-encaixe-esquerda {
+    from {
+      transform: translateX(-14%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes baliza-encaixe-direita {
+    from {
+      transform: translateX(14%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
 }
 
 /* Movimento: quem pediu redução, recebe redução. Sem exceção. */
@@ -440,6 +585,7 @@
    1. TEMA CLARO À FORÇA. Imprimir no escuro cospe páginas pretas ou, pior,
       texto claro sobre papel branco. As variáveis do `:root` são
       reafirmadas aqui para valer também quando `.dark` está na árvore.
+      O papel é BRANCO, não osso: osso vira uma mancha cinza na impressora.
    2. COR PRESERVADA. `print-color-adjust: exact` é o que faz o navegador
       parar de "economizar tinta" e apagar justamente o que codifica dado —
       a cor de cada fator, o selo de confiança, as barras.
@@ -460,36 +606,40 @@
   .dark {
     color-scheme: light;
 
-    --marca: #8a5f17;
-    --marca-forte: #a97722;
-    --marca-suave: #f6efe0;
+    /* No papel o laranja-sinal escurece um degrau: jato de tinta satura o
+       #FF5A1F e o traço fino da marca some dentro do próprio borrão. */
+    --marca: #a8380c;
+    --marca-sinal: #e04a12;
+    --marca-forte: #e04a12;
+    --marca-suave: #fdf0e9;
 
-    --dentro: #1b6f65;
-    --dentro-suave: #e2efec;
-    --fora: #9e4d2c;
-    --fora-suave: #f8e9e2;
+    --dentro: #26685a;
+    --dentro-suave: #e4f0ed;
+    --fora: #954f36;
+    --fora-suave: #f4e7e1;
 
     --superficie: #ffffff;
-    --superficie-2: #f7f8fa;
-    --linha: #d9dce3;
-    --linha-forte: #c3c8d2;
+    --superficie-2: #f7f6f4;
+    --linha: #d8d4ce;
+    --linha-forte: #bdb8b1;
+    --pedra: #8f8b84;
 
     --background: #ffffff;
-    --foreground: #0b0e14;
+    --foreground: #151515;
     --card: #ffffff;
-    --card-foreground: #0b0e14;
+    --card-foreground: #151515;
     --popover: #ffffff;
-    --popover-foreground: #0b0e14;
-    --primary: #0b0e14;
+    --popover-foreground: #151515;
+    --primary: #151515;
     --primary-foreground: #ffffff;
-    --secondary: #f2f3f6;
-    --secondary-foreground: #0b0e14;
-    --muted: #f2f3f6;
-    --muted-foreground: #4a5261;
-    --accent: #f6efe0;
-    --accent-foreground: #6b4a11;
-    --destructive: #9e4d2c;
-    --border: #d9dce3;
+    --secondary: #f2f0ed;
+    --secondary-foreground: #151515;
+    --muted: #f2f0ed;
+    --muted-foreground: #55524d;
+    --accent: #fdf0e9;
+    --accent-foreground: #8a2f0d;
+    --destructive: #96271d;
+    --border: #d8d4ce;
   }
 
   *,
@@ -527,6 +677,11 @@
     max-width: none !important;
     padding: 0 !important;
     margin: 0 !important;
+  }
+
+  .medida {
+    max-width: none !important;
+    padding-inline: 0 !important;
   }
 
   .grid {
