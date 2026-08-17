@@ -2,7 +2,7 @@ import { Esqueleto } from "@/components/ui/esqueleto";
 
 export default function CarregandoVagas() {
   return (
-    <div className="mx-auto max-w-6xl" aria-busy="true">
+    <div aria-busy="true">
       <span className="sr-only">Carregando as vagas</span>
 
       <div className="mb-6 flex items-end justify-between">

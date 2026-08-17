@@ -8,7 +8,7 @@ import { NOMES_DE_FATOR, FATORES } from "@/lib/instrument/types";
 export const metadata: Metadata = { title: "Como funciona" };
 
 /**
- * A página que explica o produto para quem abriu o Prumo pela primeira vez.
+ * A página que explica o produto para quem abriu a Baliza pela primeira vez.
  *
  * ─── Por que uma PÁGINA, e não um passeio guiado com balões ────────────────
  * Balão que aparece uma vez some exatamente quando a pessoa precisa dele: a
@@ -65,7 +65,7 @@ const CAMINHO = [
   },
   {
     n: 4,
-    titulo: "O Prumo compara e você conversa",
+    titulo: "A Baliza compara e você conversa",
     texto:
       "O sistema põe a resposta dela lado a lado com o que você pediu no passo 1, escolhe as perguntas de entrevista que valem a pena para aquela pessoa, e espera. Quem decide é você — e o parecer fica registrado com o seu nome e a data.",
     onde: "Candidatos › a pessoa › Parecer do analista",
@@ -85,7 +85,7 @@ const EM_MIUDOS: Record<string, string> = {
 /** Os testes, com o que cada um entrega e quanto custa de tempo. */
 const TESTES = [
   {
-    nome: "Prumo",
+    nome: "Mapeamento Baliza",
     tempo: "~6 min",
     faz: "O mapeamento completo da casa: as cinco dimensões, o arquétipo e o selo de confiança. Sozinho já produz a aderência.",
   },
@@ -116,39 +116,43 @@ export default function PaginaComoFunciona() {
     <div className="mx-auto max-w-3xl">
       <CabecalhoDePagina
         etiqueta="Comece por aqui"
-        titulo="Como o Prumo funciona"
+        titulo="Como a Baliza funciona"
         descricao="Cinco minutos de leitura. Depois disso você entende qualquer tela daqui."
       />
 
       {/* ─── A ideia inteira, antes de qualquer detalhe ─────────────────── */}
       <section className="rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">A ideia em uma frase</h2>
+        <h2 className="t-cartao">A ideia em uma frase</h2>
         <p className="mt-3 t-corpo leading-relaxed">
-          Prumo é o nome daquele peso de pedreiro pendurado num barbante: você
-          encosta na parede e ele mostra se está torta ou reta.{" "}
+          Uma baliza é uma marca de referência: ela não diz para onde ir, diz
+          onde você está em relação a alguma coisa.{" "}
           <strong className="font-semibold">
-            Aqui a ideia é parecida, com uma diferença que muda tudo.
+            Aqui essa alguma coisa é a vaga.
           </strong>
         </p>
         <p className="mt-3 t-corpo leading-relaxed">
-          O prumo do pedreiro tem uma referência só, a gravidade, e por isso ele
-          julga: torta ou reta.{" "}
+          O sistema junta duas metades — o que a pessoa respondeu e o que este
+          trabalho pede — e mostra a distância entre as duas.{" "}
           <strong className="font-semibold">
-            Aqui a referência é a vaga — e cada vaga é um prumo diferente.
+            Cada vaga é uma referência diferente.
           </strong>{" "}
-          Não existe pessoa &ldquo;torta&rdquo;: existe alguém perto do que uma
-          vaga pede e longe do que outra pede. A mesma pessoa, no mesmo dia, com
-          a mesma resposta.
+          Não existe pessoa &ldquo;fora do lugar&rdquo;: existe alguém perto do
+          que uma vaga pede e longe do que outra pede. A mesma pessoa, no mesmo
+          dia, com a mesma resposta.
         </p>
         <p className="mt-3 t-corpo leading-relaxed text-muted-foreground">
-          E o que ele não é: não é teste de QI e não é prova de conhecimento.
+          E o que isto não é: não é teste de QI e não é prova de conhecimento.
           Não reprova ninguém — nenhuma tela daqui elimina candidato sozinha.
+          A Baliza não decide por você; ela dá referência para você decidir
+          melhor.
         </p>
       </section>
 
       {/* ─── As cinco dimensões vêm ANTES do caminho ─────────────────────── */}
       <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">As cinco coisas que ele mede</h2>
+        <h2 className="t-cartao">
+          As cinco coisas que a Baliza mede
+        </h2>
         <p className="mt-2 t-corpo-sm leading-relaxed text-muted-foreground">
           Todo mundo tem um pouco de cada uma. Não existe lado bom e lado ruim —
           existe o que a vaga pede. São estas que você vai pesar no passo 1.
@@ -168,7 +172,7 @@ export default function PaginaComoFunciona() {
       </section>
 
       {/* ─── O caminho, do começo ao fim ────────────────────────────────── */}
-      <h2 className="mt-8 text-base font-semibold">O caminho, do começo ao fim</h2>
+      <h2 className="mt-8 t-cartao">O caminho, do começo ao fim</h2>
       <ol className="mt-4 space-y-3">
         {CAMINHO.map((p) => (
           <li key={p.n} className="flex gap-4 rounded-xl border bg-card p-5">
@@ -194,7 +198,7 @@ export default function PaginaComoFunciona() {
 
       {/* ─── A bateria: a omissão que fazia tudo soar absoluto ───────────── */}
       <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">Os quatro testes</h2>
+        <h2 className="t-cartao">Os quatro testes</h2>
         <p className="mt-2 t-corpo leading-relaxed text-muted-foreground">
           Quase tudo o que muda de uma vaga para outra — o tempo, se existe
           número, quais avisos aparecem — depende de quais destes você aplicou.
@@ -218,11 +222,11 @@ export default function PaginaComoFunciona() {
 
       {/* ─── O número grande: onde mora quase todo mal-entendido ────────── */}
       <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">
+        <h2 className="t-cartao">
           O número grande, e o que fazer com ele
         </h2>
         <p className="mt-3 t-corpo leading-relaxed">
-          Quando a vaga aplica o Prumo ou o Big Five, cada resposta ganha um
+          Quando a vaga aplica o Mapeamento Baliza ou o Big Five, cada resposta ganha um
           número de 0 a 100 — tipo{" "}
           <span className="leitura font-semibold text-marca">72,4</span>. Ele
           chama <strong className="font-semibold">aderência</strong> e responde
@@ -252,7 +256,7 @@ export default function PaginaComoFunciona() {
 
       {/* ─── Confiança: o que fazer quando a resposta parece estranha ───── */}
       <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">
+        <h2 className="t-cartao">
           O selo de confiança: dá para acreditar nesta resposta?
         </h2>
         <p className="mt-3 t-corpo leading-relaxed">
@@ -296,11 +300,11 @@ export default function PaginaComoFunciona() {
 
       {/* ─── O roteiro: a parte que economiza mais tempo ─────────────────── */}
       <section className="mt-8 rounded-xl border bg-card p-6">
-        <h2 className="text-base font-semibold">
+        <h2 className="t-cartao">
           O roteiro de entrevista é a parte mais útil
         </h2>
         <p className="mt-3 t-corpo leading-relaxed">
-          Em toda resposta o Prumo monta uma lista de perguntas e explica por que
+          Em toda resposta a Baliza monta uma lista de perguntas e explica por que
           cada uma está ali. Elas saem de um banco escrito à mão, e o sistema
           escolhe as que se aplicam <em>àquela pessoa naquela vaga</em>. Pedem um
           caso que aconteceu de verdade — &ldquo;me conta de um prazo que você
@@ -314,8 +318,8 @@ export default function PaginaComoFunciona() {
 
       {/* ─── As três regras, que são a política do produto ──────────────── */}
       <section className="mt-8 rounded-xl border border-marca/30 bg-marca-suave/40 p-6">
-        <h2 className="text-base font-semibold">
-          Três regras que o Prumo não abre mão
+        <h2 className="t-cartao">
+          Três regras de que a Baliza não abre mão
         </h2>
         <ol className="mt-4 space-y-3 t-corpo leading-relaxed">
           <li>
@@ -336,14 +340,14 @@ export default function PaginaComoFunciona() {
         </ol>
         <p className="mt-4 t-corpo-sm leading-relaxed text-muted-foreground">
           Não são só boas intenções: é o que a lei espera de quem usa sistema
-          para apoiar decisão sobre pessoas, e é por isso que o Prumo guarda quem
+          para apoiar decisão sobre pessoas, e é por isso que a Baliza guarda quem
           decidiu o quê, e quando.
         </p>
       </section>
 
       {/* ─── Perguntas que todo mundo faz ────────────────────────────────── */}
       <section className="mt-8">
-        <h2 className="text-base font-semibold">Perguntas que todo mundo faz</h2>
+        <h2 className="t-cartao">Perguntas que todo mundo faz</h2>
         <div className="mt-4 space-y-3">
           {[
             {
@@ -360,7 +364,7 @@ export default function PaginaComoFunciona() {
             },
             {
               p: "E se a pessoa responder de novo depois?",
-              r: "Depende do teste. O Prumo tem banco grande e sorteia perguntas diferentes a cada aplicação, então refazer mede mudança de verdade. Big Five, DISC e julgamento situacional aplicam o banco inteiro — são 20, 12 e 8 questões fixas —, então repetir logo em seguida mede também a memória da prova anterior. Se for reaplicar, deixe um tempo passar.",
+              r: "Depende do teste. O Mapeamento Baliza tem banco grande e sorteia perguntas diferentes a cada aplicação, então refazer mede mudança de verdade. Big Five, DISC e julgamento situacional aplicam o banco inteiro — são 20, 12 e 8 questões fixas —, então repetir logo em seguida mede também a memória da prova anterior. Se for reaplicar, deixe um tempo passar.",
             },
             {
               p: "Serve para quem já trabalha aqui?",
@@ -368,7 +372,7 @@ export default function PaginaComoFunciona() {
             },
             {
               p: "Por que uma vaga minha não mostra número nenhum?",
-              r: "Porque a bateria dela não inclui Prumo nem Big Five, e são esses dois que produzem as cinco dimensões. Sem elas não há o que comparar com o perfil da vaga, e mostrar zero seria pior que não mostrar nada — zero se lê como “candidato péssimo”. O relatório dessa vaga traz o que o DISC e o julgamento situacional mediram.",
+              r: "Porque a bateria dela não inclui o Mapeamento Baliza nem o Big Five, e são esses dois que produzem as cinco dimensões. Sem elas não há o que comparar com o perfil da vaga, e mostrar zero seria pior que não mostrar nada — zero se lê como “candidato péssimo”. O relatório dessa vaga traz o que o DISC e o julgamento situacional mediram.",
             },
           ].map((q) => (
             <details

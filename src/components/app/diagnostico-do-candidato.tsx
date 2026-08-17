@@ -78,7 +78,7 @@ export function DiagnosticoDoCandidato({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Compass className="size-4 text-marca" />
-          <h2 className="text-sm font-semibold">Diagnóstico</h2>
+          <h2 className="t-cartao">Diagnóstico</h2>
         </div>
         {/* O selo anda colado na leitura, e não no rodapé: a regra do §4.4 vale
             aqui pelo mesmo motivo que vale para o número — uma síntese sem o

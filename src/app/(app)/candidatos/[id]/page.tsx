@@ -103,7 +103,7 @@ export default async function PaginaDoCandidato({
   /*
    * Sem os cinco fatores não existe ficha de aderência para montar.
    *
-   * Acontece quando a bateria da vaga não tem Prumo nem Big Five: DISC devolve
+   * Acontece quando a bateria da vaga não tem o Mapeamento Baliza nem o Big Five: DISC devolve
    * estilo e o SJT devolve acerto contra gabarito, e nenhum dos dois vira
    * fator.
    *
@@ -222,9 +222,7 @@ export default async function PaginaDoCandidato({
                 <SeloDeConfianca confianca={confianca} />
                 <div className="text-right">
                   <p className="etiqueta">Aderência</p>
-                  <p className="leitura text-3xl leading-none font-semibold text-marca">
-                    {aderencia}
-                  </p>
+                  <p className="t-numero mt-1 text-marca">{aderencia}</p>
                 </div>
               </>
             )}
@@ -241,7 +239,7 @@ export default async function PaginaDoCandidato({
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-4">
           <section className="rounded-xl border bg-card p-5">
-            <h2 className="text-sm font-semibold">
+            <h2 className="t-cartao">
               {aderencia
                 ? `Por que a aderência é ${aderencia}`
                 : "Perfil por dimensão"}
@@ -250,48 +248,19 @@ export default async function PaginaDoCandidato({
               {roteiro.resumoDoGap}
             </p>
             {/* De qual instrumento saíram os cinco fatores. Só aparece quando
-                NÃO é o Prumo: dizer a origem importa porque o Big Five mede o
+                NÃO é o Mapeamento Baliza: dizer a origem importa porque o Big Five mede o
                 mesmo terreno com 20 itens em vez de 34, e sem facetas. */}
             {leitura.origemDosFatores === "BIG_FIVE" && (
               <p className="mt-1.5 text-xs text-muted-foreground">
                 Os cinco fatores desta conta vieram do Big Five (20 itens), não
-                do Prumo — esta vaga não aplicou o instrumento completo.
+                do Mapeamento Baliza — esta vaga não aplicou o instrumento completo.
               </p>
             )}
 
-            <div className="mt-6 space-y-6">
-              {(detalhe.contribuicoes ?? []).map((c, i) => {
-                const dados: DadosDaFaixa = {
-                  fator: c.fator,
-                  nome: c.nome ?? NOMES_DE_FATOR[c.fator].ui,
-                  escore: c.escore,
-                  faixa: c.faixa,
-                  ideal: c.ideal,
-                  peso: c.peso,
-                  tipo: c.tipo,
-                  dentro: c.dentro,
-                };
-                return <Faixa key={c.fator} dados={dados} atraso={i * 0.06} />;
-              })}
-
-              {(detalhe.ignoradas ?? []).map((f) => (
-                <Faixa
-                  key={f}
-                  dados={{
-                    fator: f,
-                    nome: NOMES_DE_FATOR[f].ui,
-                    escore: escores[f],
-                    faixa: [0, 100],
-                    ideal: 50,
-                    peso: 0,
-                    tipo: "irrelevante",
-                    dentro: true,
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="mt-7 grid gap-4 border-t pt-5 sm:grid-cols-2">
+            {/* O veredito antes da prova. Cinco medidores lidos sem saber quais
+                pesaram obrigam a ler tudo duas vezes: uma para entender, outra
+                para achar o que importou. */}
+            <div className="mt-5 grid gap-4 rounded-lg bg-secondary/50 p-4 sm:grid-cols-2">
               <div>
                 <p className="etiqueta mb-2 text-dentro">Puxaram pra cima</p>
                 <ul className="space-y-1 t-corpo-sm">
@@ -327,6 +296,38 @@ export default async function PaginaDoCandidato({
                 </ul>
               </div>
             </div>
+
+            <div className="mt-7 space-y-7 border-t pt-6">
+              {(detalhe.contribuicoes ?? []).map((c, i) => {
+                const dados: DadosDaFaixa = {
+                  fator: c.fator,
+                  nome: c.nome ?? NOMES_DE_FATOR[c.fator].ui,
+                  escore: c.escore,
+                  faixa: c.faixa,
+                  ideal: c.ideal,
+                  peso: c.peso,
+                  tipo: c.tipo,
+                  dentro: c.dentro,
+                };
+                return <Faixa key={c.fator} dados={dados} atraso={i * 0.06} />;
+              })}
+
+              {(detalhe.ignoradas ?? []).map((f) => (
+                <Faixa
+                  key={f}
+                  dados={{
+                    fator: f,
+                    nome: NOMES_DE_FATOR[f].ui,
+                    escore: escores[f],
+                    faixa: [0, 100],
+                    ideal: 50,
+                    peso: 0,
+                    tipo: "irrelevante",
+                    dentro: true,
+                  }}
+                />
+              ))}
+            </div>
           </section>
 
           {/* ─── Os outros testes da bateria (§5.2 do manual) ──────────── */}
@@ -338,7 +339,7 @@ export default async function PaginaDoCandidato({
               <div>
                 <div className="flex items-center gap-2">
                   <MessageSquareQuote className="size-4 text-marca" />
-                  <h2 className="text-sm font-semibold">Roteiro de entrevista</h2>
+                  <h2 className="t-cartao">Roteiro de entrevista</h2>
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Perguntas comportamentais — a pessoa conta um fato que
@@ -387,7 +388,7 @@ export default async function PaginaDoCandidato({
               <p className="etiqueta">
                 {avaliacao.archetypeMixedWith ? "Perfil misto" : "Arquétipo"}
               </p>
-              <h2 className="mt-1.5 text-lg font-semibold tracking-tight">
+              <h2 className="mt-1.5 t-secao">
                 {arquetipo.nome}
                 {avaliacao.archetypeMixedWith &&
                   ` / ${ARQUETIPO_POR_ID.get(avaliacao.archetypeMixedWith)?.nome}`}
@@ -417,7 +418,7 @@ export default async function PaginaDoCandidato({
           )}
 
           <section className="rounded-xl border bg-card p-5">
-            <h2 className="text-sm font-semibold">Perfil comportamental</h2>
+            <h2 className="t-cartao">Perfil comportamental</h2>
             <RadarComportamental escores={escores} altura={250} />
 
             <ul className="mt-3 space-y-2 border-t pt-4">
@@ -434,7 +435,7 @@ export default async function PaginaDoCandidato({
 
           {facetas.length > 0 && (
             <section className="rounded-xl border bg-card p-5">
-              <h2 className="text-sm font-semibold">Nuances</h2>
+              <h2 className="t-cartao">Nuances</h2>
               <p className="mt-1 mb-3 text-xs text-muted-foreground">
                 Leitura interna ao perfil. Faceta tem poucos itens e por isso
                 nunca vira número nem entra em comparação.
@@ -449,7 +450,7 @@ export default async function PaginaDoCandidato({
 
           {historico.length > 0 && (
             <section className="rounded-xl border bg-card p-5">
-              <h2 className="text-sm font-semibold">Histórico nesta empresa</h2>
+              <h2 className="t-cartao">Histórico nesta empresa</h2>
               <ul className="mt-3 space-y-2">
                 {historico.map((a) => (
                   <li key={a.id}>
@@ -533,9 +534,9 @@ function roteiroEmTexto(
  * As respostas brutas dos módulos do manual — só quando há módulo que as use.
  *
  * Os alertas do §6.3 (tempo por tela, padrão uniforme, itens espelhados) moram
- * na resposta item a item, que o relatório do Prumo nunca precisou carregar. A
+ * na resposta item a item, que o relatório da Baliza nunca precisou carregar. A
  * consulta é condicionada ao que a bateria tem: a página da esmagadora maioria
- * das avaliações — as só do Prumo — continua fazendo exatamente as mesmas
+ * das avaliações — as só do Mapeamento Baliza — continua fazendo exatamente as mesmas
  * consultas de antes.
  */
 async function respostasBrutas(avaliacao: { id: string; testBattery: string[] }) {
@@ -632,7 +633,7 @@ function SemOsCincoFatores({
       </div>
 
       <section className="rounded-xl border bg-card p-5">
-        <h2 className="text-sm font-semibold">O que esta pessoa respondeu</h2>
+        <h2 className="t-cartao">O que esta pessoa respondeu</h2>
         <ul className="mt-3 space-y-2">
           {leitura.bateria.map((teste: Teste) => (
             <li key={teste} className="t-corpo-sm">
@@ -645,7 +646,7 @@ function SemOsCincoFatores({
         </ul>
 
         <p className="mt-5 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5 t-legenda leading-relaxed">
-          Esta vaga não aplicou o Prumo nem o Big Five, então não há os cinco
+          Esta vaga não aplicou o Mapeamento Baliza nem o Big Five, então não há os cinco
           fatores — e sem eles não há aderência ao perfil-alvo para calcular.
           Não é aderência zero: é aderência não medida. Para ter o número,
           marque um dos dois na vaga; vale para quem for convidado a partir dali.
@@ -661,7 +662,7 @@ function SemOsCincoFatores({
           <div>
             <div className="flex items-center gap-2">
               <MessageSquareQuote className="size-4 text-marca" />
-              <h2 className="text-sm font-semibold">Roteiro de entrevista</h2>
+              <h2 className="t-cartao">Roteiro de entrevista</h2>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
               {roteiro.resumoDoGap}

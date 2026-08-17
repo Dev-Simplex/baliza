@@ -89,9 +89,9 @@ export default function Erro({
     <main className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-6">
       <Marca href={ehCandidato ? null : "/"} />
 
-      <p className="etiqueta mt-12">Algo saiu de prumo</p>
+      <p className="etiqueta mt-12">Algo saiu do lugar</p>
       <h1 className="t-titulo mt-3">
-        {versaoVelha ? "O Prumo foi atualizado." : "Esta tela não carregou."}
+        {versaoVelha ? "A Baliza foi atualizada." : "Esta tela não carregou."}
       </h1>
       <p className="t-corpo mt-3 text-muted-foreground">{explicacao}</p>
 

@@ -4,7 +4,10 @@ import { ChartNoAxesColumn } from "lucide-react";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import { ExportarRespostas } from "@/components/app/exportar-respostas";
-import { CartaoIndicador } from "@/components/app/cartao-indicador";
+import {
+  CartaoIndicador,
+  FaixaDeIndicadores,
+} from "@/components/app/cartao-indicador";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import { Painel, PainelCabecalho, NotaDeRodape } from "@/components/ui/painel";
 import { BotaoLink } from "@/components/ui/botao-link";
@@ -44,7 +47,7 @@ export default async function PaginaDeRelatorios() {
 
   if (resumo.concluidas === 0) {
     return (
-      <div className="mx-auto max-w-6xl">
+      <div>
         <CabecalhoDePagina etiqueta="Agregado" titulo="Relatórios" />
         <EstadoVazio
           icone={ChartNoAxesColumn}
@@ -66,7 +69,7 @@ export default async function PaginaDeRelatorios() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <CabecalhoDePagina
         etiqueta="Agregado"
         titulo="Relatórios"
@@ -75,7 +78,7 @@ export default async function PaginaDeRelatorios() {
       />
 
       <div className="space-y-4">
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <FaixaDeIndicadores>
           <CartaoIndicador
             rotulo="Respostas concluídas"
             valor={numero(resumo.concluidas)}
@@ -109,7 +112,7 @@ export default async function PaginaDeRelatorios() {
             }
             apoio="em todas as vagas"
           />
-        </section>
+        </FaixaDeIndicadores>
 
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <Painel padding="nenhum">
@@ -126,7 +129,57 @@ export default async function PaginaDeRelatorios() {
               }
             />
 
-            <div className="overflow-x-auto">
+            {/* ─── Celular: uma vaga por bloco ───────────────────────────
+                A tabela abaixo tem cinco colunas e não cabe em 320px sem
+                rolagem lateral — e rolagem lateral dentro de um painel é a
+                forma mais fácil de esconder dado de quem só tem o telefone.
+                Aqui os mesmos cinco valores viram rótulo e número, empilhados.
+
+                As duas versões convivem porque `hidden` é `display: none`, e o
+                que está em `display: none` sai da árvore de acessibilidade:
+                em qualquer largura o leitor de tela encontra UMA das duas,
+                nunca as duas. */}
+            <ul className="divide-y md:hidden">
+              {vagas.map((vaga) => (
+                <li key={vaga.id}>
+                  <Link
+                    href={`/vagas/${vaga.id}`}
+                    className="linha-clicavel block px-5 py-4"
+                  >
+                    <p className="text-sm font-medium">{vaga.titulo}</p>
+                    <p className="t-legenda text-muted-foreground">
+                      {[vaga.departamento, ROTULO_DE_STATUS_DE_VAGA[vaga.status]]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+
+                    <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 min-[26rem]:grid-cols-4">
+                      <ValorDaVaga rotulo="Receberam" valor={numero(vaga.iniciadas)} />
+                      <ValorDaVaga rotulo="Respostas" valor={numero(vaga.concluidas)} />
+                      <ValorDaVaga
+                        rotulo="Conclusão"
+                        valor={
+                          vaga.conversao === null
+                            ? "—"
+                            : porcentagem(vaga.conversao)
+                        }
+                      />
+                      <ValorDaVaga
+                        destaque
+                        rotulo="Aderência"
+                        valor={
+                          vaga.aderenciaMedia === null
+                            ? "—"
+                            : numero(vaga.aderenciaMedia, 1)
+                        }
+                      />
+                    </dl>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <caption className="sr-only">
                   Desempenho por vaga: quantas pessoas receberam o link, quantas
@@ -342,6 +395,36 @@ export default async function PaginaDeRelatorios() {
           sobre pessoas. Nenhum indicador desta tela deve ser usado como corte.
         </NotaDeRodape>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Um número da vaga na versão de celular.
+ *
+ * `dt`/`dd` e não dois `span`: no bloco empilhado o rótulo é o cabeçalho de
+ * coluna que a tabela tem e o cartão perdeu. Sem a relação declarada, o leitor
+ * de tela anuncia quatro números soltos.
+ */
+function ValorDaVaga({
+  rotulo,
+  valor,
+  destaque = false,
+}: {
+  rotulo: string;
+  valor: string;
+  destaque?: boolean;
+}) {
+  return (
+    <div>
+      <dt className="etiqueta">{rotulo}</dt>
+      <dd
+        className={`leitura mt-1 text-sm tabular-nums ${
+          destaque ? "font-semibold" : "text-muted-foreground"
+        }`}
+      >
+        {valor}
+      </dd>
     </div>
   );
 }

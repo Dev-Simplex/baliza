@@ -112,7 +112,7 @@ export function TutorialDeEntrada({ nome }: { nome?: string | null }) {
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            {passo === 0 && (nome ? `Bem-vindo, ${nome.split(" ")[0]}` : "Bem-vindo ao Prumo")}
+            {passo === 0 && (nome ? `Bem-vindo, ${nome.split(" ")[0]}` : "Bem-vindo à Baliza")}
             {passo === 1 && "Onde ficam as coisas"}
             {passo === 2 && "A única coisa que costuma confundir"}
             {passo === 3 && "Por onde começar"}
@@ -130,7 +130,7 @@ export function TutorialDeEntrada({ nome }: { nome?: string | null }) {
           {passo === 0 && (
             <div className="space-y-3 t-corpo leading-relaxed">
               <p>
-                O Prumo ajuda a decidir quem chamar para conversar. Você descreve
+                A Baliza ajuda a decidir quem chamar para conversar. Você descreve
                 o que a vaga pede de comportamento, manda um link para os
                 candidatos, e ele mostra quem chega mais perto.
               </p>
@@ -224,7 +224,7 @@ export function TutorialDeEntrada({ nome }: { nome?: string | null }) {
           {passo === 3 && (
             <div className="space-y-3 t-corpo leading-relaxed">
               <p>
-                Crie uma vaga, ajuste o peso das cinco coisas que o Prumo mede (
+                Crie uma vaga, ajuste o peso das cinco coisas que a Baliza mede (
                 {NOMES_DE_FATOR.C.ui}, {NOMES_DE_FATOR.E.ui}, {NOMES_DE_FATOR.X.ui},{" "}
                 {NOMES_DE_FATOR.A.ui} e {NOMES_DE_FATOR.O.ui}) e mande o link
                 para uma pessoa. O resultado aparece sozinho quando ela terminar.

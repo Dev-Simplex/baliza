@@ -21,11 +21,15 @@ export const metadata: Metadata = { title: "Vagas" };
 /**
  * Cor do status. `DRAFT` e `CLOSED` compartilham o cinza de propósito: nenhum
  * dos dois recebe resposta, e o que os diferencia está escrito no rótulo.
+ *
+ * Pausada é ARGILA, e não laranja: laranja é a marca, e uma vaga pausada não é
+ * "a Baliza acontecendo" — é um estado que pede atenção. A mesma regra que
+ * proíbe pintar candidato de laranja vale aqui.
  */
 const COR_DO_STATUS: Record<string, string> = {
   OPEN: "border-dentro/40 bg-dentro/10 text-dentro",
   DRAFT: "border-border bg-secondary text-muted-foreground",
-  PAUSED: "border-marca/40 bg-marca-forte/10 text-marca",
+  PAUSED: "border-fora/40 bg-fora/10 text-fora",
   CLOSED: "border-border bg-secondary text-muted-foreground",
 };
 
@@ -69,7 +73,7 @@ export default async function PaginaDeVagas() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <CabecalhoDePagina
         etiqueta="Processos"
         titulo="Vagas"
@@ -122,7 +126,7 @@ export default async function PaginaDeVagas() {
               <li key={vaga.id}>
                 <Link
                   href={`/vagas/${vaga.id}`}
-                  className="flex h-full flex-col rounded-xl border bg-card p-5 transition-colors hover:border-marca/40 hover:bg-secondary/30"
+                  className="flex h-full flex-col rounded-xl border bg-card p-5 shadow-baixa transition-colors hover:border-linha-forte hover:bg-secondary/30"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="t-corpo leading-snug font-semibold">

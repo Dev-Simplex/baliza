@@ -28,7 +28,9 @@ const OPCOES: Array<{
   classe: string;
 }> = [
   { valor: "ADVANCE", icone: ThumbsUp, classe: "text-dentro border-dentro/40 bg-dentro/5" },
-  { valor: "DOUBT", icone: HelpCircle, classe: "text-marca border-marca/40 bg-marca/5" },
+  // Dúvida é neutra pelo mesmo motivo do selo de confiança: laranja é marca,
+  // e marca não emite veredito sobre candidato.
+  { valor: "DOUBT", icone: HelpCircle, classe: "text-foreground border-linha-forte bg-secondary" },
   { valor: "REJECT", icone: CircleSlash, classe: "text-fora border-fora/40 bg-fora/5" },
 ];
 

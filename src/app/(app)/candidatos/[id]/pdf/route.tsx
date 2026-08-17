@@ -207,7 +207,7 @@ export async function GET(
       : [],
 
     // A ficha dos módulos do manual. `temAlgum` falso — a vaga que só aplica o
-    // Prumo — deixa o documento exatamente como sempre foi.
+    // Mapeamento Baliza — deixa o documento exatamente como sempre foi.
     modulos: leitura.ficha.temAlgum ? leitura.ficha : null,
     qualidade: leitura.qualidade,
     bateria: leitura.bateria.map((t) => CATALOGO_DE_TESTES[t].nome),
@@ -237,7 +237,7 @@ export async function GET(
 
   // O nome do arquivo importa: ele vai para a pasta de downloads junto de
   // dezenas de outros, e "documento.pdf" obriga a abrir para saber de quem é.
-  const nome = `Prumo — ${candidato.name} — ${avaliacao.job.title}.pdf`
+  const nome = `Baliza — ${candidato.name} — ${avaliacao.job.title}.pdf`
     .replace(/[/\\?%*:|"<>]/g, "-")
     .trim();
 

@@ -49,9 +49,11 @@ export function BotaoSalvarPdf({
   );
 }
 
+// Espelha `ESTILO` de `selo-de-confianca`: média é neutra porque a cor da
+// marca não codifica qualidade de dado. Ver a nota lá.
 const ESTILO_DO_SELO = {
   alta: "border-dentro/40 bg-dentro/10 text-dentro",
-  media: "border-marca/45 bg-marca-forte/10 text-marca",
+  media: "border-linha-forte bg-secondary text-foreground",
   baixa: "border-fora/45 bg-fora/10 text-fora",
 } as const;
 
@@ -115,12 +117,10 @@ export function CabecalhoDeImpressao({
         {aderencia && (
           <div className="shrink-0 text-right">
             <p className="etiqueta">Aderência</p>
-            <p className="leitura text-2xl leading-none font-semibold text-marca">
-              {aderencia}
-            </p>
+            <p className="t-numero text-marca">{aderencia}</p>
             {selo && (
               <span
-                className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 text-[10px] font-medium ${ESTILO_DO_SELO[selo.nivel]}`}
+                className={`mt-1.5 inline-block rounded-full border px-2 py-0.5 t-legenda font-medium ${ESTILO_DO_SELO[selo.nivel]}`}
               >
                 Confiança {selo.rotulo.toLowerCase()}
               </span>
@@ -143,7 +143,7 @@ export function RodapeDeImpressao() {
   return (
     <footer className="so-impressao mt-8 border-t pt-4">
       <p className="t-legenda leading-relaxed text-muted-foreground">
-        Documento gerado pelo Prumo. Contém dado pessoal de candidato: trate como
+        Documento gerado pela Baliza. Contém dado pessoal de candidato: trate como
         confidencial e compartilhe apenas com quem participa deste processo
         seletivo.
       </p>

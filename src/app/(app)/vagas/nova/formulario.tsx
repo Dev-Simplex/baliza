@@ -49,7 +49,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
   return (
     <form action={acao} className="mt-8 space-y-8">
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold">A vaga</h2>
+        <h2 className="t-cartao">A vaga</h2>
 
         <div className="space-y-2">
           <Label htmlFor="titulo">Título</Label>
@@ -133,7 +133,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold">Quem pode responder</h2>
+          <h2 className="t-cartao">Quem pode responder</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Dá para mudar depois, na página da vaga.
           </p>
@@ -169,7 +169,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold">Testes desta vaga</h2>
+          <h2 className="t-cartao">Testes desta vaga</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Cada teste vira uma etapa separada da prova. Dá para mudar depois,
             na página da vaga — mas só vale para quem for convidado a partir
@@ -193,7 +193,7 @@ export function FormularioDeVaga({ presets }: { presets: PresetResumido[] }) {
 
       <section className="space-y-4">
         <div>
-          <h2 className="text-sm font-semibold">Perfil-alvo</h2>
+          <h2 className="t-cartao">Perfil-alvo</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Pontos de partida editáveis, não verdades. Depois de criar a vaga
             você ajusta cada faixa.

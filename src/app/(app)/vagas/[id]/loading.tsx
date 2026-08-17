@@ -11,7 +11,7 @@ import {
  */
 export default function CarregandoVaga() {
   return (
-    <div className="mx-auto max-w-6xl" aria-busy="true">
+    <div aria-busy="true">
       <span className="sr-only">Carregando a vaga</span>
 
       <div className="mb-6">

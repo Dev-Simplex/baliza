@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
  *   · o TEMPO somado da prova — quem marca os quatro testes está pedindo
  *     ~30 min de um candidato que ainda não trabalha na empresa, e a taxa de
  *     abandono é o preço;
- *   · a perda da ADERÊNCIA — sem Prumo nem Big Five não há os cinco fatores, e
+ *   · a perda da ADERÊNCIA — sem o Mapeamento Baliza nem o Big Five não há os
  *     sem eles não há ranking. A vaga continua funcionando, mas o número some.
  */
 export function SeletorDeBateria({
@@ -124,7 +124,7 @@ export function SeletorDeBateria({
         >
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-fora" />
           <span>
-            Sem o Prumo nem o Big Five, esta vaga <strong>não calcula
+            Sem o Mapeamento Baliza nem o Big Five, esta vaga <strong>não calcula
             aderência</strong>: DISC e Estilo Emocional descrevem tendências, e
             o SJT mede julgamento. Nenhum deles vira os cinco fatores do perfil-alvo. O ranking
             continua listando todo mundo, só que sem nota de aderência — em vez

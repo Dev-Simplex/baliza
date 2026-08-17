@@ -126,7 +126,7 @@ export default async function PaginaDaVaga({
   });
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <CabecalhoDePagina
         voltar={{ href: "/vagas", rotulo: "Vagas" }}
         titulo={vaga.title}
@@ -155,6 +155,51 @@ export default async function PaginaDaVaga({
         }
       />
 
+      {/* ─── O perfil-alvo vem PRIMEIRO ──────────────────────────────────
+          Ele estava no pé da coluna lateral, abaixo de três painéis — e é a
+          régua contra a qual tudo abaixo dele é medido. Um ranking lido sem
+          saber o que a vaga pede é uma lista de números sem denominador. Aqui
+          ele ocupa a largura inteira e abre a página: primeiro o que a vaga
+          pede, depois quem chegou perto. */}
+      <Painel className="mb-4">
+        <PainelCabecalho
+          titulo="Perfil-alvo desta vaga"
+          descricao={
+            temAderencia
+              ? "As faixas que este trabalho pede. É contra elas que a aderência de cada pessoa é calculada."
+              : "As faixas que este trabalho pede — sem efeito enquanto a bateria não tiver o Mapeamento Baliza ou o Big Five."
+          }
+          acao={
+            podeEditar && (
+              <EditarPerfilAlvo
+                jobId={vaga.id}
+                perfil={perfil}
+                respostasConcluidas={vaga.assessments.length}
+              />
+            )
+          }
+        />
+
+        <div className="mt-6 grid gap-x-10 gap-y-6 md:grid-cols-2">
+          {FATORES.map((f, i) => {
+            const cfg = perfil[f];
+            if (!cfg) return null;
+            const dados: DadosDaFaixa = {
+              fator: f,
+              nome: NOMES_DE_FATOR[f].ui,
+              // No perfil-alvo o marcador mostra o IDEAL, não um candidato.
+              escore: idealDaDimensao(cfg),
+              faixa: cfg.faixa,
+              ideal: idealDaDimensao(cfg),
+              peso: cfg.peso,
+              tipo: cfg.tipo,
+              dentro: true,
+            };
+            return <Faixa key={f} dados={dados} atraso={i * 0.04} />;
+          })}
+        </div>
+      </Painel>
+
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <Painel padding="nenhum">
           <PainelCabecalho
@@ -172,7 +217,7 @@ export default async function PaginaDaVaga({
             descricao={
               temAderencia
                 ? "A ordem é sugestão de prioridade de conversa. Nenhum candidato é descartado automaticamente."
-                : "Esta vaga não aplica Prumo nem Big Five, então não há aderência a calcular: a lista é por ordem de resposta, e o resultado de cada pessoa está na ficha dela."
+                : "Esta vaga não aplica o Mapeamento Baliza nem o Big Five, então não há aderência a calcular: a lista é por ordem de resposta, e o resultado de cada pessoa está na ficha dela."
             }
           />
 
@@ -200,9 +245,9 @@ export default async function PaginaDaVaga({
                 );
               })}
               {/* Descrito por forma e posição, não por cor: quem não distingue
-                  argila de latão continua conseguindo ler o medidor. */}
+                  argila de laranja continua conseguindo ler o medidor. */}
               <span className="t-legenda ml-auto text-muted-foreground">
-                o trecho marcado é o que a vaga pede; o losango é o candidato
+                o trecho marcado é o que a vaga pede; a agulha é o candidato
               </span>
             </div>
           )}
@@ -415,49 +460,11 @@ export default async function PaginaDaVaga({
               <p className="mt-4 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5 t-legenda leading-relaxed">
                 Nenhum destes testes mede os cinco fatores, então o perfil-alvo
                 abaixo fica sem uso e as respostas vêm sem aderência. Marque o
-                Prumo ou o Big Five para ligar o ranking de volta.
+                Mapeamento Baliza ou o Big Five para ligar o ranking de volta.
               </p>
             )}
           </Painel>
 
-          <Painel>
-            <PainelCabecalho
-              titulo="Perfil-alvo"
-              descricao={
-                temAderencia
-                  ? "As faixas que esta vaga pede. É contra elas que a aderência é calculada."
-                  : "As faixas que esta vaga pede — sem efeito enquanto a bateria não tiver Prumo ou Big Five."
-              }
-              acao={
-                podeEditar && (
-                  <EditarPerfilAlvo
-                    jobId={vaga.id}
-                    perfil={perfil}
-                    respostasConcluidas={vaga.assessments.length}
-                  />
-                )
-              }
-            />
-
-            <div className="mt-5 space-y-5">
-              {FATORES.map((f, i) => {
-                const cfg = perfil[f];
-                if (!cfg) return null;
-                const dados: DadosDaFaixa = {
-                  fator: f,
-                  nome: NOMES_DE_FATOR[f].ui,
-                  // No perfil-alvo o marcador mostra o IDEAL, não um candidato.
-                  escore: idealDaDimensao(cfg),
-                  faixa: cfg.faixa,
-                  ideal: idealDaDimensao(cfg),
-                  peso: cfg.peso,
-                  tipo: cfg.tipo,
-                  dentro: true,
-                };
-                return <Faixa key={f} dados={dados} atraso={i * 0.05} />;
-              })}
-            </div>
-          </Painel>
         </div>
       </div>
     </div>

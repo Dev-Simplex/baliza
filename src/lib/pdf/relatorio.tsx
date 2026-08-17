@@ -13,7 +13,11 @@ import {
   View,
 } from "@react-pdf/renderer";
 
-import { COR_DO_FATOR } from "@/components/app/graficos";
+import {
+  LOCKUP_LARANJA,
+  LOCKUP_TINTA,
+  LOCKUP_VIEWBOX,
+} from "@/components/marca-vetor";
 import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
 // Só tipo: nada de `lib/analise` entra no pacote deste arquivo. A estrutura é
 // declarada uma vez e as duas representações do relatório comem dela — que é
@@ -50,12 +54,13 @@ import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
 /* ─── Tipografia ────────────────────────────────────────────────────────────
    O PDF nascia inteiro em Helvetica, que é uma das 14 fontes que todo leitor
    de PDF já tem. Sai de graça — e sai igual a qualquer documento do mundo. O
-   relatório é o único pedaço do Prumo que circula FORA do produto: vai por
+   relatório é o único pedaço da Baliza que circula FORA do produto: vai por
    e-mail, é impresso, é lido por quem nunca abriu a ferramenta. Sair sem a
    cara do produto é desperdiçar a única peça que viaja sozinha.
 
-   Agora ele usa as mesmas duas famílias da tela: Inter Tight no texto e
-   Bricolage Grotesque no que é display (nome, número da aderência, marca).
+   Agora ele usa a MESMA família da tela: Inter Tight em tudo. A Baliza não tem
+   uma segunda fonte de display — a hierarquia sai de tamanho, peso e espaço, e
+   uma família a menos são ~160 KB de TTF a menos embutidos em cada documento.
 
    Os arquivos estão VERSIONADOS em `fontes/`, e não buscados na hora. Duas
    razões: gerar relatório não pode depender de a Google estar no ar — o build
@@ -67,22 +72,18 @@ import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
    dia virar `output: "standalone"`, estes arquivos precisam entrar na cópia. */
 const PASTA_DE_FONTES = path.join(process.cwd(), "src/lib/pdf/fontes");
 const CORPO = "Inter Tight";
-const DISPLAY = "Bricolage Grotesque";
+/** Mantido como nome próprio para o dia em que a marca ganhar um tipo de display. */
+const DISPLAY = CORPO;
 
 Font.register({
   family: CORPO,
   fonts: [
     { src: path.join(PASTA_DE_FONTES, "InterTight-Regular.ttf"), fontWeight: 400 },
     { src: path.join(PASTA_DE_FONTES, "InterTight-SemiBold.ttf"), fontWeight: 600 },
+    // 700 fica registrado e sem uso de propósito: a escala da Baliza para em
+    // 600, e deixar o peso disponível evita que alguém volte a introduzir uma
+    // segunda família só para conseguir um título mais forte.
     { src: path.join(PASTA_DE_FONTES, "InterTight-Bold.ttf"), fontWeight: 700 },
-  ],
-});
-
-Font.register({
-  family: DISPLAY,
-  fonts: [
-    { src: path.join(PASTA_DE_FONTES, "BricolageGrotesque-SemiBold.ttf"), fontWeight: 600 },
-    { src: path.join(PASTA_DE_FONTES, "BricolageGrotesque-Bold.ttf"), fontWeight: 700 },
   ],
 });
 
@@ -98,19 +99,37 @@ Font.registerHyphenationCallback((palavra) => [palavra]);
 // As cores vêm dos mesmos valores do tema claro em `globals.css`. Repetidas
 // como literal porque o PDF não tem CSS custom property para resolver.
 const COR = {
-  tinta: "#0b0e14",
-  suave: "#4a5261",
-  linha: "#d9dce3",
-  linhaClara: "#eef0f4",
+  tinta: "#151515",
+  suave: "#55524d",
+  linha: "#d8d4ce",
+  linhaClara: "#f2f0ed",
   papel: "#ffffff",
-  marca: "#8a5f17",
-  marcaForte: "#a97722",
-  marcaSuave: "#f6efe0",
-  dentro: "#1b6f65",
-  dentroSuave: "#e2efec",
-  fora: "#9e4d2c",
-  foraSuave: "#f8e9e2",
+  // Laranja-sinal um degrau mais escuro: em jato de tinta o #FF5A1F satura e o
+  // traço fino da marca some dentro do próprio borrão.
+  marca: "#a8380c",
+  marcaForte: "#e04a12",
+  marcaSuave: "#fdf0e9",
+  dentro: "#26685a",
+  dentroSuave: "#e4f0ed",
+  fora: "#954f36",
+  foraSuave: "#f4e7e1",
 } as const;
+
+/**
+ * As cinco cores de fator, em papel.
+ *
+ * Espelham `--chart-1..5` do tema claro, um degrau mais escuras. Elas moram
+ * AQUI, e não em `components/app/graficos`, porque lá elas são
+ * `var(--chart-N)` — e uma custom property do CSS não existe dentro de um PDF:
+ * os cinco pontos do radar saíam pretos, silenciosamente.
+ */
+const COR_DO_FATOR_IMPRESSA: Record<Fator, string> = {
+  C: "#e04a12",
+  E: "#8f8b84",
+  X: "#26685a",
+  A: "#954f36",
+  O: "#55524d",
+};
 
 const e = StyleSheet.create({
   pagina: {
@@ -126,7 +145,6 @@ const e = StyleSheet.create({
   // ─── Cabeçalho ───────────────────────────────────────────────────────────
   topo: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   marca: { flexDirection: "row", alignItems: "center", gap: 5 },
-  marcaTexto: { fontSize: 11, fontFamily: DISPLAY, fontWeight: 700, letterSpacing: -0.2 },
   etiqueta: {
     fontSize: 6.5,
     letterSpacing: 1.1,
@@ -136,9 +154,9 @@ const e = StyleSheet.create({
   },
   // Display nos três lugares em que o documento se apresenta: a marca, o nome
   // de quem é o relatório e o número que resume tudo. O resto é leitura.
-  nome: { fontSize: 17, fontFamily: DISPLAY, fontWeight: 700, letterSpacing: -0.4 },
+  nome: { fontSize: 17, fontFamily: DISPLAY, fontWeight: 600, letterSpacing: -0.4 },
   vaga: { fontSize: 9, color: COR.suave, marginTop: 1 },
-  aderencia: { fontSize: 24, fontFamily: DISPLAY, fontWeight: 700, color: COR.marca, letterSpacing: -0.5 },
+  aderencia: { fontSize: 24, fontFamily: DISPLAY, fontWeight: 600, color: COR.marca, letterSpacing: -0.5 },
 
   selo: {
     marginTop: 4,
@@ -160,7 +178,7 @@ const e = StyleSheet.create({
     padding: 13,
     marginBottom: 11,
   },
-  titulo: { fontSize: 10, fontFamily: CORPO, fontWeight: 700, marginBottom: 3 },
+  titulo: { fontSize: 10, fontFamily: CORPO, fontWeight: 600, marginBottom: 3 },
   legenda: { fontSize: 8, color: COR.suave, lineHeight: 1.45 },
   corpo: { fontSize: 9, lineHeight: 1.5 },
 
@@ -196,15 +214,19 @@ const e = StyleSheet.create({
   },
 });
 
-/** O símbolo da marca: fio a prumo, peso de latão, faixa alvo. Igual ao do site. */
-function Simbolo() {
+/**
+ * A marca no papel — o lockup horizontal, vetorial.
+ *
+ * São os mesmos paths de `components/marca-vetor`, que saem do SVG aprovado.
+ * O wordmark NÃO é redesenhado com `<Text>`: o traçado das letras é parte da
+ * marca e não sobrevive a uma troca de fonte, e este documento circula fora do
+ * produto — é a única peça que viaja sozinha.
+ */
+function MarcaNoPapel() {
   return (
-    <Svg width={13} height={13} viewBox="0 0 20 20">
-      <Rect x={1.5} y={13} width={17} height={3.6} rx={1.8} fill={COR.dentro} fillOpacity={0.22} />
-      <Path d="M2.4 13.4v2.8" stroke={COR.dentro} strokeWidth={1.3} />
-      <Path d="M17.6 13.4v2.8" stroke={COR.dentro} strokeWidth={1.3} />
-      <Path d="M10 2.2V9" stroke={COR.tinta} strokeOpacity={0.32} strokeWidth={1.1} />
-      <Path d="M10 8.6 12.5 11.4 10 15.6 7.5 11.4Z" fill={COR.marcaForte} />
+    <Svg width={60} height={14} viewBox={LOCKUP_VIEWBOX}>
+      <Path d={LOCKUP_TINTA} fill={COR.tinta} fillRule="evenodd" />
+      <Path d={LOCKUP_LARANJA} fill={COR.marcaForte} fillRule="evenodd" />
     </Svg>
   );
 }
@@ -230,7 +252,7 @@ export type DadosDoRelatorio = {
   /**
    * Os cinco fatores — `null` quando a bateria não os produz.
    *
-   * Antes era obrigatório porque o PDF só existia para o Prumo. Uma vaga que
+   * Antes era obrigatório porque o PDF só existia para o Mapeamento Baliza. Uma vaga que
    * aplique só DISC e SJT tem relatório (as fichas do §5.2 do manual) e não tem
    * radar: o gráfico some, e nada é desenhado com zero no lugar do que não foi
    * medido.
@@ -254,7 +276,7 @@ export type DadosDoRelatorio = {
   /**
    * Os módulos do manual (Big Five, DISC, SJT) que a bateria aplicou.
    *
-   * Ausente na vaga que só usa o Prumo — e é o que mantém o PDF dela idêntico
+   * Ausente na vaga que só usa o Mapeamento Baliza — e é o que mantém o PDF dela idêntico
    * ao de sempre, sem uma linha a mais no papel.
    */
   modulos?: FichaDeModulos | null;
@@ -314,9 +336,11 @@ const ROTULO_DO_TIPO: Record<DadosDoRelatorio["faixas"][number]["tipo"], string>
   irrelevante: "não pesa nesta vaga",
 };
 
+// Espelha `ESTILO` de `components/app/selo-de-confianca`: média é NEUTRA. A cor
+// da marca não codifica qualidade de dado — nem na tela, nem no papel.
 const ESTILO_DO_SELO = {
   alta: { borderColor: COR.dentro, backgroundColor: COR.dentroSuave, color: COR.dentro },
-  media: { borderColor: COR.marca, backgroundColor: COR.marcaSuave, color: COR.marca },
+  media: { borderColor: COR.linha, backgroundColor: COR.linhaClara, color: COR.tinta },
   baixa: { borderColor: COR.fora, backgroundColor: COR.foraSuave, color: COR.fora },
 } as const;
 
@@ -347,11 +371,11 @@ function FaixaDoPdf({ d }: { d: DadosDoRelatorio["faixas"][number] }) {
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" }}>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 5 }}>
           <Text style={e.etiqueta}>{d.fator}</Text>
-          <Text style={{ fontSize: 9, fontFamily: CORPO, fontWeight: 700 }}>{d.nome}</Text>
+          <Text style={{ fontSize: 9, fontFamily: CORPO, fontWeight: 600 }}>{d.nome}</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
           <Text style={e.etiqueta}>{irrelevante ? "peso 0" : `peso ${d.peso}`}</Text>
-          <Text style={{ fontSize: 11, fontFamily: CORPO, fontWeight: 700, color: cor }}>
+          <Text style={{ fontSize: 11, fontFamily: CORPO, fontWeight: 600, color: cor }}>
             {Math.round(d.escore)}
           </Text>
         </View>
@@ -366,23 +390,48 @@ function FaixaDoPdf({ d }: { d: DadosDoRelatorio["faixas"][number] }) {
         ))}
         {/* a faixa alvo */}
         {!irrelevante && (
-          <Rect
-            x={px(lo)}
-            y={2.5}
-            width={px(hi) - px(lo)}
-            height={7}
-            rx={3.5}
-            fill={COR.dentro}
-            fillOpacity={0.2}
-          />
+          <>
+            <Rect
+              x={px(lo)}
+              y={2}
+              width={px(hi) - px(lo)}
+              height={8}
+              rx={1}
+              fill={COR.dentro}
+              fillOpacity={0.16}
+            />
+            <Rect x={px(lo)} y={2} width={0.8} height={8} fill={COR.dentro} />
+            <Rect x={px(hi) - 0.8} y={2} width={0.8} height={8} fill={COR.dentro} />
+          </>
         )}
         {/* o desvio, quando existe */}
         {!irrelevante && !d.dentro && desvioW > 0.5 && (
-          <Rect x={desvioX} y={4} width={desvioW} height={4} fill={COR.fora} fillOpacity={0.5} />
+          <Rect
+            x={desvioX}
+            y={4}
+            width={desvioW}
+            height={4}
+            rx={2}
+            fill={COR.fora}
+          />
         )}
-        {/* o marcador: losango, o mesmo peso de latão da marca */}
-        <Polygon
-          points={`${marcador},1 ${marcador + 4},6 ${marcador},11 ${marcador - 4},6`}
+        {/* O marcador da pessoa: agulha fina e cabeça redonda, o mesmo desenho
+            da tela. A agulha é o que dá precisão — um losango solto deixa
+            dúvida sobre qual ponto exatamente ele marca. */}
+        <Rect
+          x={marcador - 0.6}
+          y={0.5}
+          width={1.2}
+          height={11}
+          rx={0.6}
+          fill={irrelevante ? COR.suave : COR.marcaForte}
+        />
+        <Rect
+          x={marcador - 2}
+          y={4}
+          width={4}
+          height={4}
+          rx={2}
           fill={irrelevante ? COR.suave : COR.marcaForte}
         />
       </Svg>
@@ -467,7 +516,7 @@ function Radar({ escores }: { escores: Record<Fator, number> }) {
             width={4}
             height={4}
             rx={2}
-            fill={COR_DO_FATOR[f]}
+            fill={COR_DO_FATOR_IMPRESSA[f]}
           />
         );
       })}
@@ -501,7 +550,7 @@ function Radar({ escores }: { escores: Record<Fator, number> }) {
             key={`v-${f}`}
             x={x}
             y={y + 10}
-            style={{ fontSize: 7, fill: COR.tinta, fontFamily: CORPO, fontWeight: 700 }}
+            style={{ fontSize: 7, fill: COR.tinta, fontFamily: CORPO, fontWeight: 600 }}
             textAnchor={ancora}
           >
             {Math.round(escores[f] ?? 0)}
@@ -565,7 +614,7 @@ function LinhaDeModulo({
           <Text
             style={{
               fontSize: 10,
-              fontFamily: CORPO, fontWeight: 700,
+              fontFamily: CORPO, fontWeight: 600,
               color: destaque ? COR.fora : COR.tinta,
             }}
           >
@@ -663,7 +712,7 @@ function ModulosDoManual({
                 <Text
                   style={{
                     fontSize: 9,
-                    fontFamily: CORPO, fontWeight: 700,
+                    fontFamily: CORPO, fontWeight: 600,
                     color: c.atencao ? COR.fora : COR.tinta,
                   }}
                 >
@@ -689,7 +738,7 @@ function ModulosDoManual({
                 padding: 8,
               }}
             >
-              <Text style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 700, color: COR.marca }}>
+              <Text style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 600, color: COR.marca }}>
                 Escolheu a alternativa mais fraca em{" "}
                 {modulos.sjt.piores.length === 1
                   ? "1 cenário"
@@ -701,12 +750,12 @@ function ModulosDoManual({
                 </Text>
               ))}
               <Text style={[e.legenda, { marginTop: 5 }]}>
-                <Text style={{ fontWeight: 700 }}>Quer dizer: </Text>
+                <Text style={{ fontWeight: 600 }}>Quer dizer: </Text>
                 vale perguntar sobre uma situação parecida na entrevista — já
                 está no roteiro, mesmo com score alto.
               </Text>
               <Text style={[e.legenda, { marginTop: 3 }]}>
-                <Text style={{ fontWeight: 700 }}>Não quer dizer: </Text>
+                <Text style={{ fontWeight: 600 }}>Não quer dizer: </Text>
                 não é erro de caráter e não reprova ninguém. O teste mede uma
                 escolha num caso escrito, sem contexto e sem as pessoas
                 envolvidas. Peça um exemplo real antes de concluir.
@@ -747,7 +796,7 @@ function ModulosDoManual({
             }}
           >
             <Text style={e.titulo}>DISC — estilo de trabalho</Text>
-            <Text style={{ fontSize: 12, fontFamily: CORPO, fontWeight: 700 }}>
+            <Text style={{ fontSize: 12, fontFamily: CORPO, fontWeight: 600 }}>
               {modulos.disc.rotulo}
             </Text>
           </View>
@@ -815,7 +864,7 @@ function ModulosDoManual({
             qualidade.alertas.map((a) => (
               <View key={a.chave} style={{ marginTop: 4 }}>
                 <Text
-                  style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 700, color: COR.fora }}
+                  style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 600, color: COR.fora }}
                 >
                   {a.titulo}
                 </Text>
@@ -840,7 +889,7 @@ function ModulosDoManual({
  *
  * Ficava DENTRO do bloco dos modulos do manual, o que tinha uma consequencia
  * que so aparece olhando dois relatorios lado a lado: bateria sem modulo — a
- * vaga que aplica so o Prumo — imprimia sem caixa de parecer nenhuma. Quem
+ * vaga que aplica so o Mapeamento Baliza — imprimia sem caixa de parecer nenhuma. Quem
  * levava essa folha para a entrevista nao tinha onde anotar a decisao, e
  * agora que o parecer e um registro de verdade tambem nao teria onde LE-LO.
  * Fora do bloco, ele fecha todo relatorio.
@@ -891,7 +940,7 @@ function ParecerNoPapel({ parecer }: { parecer: DadosDoRelatorio["parecer"] }) {
               <Text
                 style={
                   marcado
-                    ? [e.corpo, { fontFamily: CORPO, fontWeight: 700 }]
+                    ? [e.corpo, { fontFamily: CORPO, fontWeight: 600 }]
                     : e.corpo
                 }
               >
@@ -1033,9 +1082,9 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
   return (
     <Document
       title={`Mapeamento comportamental — ${d.candidato}`}
-      author="Prumo"
+      author="Baliza"
       subject={`${d.vaga} · ${d.empresa}`}
-      creator="Prumo"
+      creator="Baliza"
     >
       <Page size="A4" style={e.pagina}>
         {/* Cabeçalho corrido, da página 2 em diante. */}
@@ -1051,8 +1100,7 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
         <View style={e.topo}>
           <View>
             <View style={e.marca}>
-              <Simbolo />
-              <Text style={e.marcaTexto}>Prumo</Text>
+              <MarcaNoPapel />
             </View>
             <Text style={[e.etiqueta, { marginTop: 5 }]}>
               Mapeamento comportamental
@@ -1118,7 +1166,7 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
             <Text style={[e.legenda, { marginTop: 7 }]}>{d.resumoDoGap}</Text>
             <Text style={[e.legenda, { marginTop: 4 }]}>
               Não é aderência zero: é aderência não medida. Para ter o número, a
-              vaga precisa aplicar o Prumo ou o Big Five.
+              vaga precisa aplicar o Mapeamento Baliza ou o Big Five.
             </Text>
           </View>
         )}
@@ -1228,7 +1276,7 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
                 <View>
                   <Text style={e.etiqueta}>Arquétipo</Text>
                   <Text
-                    style={{ fontSize: 13, fontFamily: CORPO, fontWeight: 700, marginTop: 2 }}
+                    style={{ fontSize: 13, fontFamily: CORPO, fontWeight: 600, marginTop: 2 }}
                   >
                     {d.arquetipo.nome}
                   </Text>
@@ -1338,7 +1386,7 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
         {/* ─── Rodapé, em toda página ───────────────────────────────────── */}
         <View style={e.rodape} fixed>
           <Text style={e.legenda}>
-            Documento gerado pelo Prumo. Contém dado pessoal de candidato: trate como
+            Documento gerado pela Baliza. Contém dado pessoal de candidato: trate como
             confidencial e compartilhe apenas com quem participa deste processo
             seletivo.
           </Text>

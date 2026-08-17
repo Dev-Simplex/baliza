@@ -1,7 +1,7 @@
 import {
   Esqueleto,
   EsqueletoDeGrafico,
-  EsqueletoDeIndicador,
+  EsqueletoDaFaixaDeIndicadores,
   EsqueletoDePainel,
 } from "@/components/ui/esqueleto";
 
@@ -13,7 +13,7 @@ import {
  */
 export default function CarregandoPainel() {
   return (
-    <div className="mx-auto max-w-7xl space-y-6" aria-busy="true">
+    <div className="space-y-6" aria-busy="true">
       <span className="sr-only">Carregando o painel</span>
 
       <div className="mb-6">
@@ -21,11 +21,7 @@ export default function CarregandoPainel() {
         <Esqueleto className="mt-2 h-8 w-52" />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <EsqueletoDeIndicador key={i} />
-        ))}
-      </div>
+      <EsqueletoDaFaixaDeIndicadores />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">

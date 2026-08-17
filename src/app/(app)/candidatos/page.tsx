@@ -120,7 +120,7 @@ export default async function PaginaDeCandidatos({
   };
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <CabecalhoDePagina
         etiqueta="Base"
         titulo="Candidatos"

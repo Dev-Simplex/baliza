@@ -2,7 +2,7 @@ import { Esqueleto, EsqueletoDePainel } from "@/components/ui/esqueleto";
 
 export default function CarregandoCandidatos() {
   return (
-    <div className="mx-auto max-w-6xl" aria-busy="true">
+    <div aria-busy="true">
       <span className="sr-only">Carregando os candidatos</span>
 
       <div className="mb-6">

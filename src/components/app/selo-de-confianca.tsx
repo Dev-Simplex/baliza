@@ -13,14 +13,22 @@ export type Confianca = {
   texto: string;
 };
 
+/**
+ * As três cores do selo.
+ *
+ * "Média" é NEUTRA, e isso é regra e não estética: laranja é a cor da marca, e
+ * marca não pode querer dizer "meio confiável". Confiança média também não é
+ * atenção — se fosse, seria argila como a baixa. Ela é literalmente o meio: o
+ * cinza diz "nada acusou, e nada confirmou", que é exatamente o que o dado diz.
+ */
 const ESTILO = {
   alta: "border-dentro/40 bg-dentro/10 text-dentro",
-  media: "border-marca/45 bg-marca-forte/10 text-marca",
+  media: "border-linha-forte bg-secondary text-foreground",
   baixa: "border-fora/45 bg-fora/10 text-fora",
 } as const;
 
 const NOME_DO_SINAL: Record<string, string> = {
-  // Os cinco do Índice de Confiança do Prumo (§5 do instrumento).
+  // Os cinco do Índice de Confiança do Mapeamento Baliza (§5 do instrumento).
   desejabilidade: "respostas socialmente desejáveis",
   inconsistencia: "respostas inconsistentes entre itens equivalentes",
   linha_reta: "sequência longa de respostas idênticas",

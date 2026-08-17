@@ -51,13 +51,13 @@ export function LinhaDeCandidato({
 }) {
   return (
     <li>
-      <Link href={href} className="linha-clicavel block px-5 py-3.5">
+      <Link href={href} className="linha-clicavel block min-h-14 px-5 py-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0 sm:flex-nowrap sm:gap-4">
           {posicao !== undefined && (
             /* `aria-label` num <span> sem papel é ignorado por leitor de tela —
                o número era anunciado solto, no meio do nome. Texto oculto de
                verdade entra no nome acessível do link. */
-            <span className="leitura w-5 shrink-0 text-sm text-muted-foreground">
+            <span className="leitura w-5 shrink-0 text-sm text-muted-foreground tabular-nums">
               <span className="sr-only">Posição </span>
               {posicao}
             </span>
@@ -107,7 +107,7 @@ export function LinhaDeCandidato({
               A causa foi corrigida na escrita — ver `seloQueAcompanha` —, mas a
               trava fica aqui também: regra que depende de um dado estar
               preenchido não é regra, é sorte. Sem selo, traço. */}
-          <span className="leitura w-12 shrink-0 text-right t-corpo font-semibold sm:w-14">
+          <span className="leitura w-12 shrink-0 text-right text-base font-semibold tabular-nums sm:w-14">
             {escore === null || !confianca ? "—" : numero(escore, 1)}
           </span>
         </div>

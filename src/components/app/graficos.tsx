@@ -24,8 +24,11 @@ import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
  * Gráficos.
  *
  * Regra de cor: cada fator tem UMA cor em todo o produto. Organização e Entrega
- * é latão em qualquer tela, sempre. Trocar de gráfico não pode trocar o
+ * é laranja-sinal em qualquer tela, sempre. Trocar de gráfico não pode trocar o
  * significado da cor.
+ *
+ * Nenhuma delas quer dizer "bom" nem "ruim": elas identificam O QUE está sendo
+ * medido. Quem codifica desempenho é o par dentro/fora, que vive na faixa.
  */
 export const COR_DO_FATOR: Record<Fator, string> = {
   C: "var(--chart-1)",
@@ -54,7 +57,7 @@ function CaixaDeDica({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border bg-popover px-3 py-2 shadow-lg">
+    <div className="rounded-lg border bg-popover px-3 py-2 shadow-alta">
       {label != null && (
         <p className="etiqueta mb-1">{String(label)}</p>
       )}
@@ -178,7 +181,7 @@ export function VolumeNoTempo({
     <ResponsiveContainer width="100%" height={altura}>
       <AreaChart data={dados} margin={{ top: 8, right: 8, bottom: 0, left: -26 }}>
         <defs>
-          <linearGradient id="gradienteLatao" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="gradienteMarca" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="var(--marca-forte)" stopOpacity={0.32} />
             <stop offset="100%" stopColor="var(--marca-forte)" stopOpacity={0.02} />
           </linearGradient>
@@ -193,7 +196,7 @@ export function VolumeNoTempo({
           name="Respostas"
           stroke="var(--marca-forte)"
           strokeWidth={2}
-          fill="url(#gradienteLatao)"
+          fill="url(#gradienteMarca)"
         />
       </AreaChart>
     </ResponsiveContainer>

@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
  * de cliente arrastaria o gabarito para o navegador (§4.2 do manual).
  */
 
-/** Trilho de 0 a 100. É a mesma escala das faixas do Prumo, sem a faixa alvo. */
+/** Trilho de 0 a 100. É a mesma escala das faixas da Baliza, sem a faixa alvo. */
 function Barra({
   valor,
   className,
@@ -47,7 +47,7 @@ function CartaoBigFive({ bloco }: { bloco: BlocoBigFive }) {
   return (
     <section className="rounded-xl border bg-card p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold">Big Five</h2>
+        <h2 className="t-cartao">Big Five</h2>
         <span className="etiqueta">Mini-IPIP · 0–100</span>
       </div>
 
@@ -88,7 +88,7 @@ function CartaoDisc({ bloco }: { bloco: BlocoDisc }) {
   return (
     <section className="rounded-xl border bg-card p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold">DISC</h2>
+        <h2 className="t-cartao">DISC</h2>
         <span className="etiqueta">Estilo de trabalho · 0–100</span>
       </div>
 
@@ -144,7 +144,7 @@ function CartaoEstiloEmocional({
   return (
     <section className="rounded-xl border bg-card p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold">Estilo Emocional do Cérebro</h2>
+        <h2 className="t-cartao">Estilo Emocional do Cérebro</h2>
         <span className="etiqueta">6 dimensões · 0–100</span>
       </div>
       <ul className="mt-4 space-y-3.5">
@@ -180,7 +180,7 @@ function CartaoSjt({ bloco }: { bloco: BlocoSjt }) {
     <section className="rounded-xl border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Julgamento situacional (SJT)</h2>
+          <h2 className="t-cartao">Julgamento situacional (SJT)</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             {bloco.faixa.leitura}
           </p>
@@ -323,7 +323,7 @@ export function CartaoDeQualidade({
             )}
           />
         )}
-        <h2 className="text-sm font-semibold">Qualidade das respostas</h2>
+        <h2 className="t-cartao">Qualidade das respostas</h2>
       </div>
 
       {!qualidade.avaliavel ? (

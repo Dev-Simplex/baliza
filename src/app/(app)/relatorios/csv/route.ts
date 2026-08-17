@@ -106,7 +106,7 @@ export async function GET(requisicao: Request) {
     /**
      * O selo sai de `lerAvaliacao`, e NÃO da coluna `confidence`.
      *
-     * A coluna só é preenchida quando a bateria inclui o Prumo. Numa vaga de
+     * A coluna só é preenchida quando a bateria inclui o Mapeamento Baliza. Numa vaga de
      * Big Five + DISC + SJT ela fica nula — e mesmo assim a tela e o PDF
      * mostram o selo, porque os dois o derivam na hora. Lendo a coluna, a
      * planilha sairia com a célula VAZIA para exatamente as pessoas cujo
@@ -157,7 +157,7 @@ export async function GET(requisicao: Request) {
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="prumo-respostas-${hoje}.csv"`,
+      "Content-Disposition": `attachment; filename="baliza-respostas-${hoje}.csv"`,
       // Exportação carrega dado pessoal: nada de cache em proxy nenhum.
       "Cache-Control": "no-store",
     },

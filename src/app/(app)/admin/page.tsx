@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
-import { CartaoIndicador } from "@/components/app/cartao-indicador";
+import {
+  CartaoIndicador,
+  FaixaDeIndicadores,
+} from "@/components/app/cartao-indicador";
 import { Painel, PainelCabecalho, NotaDeRodape } from "@/components/ui/painel";
 import { data, dataHora, haQuantoTempo, numero } from "@/lib/formato";
 import { TOTAL_DE_ITENS } from "@/lib/instrument/form";
@@ -58,7 +61,7 @@ export default async function PaginaDeAdministracao() {
   const [totalEmpresas, totalUsuarios, totalRespostas, totalCandidatos] = totais;
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <CabecalhoDePagina
         etiqueta="Plataforma"
         titulo="Administração"
@@ -66,7 +69,7 @@ export default async function PaginaDeAdministracao() {
       />
 
       <div className="space-y-4">
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <FaixaDeIndicadores>
           <CartaoIndicador rotulo="Empresas" valor={numero(totalEmpresas)} />
           <CartaoIndicador rotulo="Usuários" valor={numero(totalUsuarios)} />
           <CartaoIndicador rotulo="Candidatos" valor={numero(totalCandidatos)} />
@@ -80,7 +83,7 @@ export default async function PaginaDeAdministracao() {
                 : "amostra suficiente para percentil"
             }
           />
-        </section>
+        </FaixaDeIndicadores>
 
         <Painel padding="nenhum">
           <PainelCabecalho
@@ -88,7 +91,42 @@ export default async function PaginaDeAdministracao() {
             titulo="Empresas"
             descricao="Uso e data de entrada."
           />
-          <div className="overflow-x-auto">
+          {/* Celular: uma empresa por bloco. Mesma razão da tabela de vagas em
+              Relatórios — cinco colunas não cabem em 320px, e o que está em
+              `display: none` sai da árvore de acessibilidade, então em cada
+              largura o leitor de tela encontra uma versão só. */}
+          <ul className="divide-y md:hidden">
+            {empresas.map((empresa) => (
+              <li key={empresa.id} className="px-5 py-4">
+                <p className="text-sm font-medium">{empresa.name}</p>
+                <p className="leitura t-legenda text-muted-foreground">
+                  {empresa.slug} · desde {data(empresa.createdAt)}
+                </p>
+                <dl className="mt-3 grid grid-cols-3 gap-x-4">
+                  <div>
+                    <dt className="etiqueta">Usuários</dt>
+                    <dd className="leitura mt-1 text-sm tabular-nums text-muted-foreground">
+                      {numero(empresa._count.users)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="etiqueta">Vagas</dt>
+                    <dd className="leitura mt-1 text-sm tabular-nums text-muted-foreground">
+                      {numero(empresa._count.jobs)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="etiqueta">Respostas</dt>
+                    <dd className="leitura mt-1 text-sm font-semibold tabular-nums">
+                      {numero(empresa._count.assessments)}
+                    </dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">

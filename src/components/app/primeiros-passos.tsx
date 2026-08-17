@@ -116,7 +116,7 @@ export function PrimeirosPassos({
             href="/como-funciona"
             className="text-marca underline underline-offset-2 hover:no-underline"
           >
-            Primeira vez aqui? Entenda como o Prumo funciona
+            Primeira vez aqui? Entenda como a Baliza funciona
           </Link>{" "}
           <span className="text-muted-foreground">— 5 minutos.</span>
         </p>

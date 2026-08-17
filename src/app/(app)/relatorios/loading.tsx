@@ -1,13 +1,13 @@
 import {
   Esqueleto,
-  EsqueletoDeIndicador,
+  EsqueletoDaFaixaDeIndicadores,
   EsqueletoDeLinha,
 } from "@/components/ui/esqueleto";
 
 /** Carregando os relatórios — seis agregações, todas na mesma requisição. */
 export default function CarregandoRelatorios() {
   return (
-    <div className="mx-auto max-w-6xl" aria-busy="true">
+    <div aria-busy="true">
       <span className="sr-only">Carregando os relatórios</span>
 
       <div className="mb-6">
@@ -17,11 +17,7 @@ export default function CarregandoRelatorios() {
       </div>
 
       <div className="space-y-4">
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {Array.from({ length: 4 }, (_, i) => (
-            <EsqueletoDeIndicador key={i} />
-          ))}
-        </section>
+        <EsqueletoDaFaixaDeIndicadores />
 
         <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="overflow-hidden rounded-xl border bg-card shadow-baixa">

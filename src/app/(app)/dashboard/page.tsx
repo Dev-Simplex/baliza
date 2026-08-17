@@ -3,7 +3,10 @@ import Link from "next/link";
 import { ArrowRight, Plus, Users } from "lucide-react";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
-import { CartaoIndicador } from "@/components/app/cartao-indicador";
+import {
+  CartaoIndicador,
+  FaixaDeIndicadores,
+} from "@/components/app/cartao-indicador";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import {
   DistribuicaoDeArquetipos,
@@ -81,7 +84,7 @@ export default async function PaginaDoPainel() {
   ) : undefined;
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <CabecalhoDePagina etiqueta="Painel" titulo="Visão geral" acoes={criarVaga} />
 
       {mostrarTutorial && <TutorialDeEntrada nome={usuario?.name} />}
@@ -105,30 +108,10 @@ export default async function PaginaDoPainel() {
         />
       ) : (
         <div className="space-y-4">
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <CartaoIndicador
-              rotulo="Candidatos"
-              valor={numero(resumo.candidatos)}
-              apoio={`${resumo.vagasAbertas} ${resumo.vagasAbertas === 1 ? "vaga aberta" : "vagas abertas"}`}
-            />
-            <CartaoIndicador
-              rotulo="Respostas concluídas"
-              valor={numero(resumo.concluidas)}
-              variacao={{
-                atual: resumo.concluidasNoPeriodo,
-                anterior: resumo.concluidasNoPeriodoAnterior,
-              }}
-              apoio="vs. 30 dias anteriores"
-            />
-            <CartaoIndicador
-              rotulo="Aguardando resposta"
-              valor={numero(resumo.pendentes)}
-              apoio={
-                resumo.emAndamento > 0
-                  ? `${resumo.emAndamento} em andamento`
-                  : "convites em aberto"
-              }
-            />
+          {/* A ordem é a da leitura, não a do banco: o número que resume a
+              operação primeiro, o que exige ação em seguida, e o volume por
+              último. */}
+          <FaixaDeIndicadores>
             <CartaoIndicador
               destaque
               rotulo="Aderência média"
@@ -143,7 +126,30 @@ export default async function PaginaDoPainel() {
                   : undefined
               }
             />
-          </section>
+            <CartaoIndicador
+              rotulo="Aguardando resposta"
+              valor={numero(resumo.pendentes)}
+              apoio={
+                resumo.emAndamento > 0
+                  ? `${resumo.emAndamento} em andamento`
+                  : "convites em aberto"
+              }
+            />
+            <CartaoIndicador
+              rotulo="Respostas concluídas"
+              valor={numero(resumo.concluidas)}
+              variacao={{
+                atual: resumo.concluidasNoPeriodo,
+                anterior: resumo.concluidasNoPeriodoAnterior,
+              }}
+              apoio="vs. 30 dias anteriores"
+            />
+            <CartaoIndicador
+              rotulo="Candidatos"
+              valor={numero(resumo.candidatos)}
+              apoio={`${resumo.vagasAbertas} ${resumo.vagasAbertas === 1 ? "vaga aberta" : "vagas abertas"}`}
+            />
+          </FaixaDeIndicadores>
 
           <div className="grid items-start gap-4 lg:grid-cols-3">
             <Painel padding="nenhum" className="lg:col-span-2">
