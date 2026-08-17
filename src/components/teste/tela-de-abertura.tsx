@@ -12,7 +12,7 @@ import {
   Save,
 } from "lucide-react";
 
-import { Marca } from "@/components/marca";
+import { MolduraPublica } from "@/components/teste/moldura-publica";
 import type { TipoDePergunta } from "@/components/teste/tipos-da-prova";
 import { Button } from "@/components/ui/button";
 import { iniciarAvaliacao } from "@/lib/actions/avaliacao";
@@ -83,101 +83,99 @@ export function TelaDeAbertura({
   }
 
   return (
-    <div className="mx-auto flex min-h-svh max-w-lg flex-col px-6 py-8">
-      <header>
-        <Marca href={null} />
-      </header>
+    <MolduraPublica
+      largura="media"
+      rodape={
+        <>
+          Este é um questionário de autopercepção de comportamento no trabalho.
+          Não é teste psicológico nem avaliação psicológica, e o resultado é um
+          insumo para a conversa — não uma decisão automática.
+        </>
+      }
+    >
+      <p className="etiqueta">
+        {empresa} · {vaga}
+      </p>
 
-      <main className="flex flex-1 flex-col justify-center py-10">
-        <p className="etiqueta">
-          {empresa} · {vaga}
-        </p>
+      <h1 className="mt-4 t-titulo">
+        {nome ? `${nome.split(" ")[0]}, vamos` : "Vamos"} mapear como você
+        trabalha.
+      </h1>
 
-        <h1 className="mt-4 t-titulo">
-          {nome ? `${nome.split(" ")[0]}, vamos` : "Vamos"} mapear como você
-          trabalha.
-        </h1>
+      <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
+        Não é prova e não existe resposta certa. São afirmações sobre o dia a
+        dia de trabalho, e a única resposta útil é a sincera: o mapeamento só
+        ajuda a te colocar no lugar certo se ele for mesmo sobre você.
+      </p>
 
-        <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
-          Não é prova e não existe resposta certa. São afirmações sobre o dia a
-          dia de trabalho, e a única resposta útil é a sincera: o mapeamento só
-          ajuda a te colocar no lugar certo se ele for mesmo sobre você.
-        </p>
+      <ul className="mt-8 space-y-3.5">
+        <Linha Icone={Clock} titulo={`Cerca de ${minutos} minutos`}>
+          {etapas.length === 1
+            ? `${totalDePerguntas} perguntas, uma de cada vez.`
+            : `${etapas.length} testes, ${totalDePerguntas} perguntas no total — um teste por vez.`}
+        </Linha>
 
-        <ul className="mt-8 space-y-3.5">
-          <Linha Icone={Clock} titulo={`Cerca de ${minutos} minutos`}>
-            {etapas.length === 1
-              ? `${totalDePerguntas} perguntas, uma de cada vez.`
-              : `${etapas.length} testes, ${totalDePerguntas} perguntas no total — um teste por vez.`}
+        {/* Com mais de um teste, dizer QUAIS são não é detalhe: é o que
+            transforma "quanto ainda falta disso?" em "falta o terceiro". */}
+        {etapas.length > 1 && (
+          <Linha Icone={ListChecks} titulo="Na ordem">
+            {etapas.map((e, i) => (
+              <span key={e.teste}>
+                {i > 0 && " · "}
+                {e.nome.split(" — ")[0]} ({e.perguntas.length})
+              </span>
+            ))}
           </Linha>
-
-          {/* Com mais de um teste, dizer QUAIS são não é detalhe: é o que
-              transforma "quanto ainda falta disso?" em "falta o terceiro". */}
-          {etapas.length > 1 && (
-            <Linha Icone={ListChecks} titulo="Na ordem">
-              {etapas.map((e, i) => (
-                <span key={e.teste}>
-                  {i > 0 && " · "}
-                  {e.nome.split(" — ")[0]} ({e.perguntas.length})
-                </span>
-              ))}
-            </Linha>
-          )}
-          <Linha Icone={Save} titulo="Salva sozinho">
-            Pode fechar e continuar depois pelo mesmo link, de onde parou.
-          </Linha>
-          <Linha Icone={Lock} titulo="Vai direto para a empresa">
-            O resultado é lido por quem conduz o processo. Você pode pedir acesso
-            aos seus dados a qualquer momento a quem te enviou o convite.
-          </Linha>
-        </ul>
-
-        {erro && (
-          <p
-            role="alert"
-            className="mt-8 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm leading-relaxed text-destructive"
-          >
-            <AlertCircle className="mt-0.5 size-4 shrink-0" />
-            {erro}
-          </p>
         )}
+        <Linha Icone={Save} titulo="Salva sozinho">
+          Pode fechar e continuar depois pelo mesmo link, de onde parou.
+        </Linha>
+        <Linha Icone={Lock} titulo="Vai direto para a empresa">
+          O resultado é lido por quem conduz o processo. Você pode pedir acesso
+          aos seus dados a qualquer momento a quem te enviou o convite.
+        </Linha>
+      </ul>
 
-        <Button
-          onClick={comecar}
-          disabled={pendente}
-          size="lg"
-          className={cn("h-11 w-full gap-2 t-corpo", erro ? "mt-4" : "mt-9")}
+      {erro && (
+        <p
+          role="alert"
+          className="mt-8 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm leading-relaxed text-destructive"
         >
-          {pendente ? (
-            <>
-              <Loader2 className="size-4 animate-spin" />
-              Preparando
-            </>
-          ) : (
-            <>
-              Começar
-              <ArrowRight className="size-4" />
-            </>
-          )}
-        </Button>
-
-        {/* Quem entra por convite nunca marcou caixa nenhuma: o cadastro foi
-            feito pela empresa. É este toque que é o aceite, então ele precisa
-            dizer a que se está concordando — e o carimbo de consentimento é
-            gravado aqui, não na hora em que o RH criou o convite. */}
-        <p className="mt-3 t-legenda leading-relaxed text-muted-foreground">
-          Ao começar, você concorda que suas respostas sejam usadas por{" "}
-          {empresa} para avaliar sua aderência a esta vaga. Nenhum dado sensível
-          é pedido, e você pode solicitar a exclusão a qualquer momento.
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          {erro}
         </p>
-      </main>
+      )}
 
-      <footer className="t-legenda leading-relaxed text-muted-foreground">
-        Este é um questionário de autopercepção de comportamento no trabalho. Não
-        é teste psicológico nem avaliação psicológica, e o resultado é um insumo
-        para a conversa — não uma decisão automática.
-      </footer>
-    </div>
+      <Button
+        onClick={comecar}
+        disabled={pendente}
+        variant="marca"
+        size="lg"
+        className={cn("w-full", erro ? "mt-4" : "mt-9")}
+      >
+        {pendente ? (
+          <>
+            <Loader2 className="size-4 animate-spin" />
+            Preparando
+          </>
+        ) : (
+          <>
+            Começar
+            <ArrowRight className="size-4" />
+          </>
+        )}
+      </Button>
+
+      {/* Quem entra por convite nunca marcou caixa nenhuma: o cadastro foi
+          feito pela empresa. É este toque que é o aceite, então ele precisa
+          dizer a que se está concordando — e o carimbo de consentimento é
+          gravado aqui, não na hora em que o RH criou o convite. */}
+      <p className="mt-3 t-legenda leading-relaxed text-muted-foreground">
+        Ao começar, você concorda que suas respostas sejam usadas por{" "}
+        {empresa} para avaliar sua aderência a esta vaga. Nenhum dado sensível
+        é pedido, e você pode solicitar a exclusão a qualquer momento.
+      </p>
+    </MolduraPublica>
   );
 }
 

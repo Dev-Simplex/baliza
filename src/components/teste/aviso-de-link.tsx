@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Marca } from "@/components/marca";
+import { MolduraPublica } from "@/components/teste/moldura-publica";
 
 /**
  * Tela de link que não abre, na língua de quem está do outro lado.
@@ -21,31 +21,25 @@ export function AvisoDeLink({
   mostrarCaminhoDoCodigo?: boolean;
 }) {
   return (
-    <main className="mx-auto flex min-h-svh max-w-md flex-col px-6 py-8">
-      <header>
-        <Marca href={null} />
-      </header>
-
-      <div className="flex flex-1 flex-col justify-center py-10">
-        <p className="etiqueta">Mapeamento comportamental</p>
-        <h1 className="mt-3 t-titulo">{titulo}</h1>
-        <div className="mt-3 space-y-3 t-corpo leading-relaxed text-muted-foreground">
-          {children}
-        </div>
-
-        {mostrarCaminhoDoCodigo && (
-          <p className="mt-8 rounded-xl border border-dashed px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
-            Recebeu um código de 4 dígitos? Entre por{" "}
-            <Link
-              href="/acesso"
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              /acesso
-            </Link>{" "}
-            — vai para o mesmo lugar que o link.
-          </p>
-        )}
+    <MolduraPublica>
+      <p className="etiqueta">Mapeamento comportamental</p>
+      <h1 className="mt-3 t-titulo">{titulo}</h1>
+      <div className="mt-3 space-y-3 t-corpo leading-relaxed text-muted-foreground">
+        {children}
       </div>
-    </main>
+
+      {mostrarCaminhoDoCodigo && (
+        <p className="mt-8 rounded-xl border border-dashed px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
+          Recebeu um código de 4 dígitos? Entre por{" "}
+          <Link
+            href="/acesso"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            /acesso
+          </Link>{" "}
+          — vai para o mesmo lugar que o link.
+        </p>
+      )}
+    </MolduraPublica>
   );
 }

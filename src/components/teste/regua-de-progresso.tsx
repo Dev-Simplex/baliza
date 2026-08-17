@@ -88,12 +88,12 @@ export function ReguaDeProgresso({
               className={cn(
                 "flex-1 rounded-full transition-all duration-300",
                 aqui
-                  ? "h-6 bg-marca-forte"
+                  ? "h-6 bg-marca-sinal"
                   : respondido
-                    ? "h-3.5 bg-dentro/70"
+                    ? "h-3.5 bg-dentro/60"
                     : marcaDeDezena
-                      ? "h-3 bg-border"
-                      : "h-2 bg-border/60",
+                      ? "h-2.5 bg-linha-forte/70"
+                      : "h-1.5 bg-border",
               )}
             />
           );

@@ -120,7 +120,7 @@ export function FormularioDeCodigo() {
             enterKeyHint="go"
             aria-label={`Dígito ${posicao + 1} de 4`}
             aria-invalid={temErro}
-            className="leitura h-16 w-14 rounded-xl border bg-background text-center text-2xl tabular-nums outline-none transition-colors focus:border-marca-forte focus:ring-2 focus:ring-marca-forte/20 aria-invalid:border-destructive/60"
+            className="leitura h-16 w-14 rounded-xl border bg-card text-center text-2xl tabular-nums outline-none transition-colors focus:border-marca-sinal focus:ring-2 focus:ring-marca-sinal/25 aria-invalid:border-destructive/60"
           />
         ))}
       </div>
@@ -138,9 +138,10 @@ export function FormularioDeCodigo() {
 
       <Button
         type="submit"
+        variant="marca"
         disabled={codigo.length !== 4 || pendente}
         size="lg"
-        className="mt-6 h-11 w-full gap-2 t-corpo"
+        className="mt-6 w-full"
       >
         {pendente ? (
           <>

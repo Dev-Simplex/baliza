@@ -18,9 +18,9 @@ import type { Teste } from "@/lib/instrument/baterias";
  * cobrem os quatro testes de hoje, e um teste novo que peça uma dessas quatro
  * formas não precisa de tela nova:
  *
- *   · `likert`      1 a 5 numa afirmação        → Prumo, Big Five  (ItemResponse)
+ *   · `likert`      1 a 5 numa afirmação        → Baliza, Big Five (ItemResponse)
  *   · `ordenar`     a que eu faria PRIMEIRO e a que deixaria por ÚLTIMO
- *                                                → Prumo           (ScenarioResponse)
+ *                                                → Baliza          (ScenarioResponse)
  *   · `mais-menos`  a palavra que MAIS e a que MENOS combinam
  *                                                → DISC            (ScenarioResponse)
  *   · `escolha`     uma alternativa entre quatro → SJT             (ChoiceResponse)
@@ -79,7 +79,7 @@ export type EtapaDaProva = {
   instrucao: string;
   /** Repetido acima de cada afirmação, só nas etapas com `likert`. */
   enunciado?: string;
-  /** A escala de 1 a 5 desta etapa — o Prumo e o Big Five usam rótulos diferentes. */
+  /** A escala de 1 a 5 desta etapa — Baliza e Big Five usam rótulos diferentes. */
   escala?: OpcaoDeEscala[];
   perguntas: Pergunta[];
 };

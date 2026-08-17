@@ -32,7 +32,7 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
           autoComplete="name"
           autoCapitalize="words"
           enterKeyHint="next"
-          className="h-11"
+          tamanho="lg"
           aria-invalid={Boolean(estado.campos?.nome)}
           aria-describedby={estado.campos?.nome ? "erro-nome" : undefined}
         />
@@ -54,7 +54,7 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
           autoCapitalize="none"
           autoCorrect="off"
           enterKeyHint="go"
-          className="h-11"
+          tamanho="lg"
           aria-invalid={Boolean(estado.campos?.email)}
           aria-describedby={
             estado.campos?.email ? "erro-email-candidato" : "ajuda-email"
@@ -76,7 +76,7 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
           type="checkbox"
           name="consentimento"
           required
-          className="mt-0.5 size-4 shrink-0 accent-[var(--marca-forte)]"
+          className="mt-0.5 size-4 shrink-0 accent-[var(--marca-sinal)]"
         />
         <span className="text-muted-foreground">
           Concordo que minhas respostas sejam usadas para avaliar minha aderência
@@ -100,9 +100,10 @@ export function FormularioDeEntrada({ publicToken }: { publicToken: string }) {
 
       <Button
         type="submit"
+        variant="marca"
         disabled={pendente}
         size="lg"
-        className="h-11 w-full gap-2 t-corpo"
+        className="w-full"
       >
         {pendente ? (
           <>

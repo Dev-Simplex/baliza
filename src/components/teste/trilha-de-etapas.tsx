@@ -40,7 +40,8 @@ export function TrilhaDeEtapas({
               aria-current={aqui ? "step" : undefined}
               className={cn(
                 "flex items-center gap-1 rounded-full border px-2.5 py-1 t-legenda transition-colors",
-                aqui && "border-marca bg-marca-forte/10 font-medium text-foreground",
+                aqui &&
+                  "border-marca-sinal bg-marca-suave/60 font-medium text-foreground",
                 !aqui && feita && "border-dentro/40 bg-dentro/5 text-muted-foreground",
                 !aqui && !feita && "border-dashed text-muted-foreground",
               )}

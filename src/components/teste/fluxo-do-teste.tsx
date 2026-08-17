@@ -333,11 +333,11 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   );
 
   /**
-   * O par MAIS/MENOS — as situações do Prumo e os blocos de palavras do DISC.
+   * O par MAIS/MENOS — as situações da Baliza e os blocos de palavras do DISC.
    *
    * Os dois gravam pelo mesmo caminho porque a resposta tem a mesma forma. Só o
    * avanço difere: o bloco de palavras anda sozinho quando o par fecha (são 12
-   * telas iguais em sequência, e parar em cada uma cansa), e a situação do Prumo
+   * telas iguais em sequência, e parar em cada uma cansa), e a situação da Baliza
    * continua esperando — ela é longa, e a pessoa costuma querer reler o que
    * marcou antes de seguir.
    */
@@ -644,7 +644,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
   // texto. A margem em px, e não em rem, é de propósito — padding que cresce
   // junto com a fonte é parte do que empurrava a página para fora a 200%.
   return (
-    <div className="mx-auto flex min-h-svh w-full min-w-0 max-w-2xl flex-col px-[20px] py-6 sm:px-8">
+    <div className="mx-auto flex min-h-svh w-full min-w-0 max-w-2xl flex-col bg-background px-[20px] py-6 sm:px-8">
       <header className="shrink-0 space-y-3">
         <TrilhaDeEtapas
           etapas={etapas.map((e) => ({ curto: e.curto, teste: e.teste }))}
@@ -815,6 +815,7 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
               <Button
                 onClick={concluir}
                 disabled={!tudoRespondido || concluindo || temPendencia}
+                variant="marca"
                 className="h-11 gap-2 px-5 sm:h-9"
               >
                 {concluindo ? (
@@ -975,7 +976,7 @@ function CapaDaEtapa({
         {primeira && " · cada resposta é salva na hora"}
       </p>
 
-      <Button onClick={aoComecar} size="lg" className="mt-8 h-11 gap-2">
+      <Button onClick={aoComecar} variant="marca" size="lg" className="mt-8 gap-2">
         {primeira ? "Começar" : "Começar este teste"}
       </Button>
     </div>
@@ -1033,7 +1034,7 @@ function PerguntaLikert({
 
       <h1
         id={ID_DA_PERGUNTA}
-        className="text-balance text-[1.625rem] leading-[1.28] font-semibold tracking-tight sm:text-[1.875rem]"
+        className="t-enunciado"
       >
         {texto}
       </h1>
@@ -1059,21 +1060,21 @@ function PerguntaLikert({
               tabIndex={tabIndexDe(i)}
               onClick={() => aoResponder(opcao.valor)}
               className={cn(
-                "group flex w-full items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all",
+                "group flex min-h-14 w-full items-center gap-3.5 rounded-lg border bg-card px-4 py-3.5 text-left transition-colors",
                 marcado
-                  ? "border-marca bg-marca-forte/10"
-                  : "hover:border-marca/40 hover:bg-secondary/60 active:bg-secondary",
+                  ? "border-marca-sinal bg-marca-suave/60"
+                  : "hover:border-linha-forte hover:bg-secondary/60 active:bg-secondary",
               )}
             >
               <span
                 className={cn(
                   "grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors",
-                  marcado ? "border-marca" : "border-border",
+                  marcado ? "border-marca-sinal" : "border-input",
                 )}
               >
                 <span
                   className={cn(
-                    "size-2.5 rotate-45 rounded-[1px] bg-marca-forte transition-transform",
+                    "size-2.5 rounded-full bg-marca-sinal transition-transform",
                     marcado ? "scale-100" : "scale-0",
                   )}
                 />
@@ -1093,7 +1094,7 @@ function PerguntaLikert({
 }
 
 /**
- * Bloco de cenário do Prumo — a tela que pede DUAS escolhas ordenadas.
+ * Bloco de cenário da Baliza — a tela que pede DUAS escolhas ordenadas.
  *
  * É onde a pessoa trava, e o motivo é sempre o mesmo: ela marca a primeira ação
  * e acha que acabou. Por isso a instrução muda de estado em vez de ficar parada
@@ -1227,7 +1228,7 @@ function PerguntaDeCenario({
                 ehUltima && "border-fora bg-fora/10",
                 !ehPrimeira &&
                   !ehUltima &&
-                  "hover:border-marca/40 hover:bg-secondary/60 active:bg-secondary",
+                  "hover:border-linha-forte hover:bg-secondary/60 active:bg-secondary",
               )}
             >
               <span className="flex-1 t-corpo leading-snug">{opcao.texto}</span>
@@ -1315,7 +1316,7 @@ function PerguntaDeMaisMenos({
 
       <h1
         id={ID_DA_PERGUNTA}
-        className="text-balance text-[1.5rem] leading-[1.3] font-semibold tracking-tight sm:text-[1.75rem]"
+        className="t-enunciado"
       >
         Qual <span className="text-dentro">mais</span> parece com você — e qual{" "}
         <span className="text-fora">menos</span>?
@@ -1426,7 +1427,7 @@ function Marcador({
           ? papel === "mais"
             ? "border-dentro bg-dentro/20"
             : "border-fora bg-fora/20"
-          : "border-border hover:border-marca/50 hover:bg-secondary",
+          : "border-border hover:border-linha-forte hover:bg-secondary",
       )}
     >
       <span
@@ -1441,7 +1442,7 @@ function Marcador({
       >
         <span
           className={cn(
-            "size-2.5 rotate-45 rounded-[1px] transition-transform",
+            "size-2.5 rounded-full transition-transform",
             papel === "mais" ? "bg-dentro" : "bg-fora",
             marcado ? "scale-100" : "scale-0",
           )}
@@ -1507,19 +1508,19 @@ function PerguntaDeEscolhaUnica({
               className={cn(
                 "flex w-full items-start gap-3.5 rounded-xl border px-4 py-3.5 text-left transition-all",
                 marcado
-                  ? "border-marca bg-marca-forte/10"
-                  : "hover:border-marca/40 hover:bg-secondary/60 active:bg-secondary",
+                  ? "border-marca-sinal bg-marca-suave/60"
+                  : "hover:border-linha-forte hover:bg-secondary/60 active:bg-secondary",
               )}
             >
               <span
                 className={cn(
                   "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors",
-                  marcado ? "border-marca" : "border-border",
+                  marcado ? "border-marca-sinal" : "border-input",
                 )}
               >
                 <span
                   className={cn(
-                    "size-2.5 rotate-45 rounded-[1px] bg-marca-forte transition-transform",
+                    "size-2.5 rounded-full bg-marca-sinal transition-transform",
                     marcado ? "scale-100" : "scale-0",
                   )}
                 />
