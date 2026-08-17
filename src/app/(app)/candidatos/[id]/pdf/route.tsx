@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { RelatorioPdf, type DadosDoRelatorio } from "@/lib/pdf/relatorio";
 import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
 import { CATALOGO_DE_TESTES } from "@/lib/instrument/baterias";
+import { montarDiagnostico } from "@/lib/analise/diagnostico";
 import { lerAvaliacao } from "@/lib/analise/modulos";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
@@ -118,6 +119,18 @@ export async function GET(
     ? ARQUETIPO_POR_ID.get(avaliacao.archetypeId)
     : null;
 
+  // A mesma síntese da tela, montada da mesma fonte. Se o papel e a tela
+  // divergirem, é a tela que perde a discussão — o PDF é o que vai anexado no
+  // e-mail e o que sobra do processo seis meses depois.
+  const diagnostico = montarDiagnostico({
+    contribuicoes: detalhe?.contribuicoes ?? [],
+    ficha: leitura.ficha,
+    arquetipoId: avaliacao.archetypeId,
+    selo: leitura.selo,
+    roteiro,
+    semAderencia: !escores,
+  });
+
   const dados: DadosDoRelatorio = {
     candidato: candidato.name,
     email: candidato.email,
@@ -128,6 +141,7 @@ export async function GET(
     aderencia:
       avaliacao.fitScore == null ? null : numero(avaliacao.fitScore, 1),
     resumoDoGap: roteiro.resumoDoGap,
+    diagnostico,
     selo: confianca
       ? { nivel: confianca.selo, rotulo: confianca.rotulo, texto: confianca.texto }
       : null,

@@ -18,6 +18,7 @@ import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
 // Só tipo: nada de `lib/analise` entra no pacote deste arquivo. A estrutura é
 // declarada uma vez e as duas representações do relatório comem dela — que é
 // justamente o que impede a tela e o papel de divergirem.
+import type { Diagnostico } from "@/lib/analise/diagnostico";
 import type { FichaDeModulos } from "@/lib/analise/ficha";
 import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
 
@@ -217,6 +218,14 @@ export type DadosDoRelatorio = {
   duracao: string | null;
   aderencia: string | null;
   resumoDoGap: string;
+  /**
+   * A síntese de contratação — a mesma da tela, montada por `analise/diagnostico`.
+   *
+   * Opcional porque o PDF é gerado de mais de um lugar e nenhum deles pode
+   * quebrar por causa de um campo novo. Ausente, o relatório sai como sempre
+   * saiu: sem a página do diagnóstico e sem buraco no lugar dela.
+   */
+  diagnostico?: Diagnostico | null;
   selo: { nivel: "alta" | "media" | "baixa"; rotulo: string; texto: string } | null;
   /**
    * Os cinco fatores — `null` quando a bateria não os produz.
@@ -664,19 +673,24 @@ function ModulosDoManual({
             ))}
           </View>
 
+          {/* Cor de atenção, não de reprovação — e a ressalva junto.
+              O papel é o que circula fora de contexto: ele é encaminhado por
+              e-mail, impresso e lido meses depois por quem nunca falou com o
+              candidato. Se existe um lugar onde uma escolha ruim num caso
+              escrito pode virar impressão de caráter, é este. */}
           {modulos.sjt.piores.length > 0 && (
             <View
               style={{
                 marginTop: 11,
                 borderWidth: 0.7,
-                borderColor: COR.fora,
-                backgroundColor: COR.foraSuave,
+                borderColor: COR.marca,
+                backgroundColor: COR.marcaSuave,
                 borderRadius: 4,
                 padding: 8,
               }}
             >
-              <Text style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 700, color: COR.fora }}>
-                Escolheu a pior alternativa em{" "}
+              <Text style={{ fontSize: 8, fontFamily: CORPO, fontWeight: 700, color: COR.marca }}>
+                Escolheu a alternativa mais fraca em{" "}
                 {modulos.sjt.piores.length === 1
                   ? "1 cenário"
                   : `${modulos.sjt.piores.length} cenários`}
@@ -687,9 +701,19 @@ function ModulosDoManual({
                 </Text>
               ))}
               <Text style={[e.legenda, { marginTop: 5 }]}>
-                Vai para o roteiro de entrevista independentemente do score
-                geral. O que se leva à conversa é a situação, nunca o cenário do
-                teste.
+                <Text style={{ fontWeight: 700 }}>Quer dizer: </Text>
+                vale perguntar sobre uma situação parecida na entrevista — já
+                está no roteiro, mesmo com score alto.
+              </Text>
+              <Text style={[e.legenda, { marginTop: 3 }]}>
+                <Text style={{ fontWeight: 700 }}>Não quer dizer: </Text>
+                não é erro de caráter e não reprova ninguém. O teste mede uma
+                escolha num caso escrito, sem contexto e sem as pessoas
+                envolvidas. Peça um exemplo real antes de concluir.
+              </Text>
+              <Text style={[e.legenda, { marginTop: 3 }]}>
+                Na conversa, descreva a situação com suas palavras: não cite o
+                cenário do teste.
               </Text>
             </View>
           )}
@@ -902,6 +926,109 @@ function ParecerNoPapel({ parecer }: { parecer: DadosDoRelatorio["parecer"] }) {
   );
 }
 
+/**
+ * O diagnóstico no papel.
+ *
+ * É a primeira coisa depois da identificação, pela mesma razão que na tela: o
+ * PDF é justamente o que atravessa a mesa da entrevista, e quem o lê muitas
+ * vezes não é quem rodou o processo. Sem `wrap={false}`: se a lista crescer, é
+ * melhor quebrar de página do que espremer.
+ */
+function DiagnosticoDoPdf({ d }: { d: Diagnostico }) {
+  return (
+    <View style={e.cartao}>
+      <Text style={e.titulo}>Diagnóstico</Text>
+      <Text style={[e.corpo, { marginTop: 2 }]}>{d.leitura}</Text>
+
+      {(d.forcas.length > 0 || d.riscos.length > 0) && (
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 20,
+            marginTop: 11,
+            borderTopWidth: 0.7,
+            borderTopColor: COR.linhaClara,
+            paddingTop: 9,
+          }}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={[e.etiqueta, { color: COR.dentro }]}>
+              O que sustenta
+            </Text>
+            {d.forcas.map((item, i) => (
+              <View key={i} style={{ marginTop: 6 }}>
+                <Text style={[e.corpo, { fontWeight: 600 }]}>{item.titulo}</Text>
+                <Text style={e.legenda}>{item.evidencia}</Text>
+                <Text style={[e.legenda, { marginTop: 1.5 }]}>
+                  {item.consequencia}
+                </Text>
+              </View>
+            ))}
+            {d.forcas.length === 0 && (
+              <Text style={[e.legenda, { marginTop: 6 }]}>
+                Nenhuma dimensão com peso nesta vaga ficou dentro da faixa.
+              </Text>
+            )}
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={[e.etiqueta, { color: COR.fora }]}>
+              O que precisa ser confirmado
+            </Text>
+            {d.riscos.map((item, i) => (
+              <View key={i} style={{ marginTop: 6 }}>
+                <Text style={[e.corpo, { fontWeight: 600 }]}>
+                  {item.titulo}
+                  {item.obrigatorio ? " — levar à entrevista" : ""}
+                </Text>
+                <Text style={e.legenda}>{item.evidencia}</Text>
+                <Text style={[e.legenda, { marginTop: 1.5 }]}>
+                  {item.consequencia}
+                </Text>
+              </View>
+            ))}
+            {d.riscos.length === 0 && (
+              <Text style={[e.legenda, { marginTop: 6 }]}>
+                Nenhuma dimensão fora da faixa e nenhum alerta de módulo.
+              </Text>
+            )}
+            {d.riscos.length > 0 && (
+              <Text style={[e.legenda, { marginTop: 7 }]}>
+                Nada aqui reprova ninguém: escore baixo descreve tendência, não
+                impedimento. Esta coluna é a pauta da entrevista.
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
+
+      {d.comoTrabalhar.length > 0 && (
+        <View
+          style={{
+            marginTop: 11,
+            borderTopWidth: 0.7,
+            borderTopColor: COR.linhaClara,
+            paddingTop: 9,
+          }}
+        >
+          <Text style={e.etiqueta}>Como trabalhar com essa pessoa</Text>
+          {d.comoTrabalhar.map((linha, i) => (
+            <Text key={i} style={[e.legenda, { marginTop: 3 }]}>
+              • {linha}
+            </Text>
+          ))}
+        </View>
+      )}
+
+      <Text style={[e.legenda, { marginTop: 9 }]}>
+        Isto é leitura de evidência, não recomendação de contratação: o
+        instrumento descreve tendência, e quem decide é o parecer registrado no
+        fim deste relatório.
+      </Text>
+    </View>
+  );
+}
+
 export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
   return (
     <Document
@@ -973,6 +1100,9 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
         {d.selo && <Text style={[e.legenda, { marginTop: 9 }]}>{d.selo.texto}</Text>}
 
         <View style={e.regua} />
+
+        {/* A síntese antes da conta, como na tela. */}
+        {d.diagnostico && <DiagnosticoDoPdf d={d.diagnostico} />}
 
         {/* Sem aderência, o lugar de dizer isso é aqui em cima — antes de
             qualquer número, e não numa nota de rodapé que ninguém lê. Zero não

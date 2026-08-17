@@ -5,6 +5,7 @@ import { ArrowLeft, Hourglass, MessageSquareQuote } from "lucide-react";
 
 import { CodigoDeAcesso } from "@/components/app/codigo-de-acesso";
 import { BotaoCopiar } from "@/components/app/copiar";
+import { DiagnosticoDoCandidato } from "@/components/app/diagnostico-do-candidato";
 import { EstadoVazio } from "@/components/app/estado-vazio";
 import { FichaDosModulos } from "@/components/app/ficha-de-modulos";
 import { ParecerDoAnalista } from "@/components/app/parecer-do-analista";
@@ -19,6 +20,7 @@ import { Faixa, type DadosDaFaixa } from "@/components/faixa";
 import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
 import { CATALOGO_DE_TESTES, type Teste } from "@/lib/instrument/baterias";
+import { montarDiagnostico } from "@/lib/analise/diagnostico";
 import { lerAvaliacao, type LeituraDaAvaliacao } from "@/lib/analise/modulos";
 import { montarRoteiro } from "@/lib/analise/roteiro";
 import type { ContribuicaoDeFit } from "@/lib/instrument/scoring";
@@ -153,6 +155,16 @@ export default async function PaginaDoCandidato({
     perguntasDeModulo: leitura.perguntasDeModulo,
   });
 
+  // A síntese que a página não fazia. Vem depois do roteiro porque conta as
+  // perguntas dele — e só as conta, não as repete.
+  const diagnostico = montarDiagnostico({
+    contribuicoes: detalhe.contribuicoes ?? [],
+    ficha: leitura.ficha,
+    arquetipoId: avaliacao.archetypeId,
+    selo: leitura.selo,
+    roteiro,
+  });
+
   // Histórico: a mesma pessoa em mais de um processo desta empresa.
   const historico = candidato.assessments.filter((a) => a.id !== avaliacao.id);
 
@@ -219,6 +231,11 @@ export default async function PaginaDoCandidato({
           </div>
         </header>
       </div>
+
+      {/* A síntese primeiro: quem abre esta tela está a minutos da conversa. A
+          aderência, as faixas, a ficha e o radar continuam logo abaixo, na
+          ordem de sempre, para quem for verificar o que a síntese afirma. */}
+      <DiagnosticoDoCandidato diagnostico={diagnostico} />
 
       {/* O selo nunca aparece sozinho, e o número nunca aparece sem a conta. */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -576,6 +593,19 @@ function SemOsCincoFatores({
     semAderencia: true,
   });
 
+  // Também aqui, e não só na tela cheia: uma vaga que aplicou DISC e SJT tem
+  // resultado, e quem entrevista tem o mesmo problema de síntese. O que muda é
+  // que o diagnóstico diz, na primeira linha, que não houve comparação com o
+  // perfil-alvo — em vez de deixar a ausência do número falar sozinha.
+  const diagnostico = montarDiagnostico({
+    contribuicoes: [],
+    ficha: leitura.ficha,
+    arquetipoId: null,
+    selo: leitura.selo,
+    roteiro,
+    semAderencia: true,
+  });
+
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <div data-impressao="ocultar">
@@ -621,6 +651,8 @@ function SemOsCincoFatores({
           marque um dos dois na vaga; vale para quem for convidado a partir dali.
         </p>
       </section>
+
+      <DiagnosticoDoCandidato diagnostico={diagnostico} />
 
       <FichaDosModulos ficha={leitura.ficha} qualidade={leitura.qualidade} />
 
