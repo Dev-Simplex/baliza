@@ -30,15 +30,15 @@ export default async function PaginaDeLogin({
 
   return (
     <div>
-      <h1 className="t-titulo">Entrar</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <h1 className="t-secao text-2xl">Entrar</h1>
+      <p className="mt-2 t-corpo-sm text-muted-foreground">
         Acesse o painel da sua empresa.
       </p>
 
       {explicacao && (
         <p
           role="status"
-          className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm leading-relaxed text-amber-700 dark:text-amber-400"
+          className="mt-5 flex items-start gap-2 rounded-lg border border-fora/30 bg-fora-suave px-3 py-2.5 text-sm leading-relaxed text-fora"
         >
           <Info className="mt-0.5 size-4 shrink-0" />
           {explicacao}

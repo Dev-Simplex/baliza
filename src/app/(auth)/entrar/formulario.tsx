@@ -23,6 +23,7 @@ export function FormularioDeLogin({ proximo }: { proximo?: string }) {
           id="email"
           name="email"
           type="email"
+          tamanho="lg"
           autoComplete="email"
           required
           placeholder="voce@empresa.com.br"
@@ -42,6 +43,7 @@ export function FormularioDeLogin({ proximo }: { proximo?: string }) {
           id="senha"
           name="senha"
           type="password"
+          tamanho="lg"
           autoComplete="current-password"
           required
           aria-invalid={Boolean(estado.campos?.senha)}
@@ -61,7 +63,13 @@ export function FormularioDeLogin({ proximo }: { proximo?: string }) {
         </div>
       )}
 
-      <Button type="submit" disabled={pendente} className="w-full gap-2">
+      <Button
+        type="submit"
+        variant="marca"
+        size="lg"
+        disabled={pendente}
+        className="w-full"
+      >
         {pendente ? (
           <>
             <Loader2 className="size-4 animate-spin" />

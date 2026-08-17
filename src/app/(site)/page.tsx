@@ -1,10 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Minus } from "lucide-react";
+import {
+  ArrowRight,
+  Minus,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserRoundCheck,
+} from "lucide-react";
 
 import { AlternarTema } from "@/components/alternar-tema";
 import { Marca } from "@/components/marca";
+import { AnatomiaDaFaixa } from "@/components/site/anatomia-da-faixa";
 import { ComparacaoDeVisao } from "@/components/site/comparacao-de-visao";
+import { PainelDeDemonstracao } from "@/components/site/painel-de-demonstracao";
 import { BotaoLink } from "@/components/ui/botao-link";
 import { ARQUETIPOS } from "@/lib/instrument/archetypes";
 import { CENARIOS_POR_PROVA, TOTAL_DE_ITENS } from "@/lib/instrument/form";
@@ -13,22 +21,41 @@ import { PRESETS } from "@/lib/instrument/presets";
 import { FATORES, NOMES_DE_FATOR } from "@/lib/instrument/types";
 
 export const metadata: Metadata = {
-  title: "Prumo — não contrate nunca mais com vendas nos olhos",
+  // `absolute` porque o `template` da raiz (`%s · Baliza`) transformaria isto em
+  // "Baliza — … · Baliza". Na home o título já É o da marca; não há o que sufixar.
+  title: {
+    absolute: "Baliza — Veja além do currículo. Decida com referência.",
+  },
 };
 
+/**
+ * A landing.
+ *
+ * Ela não vende um questionário: vende uma DECISÃO melhor. Por isso a ordem das
+ * seções é a ordem de uma dúvida real — o que eu não vejo hoje, o que a Baliza
+ * põe no lugar, como isso funciona, como se lê o desenho, o quanto dá para
+ * confiar, o que acontece com os dados, e só então o preço da entrada.
+ *
+ * Nenhuma ilustração de gente feliz. O que aparece na tela é o produto rodando,
+ * com o mesmo componente de faixa que o recrutador vê no painel.
+ */
 export default function PaginaInicial() {
   return (
     <div className="min-h-svh">
       <Cabecalho />
-      <Hero />
-      <OQueFicaTapado />
-      <FaixaDeMetricas />
-      <ComoFunciona />
-      <Beneficios />
-      <OQueMedimos />
-      <Depoimentos />
-      <Perguntas />
-      <ChamadaFinal />
+      <main>
+        <Hero />
+        <OContexto />
+        <FaixaDeMetricas />
+        <ComoFunciona />
+        <OFit />
+        <ExplicacaoDaFaixa />
+        <Confianca />
+        <OQueMedimos />
+        <SegurancaEDecisao />
+        <Perguntas />
+        <ChamadaFinal />
+      </main>
       <Rodape />
     </div>
   );
@@ -39,17 +66,23 @@ export default function PaginaInicial() {
 function Cabecalho() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <Marca />
+      <div className="medida flex h-16 items-center justify-between gap-4">
+        <Marca tamanho="md" />
 
-        <nav className="hidden items-center gap-7 t-corpo-sm text-muted-foreground md:flex">
-          <a href="#funciona" className="hover:text-foreground">
+        <nav
+          className="hidden items-center gap-7 t-corpo-sm text-muted-foreground md:flex"
+          aria-label="Seções desta página"
+        >
+          <a href="#funciona" className="rounded-sm hover:text-foreground">
             Como funciona
           </a>
-          <a href="#medimos" className="hover:text-foreground">
+          <a href="#faixa" className="rounded-sm hover:text-foreground">
+            A faixa-alvo
+          </a>
+          <a href="#medimos" className="rounded-sm hover:text-foreground">
             O que medimos
           </a>
-          <a href="#perguntas" className="hover:text-foreground">
+          <a href="#perguntas" className="rounded-sm hover:text-foreground">
             Perguntas
           </a>
         </nav>
@@ -58,11 +91,11 @@ function Cabecalho() {
           <AlternarTema className="hidden sm:inline-flex" />
           <Link
             href="/entrar"
-            className="hidden t-corpo-sm text-muted-foreground hover:text-foreground sm:block"
+            className="hidden rounded-sm t-corpo-sm text-muted-foreground hover:text-foreground sm:block"
           >
             Entrar
           </Link>
-          <BotaoLink href="/cadastrar" size="sm">
+          <BotaoLink href="/cadastrar" variant="marca" size="sm">
             Criar conta
           </BotaoLink>
         </div>
@@ -76,107 +109,64 @@ function Hero() {
     <section className="relative overflow-hidden border-b">
       <div className="regua-fina absolute inset-x-0 top-0 h-px opacity-60" />
 
-      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 lg:py-20">
+      <div className="medida py-16 lg:py-24">
         <div className="max-w-3xl">
-          <p className="etiqueta">Mapeamento comportamental para recrutamento</p>
+          <p className="etiqueta">
+            Inteligência comportamental para recrutamento
+          </p>
 
-          <h1 className="mt-5 t-display">
-            Não contrate nunca mais com vendas nos olhos.
-          </h1>
+          <h1 className="mt-5 t-display">Veja além do currículo.</h1>
 
-          <p className="mt-6 max-w-xl text-[1.0625rem] leading-relaxed text-muted-foreground">
-            Cole um link na sua vaga. Em seis minutos o candidato responde. Você
-            recebe o ranking com a aderência explicada — e as perguntas exatas
-            para fazer a cada um.
+          <p className="mt-6 max-w-xl t-corpo-lg text-muted-foreground">
+            Compare o perfil comportamental de cada candidato com o que a vaga
+            realmente pede. Receba a aderência explicada, o quanto dá para
+            confiar naquela resposta e as perguntas certas para a entrevista.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
-            <BotaoLink href="/cadastrar" size="lg" className="h-11 gap-2 px-5 t-corpo">
-              Experimentar gratuitamente
+            <BotaoLink href="/cadastrar" variant="marca" size="lg">
+              Criar minha primeira vaga
               <ArrowRight className="size-4" />
             </BotaoLink>
             <a
               href="#funciona"
-              className="t-corpo text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              className="rounded-sm px-1 t-corpo text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
             >
               Ver como funciona
             </a>
           </div>
 
-          <p className="mt-4 t-corpo-sm text-muted-foreground">
-            Sem cartão e sem limite de uso. Do cadastro ao primeiro link, dois minutos.
+          <p className="mt-5 t-corpo-sm text-muted-foreground">
+            Sem cartão e sem limite de uso. Do cadastro ao primeiro link, dois
+            minutos.
           </p>
         </div>
 
-        {/* O mesmo candidato, visto de dois jeitos. É o argumento do produto
-            inteiro numa imagem — e usa dados que saem do motor de verdade. */}
-        <div className="mt-12">
-          <ComparacaoDeVisao />
-        </div>
+        {/* O herói visual é o produto: ranking, faixa e roteiro. */}
+        <PainelDeDemonstracao className="mt-14" />
       </div>
     </section>
   );
 }
 
-function OQueFicaTapado() {
-  // Nomear o que não se vê é mais forte que prometer o que se vê. Cada linha é
-  // uma fonte de informação que o recrutador JÁ usa — e o limite dela.
-  const pontosCegos = [
-    {
-      fonte: "O currículo",
-      mostra: "o que a pessoa fez",
-      esconde: "como ela faz, e o que acontece quando aperta",
-    },
-    {
-      fonte: "A entrevista",
-      mostra: "quem se apresenta bem",
-      esconde: "quem entrega depois que a conversa acaba",
-    },
-    {
-      fonte: "A referência",
-      mostra: "o que o gestor anterior quer dizer",
-      esconde: "o motivo pelo qual a pessoa saiu",
-    },
-    {
-      fonte: "A intuição",
-      mostra: "o seu próprio viés, de volta",
-      esconde: "todo mundo que não se parece com você",
-    },
-  ];
-
+function OContexto() {
   return (
     <section className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+      <div className="medida secao">
         <p className="etiqueta">O ponto cego</p>
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          Ninguém contrata mal por falta de esforço. Contrata mal por falta de
-          informação.
+        <h2 className="mt-4 max-w-3xl t-titulo">
+          O currículo mostra histórico. A Baliza mostra contexto para a decisão.
         </h2>
-
-        <ul className="mt-14 divide-y border-t">
-          {pontosCegos.map((ponto) => (
-            <li
-              key={ponto.fonte}
-              className="grid gap-2 py-5 md:grid-cols-[13rem_1fr_1fr] md:gap-8"
-            >
-              <p className="text-base font-semibold">{ponto.fonte}</p>
-              <p className="t-corpo leading-relaxed text-muted-foreground">
-                mostra {ponto.mostra}
-              </p>
-              <p className="t-corpo leading-relaxed">
-                <span className="text-fora">esconde</span>{" "}
-                <span className="text-muted-foreground">{ponto.esconde}</span>
-              </p>
-            </li>
-          ))}
-        </ul>
-
-        <p className="mt-10 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
-          Nada disso é substituível — e o Prumo não substitui. Ele acrescenta a
-          única coisa que faltava: uma medida comparável entre pessoas, com a
-          conta aberta do lado. Você continua entrevistando. Só para de
-          entrevistar no escuro.
+        <p className="mt-5 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
+          Currículo, entrevista e referência continuam valendo — e a Baliza não
+          substitui nenhum dos três. Ela acrescenta a única coisa que faltava:
+          uma medida comparável entre pessoas, lida contra o que aquela vaga
+          pede, com a conta aberta do lado.
         </p>
+
+        <div className="mt-12">
+          <ComparacaoDeVisao />
+        </div>
       </div>
     </section>
   );
@@ -196,12 +186,10 @@ function FaixaDeMetricas() {
 
   return (
     <section className="border-b bg-superficie-2/60">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 gap-y-8 px-5 py-12 sm:px-8 md:grid-cols-5">
+      <div className="medida grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-5">
         {metricas.map((m) => (
           <div key={m.rotulo}>
-            <p className="leitura text-[1.75rem] leading-none font-semibold">
-              {m.valor}
-            </p>
+            <p className="t-numero">{m.valor}</p>
             <p className="etiqueta mt-2">{m.rotulo}</p>
           </div>
         ))}
@@ -213,9 +201,8 @@ function FaixaDeMetricas() {
 function ComoFunciona() {
   const passos = [
     {
-      titulo: "Crie a vaga e escolha o perfil-alvo",
-      texto:
-        "Sete perfis prontos, do atendimento à liderança, cada um com as faixas que aquele trabalho realmente pede. Você ajusta o que quiser — e o que não quiser fica como está.",
+      titulo: "Crie a vaga e ajuste o perfil-alvo",
+      texto: `${PRESETS.length} perfis prontos, do atendimento à liderança, cada um com as faixas que aquele trabalho realmente pede. Você ajusta o que quiser — e o que não quiser fica como está.`,
     },
     {
       titulo: "Mande o link",
@@ -225,13 +212,13 @@ function ComoFunciona() {
     {
       titulo: "Receba o ranking e o roteiro",
       texto:
-        "A aderência vem com a conta que a gerou: o que puxou pra cima, o que puxou pra baixo e o quanto disso é confiável. E as perguntas de entrevista para cada candidato.",
+        "A aderência vem com a conta que a gerou: o que puxou para cima, o que puxou para baixo e o quanto disso é confiável. E as perguntas de entrevista para cada candidato.",
     },
   ];
 
   return (
-    <section id="funciona" className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
+    <section id="funciona" className="border-b scroll-mt-16">
+      <div className="medida secao">
         <p className="etiqueta">Como funciona</p>
         <h2 className="mt-4 max-w-2xl t-titulo">
           Três passos, e o terceiro é o que você compra.
@@ -241,7 +228,7 @@ function ComoFunciona() {
             importa. Por isso ela existe — não como enfeite. */}
         <ol className="mt-14 grid gap-10 md:grid-cols-3 md:gap-8">
           {passos.map((passo, i) => (
-            <li key={passo.titulo} className="relative">
+            <li key={passo.titulo}>
               <div className="flex items-center gap-3">
                 <span className="leitura t-corpo-sm text-marca">
                   {String(i + 1).padStart(2, "0")}
@@ -262,60 +249,141 @@ function ComoFunciona() {
   );
 }
 
-function Beneficios() {
-  const itens = [
-    {
-      titulo: "O número vem com a conta",
-      texto:
-        "Toda aderência mostra as três dimensões que puxaram pra cima, as três que puxaram pra baixo e as que foram descartadas de propósito. Ninguém decide sobre gente com uma caixa-preta.",
-    },
-    {
-      titulo: "Um selo que diz o quanto confiar",
-      texto:
-        "Cinco sinais indicam quando alguém respondeu pensando em causar boa impressão. Nenhum concorrente mostra isso. Nós mostramos — e sem acusar o candidato.",
-    },
-    {
-      titulo: "Faixa ótima, não quanto-mais-melhor",
-      texto:
-        "Cooperação altíssima atrapalha em negociação. Abertura altíssima frustra em conferência. O modelo penaliza os dois lados quando o trabalho pede o meio.",
-    },
-    {
-      titulo: "Ordena, nunca elimina",
-      texto:
-        "Não existe e não vai existir corte automático. A lista é sugestão de prioridade de conversa, e a decisão continua sendo de quem entrevista.",
-    },
-    {
-      titulo: "O resultado é seu, da sua empresa",
-      texto:
-        "O mapeamento fica no seu painel, para você conduzir a conversa. O candidato responde, é avisado de que o resultado vai para você, e continua podendo pedir os próprios dados quando quiser.",
-    },
-    {
-      titulo: "Reaplicar mede mudança, não memória",
-      texto:
-        `O banco tem ${ITENS.length} itens e cada aplicação sorteia 44. Candidato recorrente recebe itens que ainda não viu.`,
-    },
+/**
+ * O conceito da marca, dito com o produto.
+ *
+ * Duas metades — sinais da pessoa e contexto da vaga — e o FIT no meio. É o
+ * símbolo da Baliza explicado sem falar de logotipo nenhum.
+ */
+function OFit() {
+  return (
+    <section className="border-b bg-superficie-2/60">
+      <div className="medida secao">
+        <p className="etiqueta">Pessoa + vaga</p>
+        <h2 className="mt-4 max-w-2xl t-titulo">
+          Aderência é uma relação, não uma nota.
+        </h2>
+        <p className="mt-5 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
+          A mesma pessoa tem aderências diferentes em vagas diferentes, e isso
+          não é defeito do modelo — é o modelo funcionando. Cooperação altíssima
+          é um problema em prospecção e um trunfo em pós-venda. Ninguém é bom ou
+          ruim em abstrato.
+        </p>
+
+        <div className="mt-12 grid items-stretch gap-4 lg:grid-cols-[1fr_auto_1fr]">
+          <div className="rounded-2xl border bg-card p-6">
+            <p className="etiqueta">Lado A · a pessoa</p>
+            <h3 className="mt-3 text-base font-semibold">
+              Sinais comportamentais
+            </h3>
+            <p className="mt-2 t-corpo-sm leading-relaxed text-muted-foreground">
+              {TOTAL_DE_ITENS} afirmações e {CENARIOS_POR_PROVA} situações de
+              trabalho geram cinco dimensões comparáveis entre pessoas — mais os
+              controles que dizem o quanto confiar naquela resposta.
+            </p>
+          </div>
+
+          {/* O vazio do meio é o desenho, não a sobra dele. */}
+          <div className="flex items-center justify-center py-2 lg:py-0">
+            <div className="flex flex-col items-center gap-2">
+              <span className="etiqueta">fit</span>
+              <span
+                aria-hidden
+                className="h-16 w-px lg:h-full lg:min-h-24"
+                style={{
+                  background:
+                    "linear-gradient(to bottom, transparent, var(--marca-sinal), transparent)",
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-card p-6">
+            <p className="etiqueta">Lado B · a vaga</p>
+            <h3 className="mt-3 text-base font-semibold">
+              O que este trabalho pede
+            </h3>
+            <p className="mt-2 t-corpo-sm leading-relaxed text-muted-foreground">
+              Uma faixa-alvo por dimensão, com peso e regra próprios — quanto
+              mais melhor, quanto menos melhor, ou faixa ótima que penaliza os
+              dois lados. É a régua, e ela é sua.
+            </p>
+          </div>
+        </div>
+
+        <p className="mt-8 max-w-2xl rounded-xl border-l-2 border-marca bg-secondary/50 px-5 py-4 t-corpo-sm leading-relaxed text-muted-foreground">
+          Editar o perfil-alvo recalcula a aderência de todas as respostas já
+          recebidas, na mesma transação. Duas réguas convivendo num mesmo ranking
+          é o pior tipo de erro: nada na tela denuncia.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ExplicacaoDaFaixa() {
+  return (
+    <section id="faixa" className="border-b scroll-mt-16">
+      <div className="medida secao">
+        <p className="etiqueta">O desenho</p>
+        <h2 className="mt-4 max-w-2xl t-titulo">
+          A faixa-alvo, peça por peça.
+        </h2>
+        <p className="mt-5 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
+          Este é o desenho que aparece em toda dimensão, em toda vaga, no painel
+          e no relatório impresso. Vale aprender uma vez.
+        </p>
+
+        <div className="mt-12">
+          <AnatomiaDaFaixa />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Confianca() {
+  const sinais = [
+    "afirmações que quase ninguém sustenta",
+    "itens equivalentes respondidos de forma divergente",
+    "sequências longas de resposta idêntica",
+    "tempo por item baixo demais para ter lido",
+    "divergência entre as afirmações e as situações",
   ];
 
   return (
     <section className="border-b bg-superficie-2/60">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <p className="etiqueta">Diferenciais</p>
-        <h2 className="mt-4 max-w-2xl t-titulo">
-          O produto não é o teste. É a decisão do dia seguinte.
-        </h2>
-
-        <div className="mt-14 grid gap-x-10 gap-y-11 md:grid-cols-2 lg:grid-cols-3">
-          {itens.map((item) => (
-            <div key={item.titulo}>
-              <h3 className="text-base leading-snug font-semibold">
-                {item.titulo}
-              </h3>
-              <p className="mt-2.5 t-corpo leading-relaxed text-muted-foreground">
-                {item.texto}
-              </p>
-            </div>
-          ))}
+      <div className="medida secao grid gap-12 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <p className="etiqueta">Resposta defensável</p>
+          <h2 className="mt-4 t-titulo">
+            Todo escore vem com o quanto dá para confiar nele.
+          </h2>
+          <p className="mt-6 t-corpo leading-relaxed text-muted-foreground">
+            Autorrelato dá para maquiar — em qualquer instrumento do mercado. A
+            diferença é que aqui isso é medido e dito. Cinco sinais alimentam um
+            selo de confiança que acompanha a aderência para todo lado: tela,
+            relatório e PDF.
+          </p>
+          <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
+            Quando o selo cai, o relatório avisa e sugere o que confirmar na
+            entrevista — sem acusar o candidato de nada.
+          </p>
         </div>
+
+        <ul className="space-y-3 self-center">
+          {sinais.map((s, i) => (
+            <li
+              key={s}
+              className="flex items-start gap-3 rounded-xl border bg-card px-5 py-4"
+            >
+              <span className="leitura mt-px shrink-0 t-legenda text-muted-foreground">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="t-corpo-sm leading-relaxed">{s}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
@@ -323,20 +391,21 @@ function Beneficios() {
 
 function OQueMedimos() {
   return (
-    <section id="medimos" className="border-b">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:gap-16">
+    <section id="medimos" className="border-b scroll-mt-16">
+      <div className="medida secao grid gap-12 lg:grid-cols-2 lg:gap-16">
         <div>
           <p className="etiqueta">O instrumento</p>
           <h2 className="mt-4 t-titulo">
-            Cinco dimensões, medidas do jeito que dá pra defender.
+            Cinco dimensões, medidas do jeito que dá para defender.
           </h2>
 
           <p className="mt-6 t-corpo leading-relaxed text-muted-foreground">
             O instrumento é derivado do IPIP, que é de domínio público e mede o
             mesmo modelo de cinco fatores que o mercado vende como diferencial
-            proprietário. A prova tem duas partes: {TOTAL_DE_ITENS} afirmações que geram
-            o escore comparável entre pessoas, e {CENARIOS_POR_PROVA} situações
-            de trabalho que servem para conferir se as duas histórias batem.
+            proprietário. A prova tem duas partes: {TOTAL_DE_ITENS} afirmações
+            que geram o escore comparável entre pessoas, e {CENARIOS_POR_PROVA}{" "}
+            situações de trabalho que servem para conferir se as duas histórias
+            batem.
           </p>
 
           <p className="mt-4 t-corpo leading-relaxed text-muted-foreground">
@@ -353,7 +422,7 @@ function OQueMedimos() {
           </p>
         </div>
 
-        <ul className="space-y-5 self-center">
+        <ul className="space-y-4 self-center">
           {FATORES.map((f) => (
             <li key={f} className="rounded-xl border bg-card p-5">
               <div className="flex items-baseline gap-2.5">
@@ -375,76 +444,55 @@ function OQueMedimos() {
   );
 }
 
-/**
- * ATENÇÃO — CONTEÚDO DE EXEMPLO.
- *
- * Estes depoimentos são ilustrativos e foram escritos para mostrar o formato da
- * seção. NÃO são de clientes reais. Troque por depoimentos verdadeiros, com
- * autorização de quem falou, antes de publicar. Depoimento inventado numa
- * página de vendas é problema jurídico e de reputação, não licença poética.
- */
-const DEPOIMENTOS_DE_EXEMPLO = [
-  {
-    texto:
-      "A parte que mudou o processo não foi o ranking — foi chegar na entrevista já sabendo o que perguntar pra cada pessoa.",
-    autor: "Coordenação de RH",
-    contexto: "indústria, 180 pessoas",
-  },
-  {
-    texto:
-      "O selo de confiança pegou dois candidatos que responderam o que achavam que a gente queria ouvir. Isso sozinho pagou a ferramenta.",
-    autor: "Gerência de Gente",
-    contexto: "varejo, 40 lojas",
-  },
-  {
-    texto:
-      "Parei de contratar vendedor simpático que não fecha. A faixa de cooperação explicou uma coisa que eu sentia e não sabia nomear.",
-    autor: "Direção Comercial",
-    contexto: "serviços B2B",
-  },
-];
+function SegurancaEDecisao() {
+  const garantias = [
+    {
+      Icone: UserRoundCheck,
+      titulo: "Ordena, nunca elimina",
+      texto:
+        "Não existe e não vai existir corte automático por nota. A lista é sugestão de prioridade de conversa; a decisão continua sendo de quem entrevista.",
+    },
+    {
+      Icone: SlidersHorizontal,
+      titulo: "A régua é sua, e fica registrada",
+      texto:
+        "O perfil-alvo é copiado para a vaga na criação e vive com ela. Toda edição recalcula o que já entrou, para o ranking nunca misturar duas réguas.",
+    },
+    {
+      Icone: ShieldCheck,
+      titulo: "Nenhum dado sensível, prazo definido",
+      texto:
+        "Nada de origem, religião, opinião política, saúde ou biometria em etapa nenhuma. As respostas são apagadas no prazo de retenção que a sua empresa definir.",
+    },
+  ];
 
-function Depoimentos() {
   return (
     <section className="border-b bg-superficie-2/60">
-      <div className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="etiqueta">O que muda na prática</p>
-          <span className="rounded-full border border-fora/40 bg-fora/10 px-2.5 py-1 t-legenda font-medium text-fora">
-            Exemplos ilustrativos
-          </span>
-        </div>
-
+      <div className="medida secao">
+        <p className="etiqueta">Segurança e decisão humana</p>
         <h2 className="mt-4 max-w-2xl t-titulo">
-          Três situações que o produto resolve.
+          O sistema dá referência. Quem decide é gente.
         </h2>
 
-        {/* O aviso fica na tela, e não só no comentário do código, porque é a
-            tela que engana. Depoimento inventado numa página de vendas é
-            problema jurídico e de reputação — e o leitor não abre o fonte para
-            descobrir que a frase é nossa. */}
-        <p className="mt-4 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
-          As falas abaixo foram escritas por nós para mostrar o formato da
-          conversa que o produto muda. <strong className="font-medium text-foreground">
-            Não são clientes reais</strong> e não representam resultado de
-          ninguém. Quando houver depoimento de verdade, com autorização de quem
-          falou, ele entra aqui — com nome e empresa.
-        </p>
-
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {DEPOIMENTOS_DE_EXEMPLO.map((d) => (
-            <figure key={d.autor} className="rounded-xl border border-dashed bg-card p-6">
-              <blockquote className="t-corpo leading-relaxed">
-                &ldquo;{d.texto}&rdquo;
-              </blockquote>
-              <figcaption className="mt-5 border-t pt-4">
-                <p className="etiqueta text-fora">Exemplo escrito por nós</p>
-                <p className="mt-1.5 t-corpo-sm font-medium">{d.autor}</p>
-                <p className="etiqueta mt-1">{d.contexto}</p>
-              </figcaption>
-            </figure>
+        <div className="mt-12 grid gap-x-10 gap-y-10 md:grid-cols-3">
+          {garantias.map(({ Icone, titulo, texto }) => (
+            <div key={titulo}>
+              <Icone className="size-5 text-marca" aria-hidden />
+              <h3 className="mt-4 text-base leading-snug font-semibold">
+                {titulo}
+              </h3>
+              <p className="mt-2.5 t-corpo leading-relaxed text-muted-foreground">
+                {texto}
+              </p>
+            </div>
           ))}
         </div>
+
+        <p className="mt-10 max-w-3xl t-corpo-sm leading-relaxed text-muted-foreground">
+          O resultado é da empresa que aplicou. O candidato responde, é avisado
+          de que o resultado vai para você e continua podendo pedir acesso,
+          correção ou exclusão dos próprios dados a qualquer momento.
+        </p>
       </div>
     </section>
   );
@@ -483,8 +531,8 @@ const PERGUNTAS_FREQUENTES = [
 
 function Perguntas() {
   return (
-    <section id="perguntas" className="border-b bg-superficie-2/60">
-      <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[20rem_1fr]">
+    <section id="perguntas" className="border-b scroll-mt-16">
+      <div className="medida secao grid gap-12 lg:grid-cols-[20rem_1fr]">
         <div>
           <p className="etiqueta">Perguntas frequentes</p>
           <h2 className="mt-4 t-titulo">
@@ -495,13 +543,16 @@ function Perguntas() {
         <div className="divide-y border-t">
           {PERGUNTAS_FREQUENTES.map((item) => (
             <details key={item.p} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 text-base font-medium">
+              <summary className="flex min-h-11 cursor-pointer list-none items-start justify-between gap-4 rounded-sm text-base font-medium">
                 {item.p}
-                <span className="mt-1 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
+                <span
+                  aria-hidden
+                  className="mt-1 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+                >
                   <Minus className="size-4 rotate-90 group-open:rotate-0" />
                 </span>
               </summary>
-              <p className="mt-3 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
+              <p className="mt-1 max-w-2xl t-corpo leading-relaxed text-muted-foreground">
                 {item.r}
               </p>
             </details>
@@ -515,21 +566,22 @@ function Perguntas() {
 function ChamadaFinal() {
   return (
     <section className="border-b">
-      <div className="mx-auto max-w-6xl px-5 py-24 text-center sm:px-8">
+      <div className="medida secao text-center">
         <h2 className="mx-auto max-w-2xl t-display">
-          Tire a venda antes da próxima contratação.
+          Decida com referência, não com impressão.
         </h2>
-        <p className="mx-auto mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
+        <p className="mx-auto mt-5 max-w-lg t-corpo-lg text-muted-foreground">
           Crie a conta, publique uma vaga e mande o link para três candidatos
           hoje mesmo. Você vê o ranking ainda esta semana — e chega na entrevista
           sabendo o que perguntar.
         </p>
         <BotaoLink
           href="/cadastrar"
+          variant="marca"
           size="lg"
-          className="mt-9 h-11 gap-2 px-6 t-corpo"
+          className="mt-9"
         >
-          Experimentar gratuitamente
+          Criar minha primeira vaga
           <ArrowRight className="size-4" />
         </BotaoLink>
       </div>
@@ -539,13 +591,13 @@ function ChamadaFinal() {
 
 function Rodape() {
   return (
-    <footer className="mx-auto max-w-6xl px-5 py-14 sm:px-8">
+    <footer className="medida py-14">
       <div className="flex flex-wrap items-start justify-between gap-10">
         <div className="max-w-xs">
-          <Marca />
+          <Marca tamanho="md" />
           <p className="mt-4 t-corpo-sm leading-relaxed text-muted-foreground">
-            Mapeamento comportamental para processos seletivos. Mostra o que
-            currículo e entrevista não mostram — e devolve as perguntas certas.
+            Inteligência comportamental para recrutamento. Pessoa + vaga,
+            aderência explicada — e as perguntas certas para a entrevista.
           </p>
         </div>
 
@@ -554,6 +606,7 @@ function Rodape() {
             titulo="Produto"
             itens={[
               { rotulo: "Como funciona", href: "#funciona" },
+              { rotulo: "A faixa-alvo", href: "#faixa" },
               { rotulo: "O que medimos", href: "#medimos" },
             ]}
           />
@@ -562,6 +615,7 @@ function Rodape() {
             itens={[
               { rotulo: "Entrar", href: "/entrar" },
               { rotulo: "Criar conta", href: "/cadastrar" },
+              { rotulo: "Acesso por código", href: "/acesso" },
             ]}
           />
           <ColunaDoRodape
@@ -575,7 +629,9 @@ function Rodape() {
       </div>
 
       <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t pt-6">
-        <p className="etiqueta">© {new Date().getFullYear()} Prumo</p>
+        <p className="etiqueta">
+          © {new Date().getFullYear()} Baliza by SPXIA
+        </p>
         <AlternarTema />
       </div>
     </footer>
@@ -597,7 +653,7 @@ function ColunaDoRodape({
           <li key={item.rotulo}>
             <Link
               href={item.href}
-              className="t-corpo-sm text-muted-foreground hover:text-foreground"
+              className="rounded-sm t-corpo-sm text-muted-foreground hover:text-foreground"
             >
               {item.rotulo}
             </Link>

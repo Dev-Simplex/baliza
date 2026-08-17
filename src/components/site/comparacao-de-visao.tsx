@@ -9,14 +9,16 @@ import { Faixa } from "@/components/faixa";
  *
  * O MESMO candidato, visto de dois jeitos. À esquerda, o que currículo e
  * entrevista entregam: um nome, um cargo e uma impressão simpática — e três
- * barras tapadas, que são as coisas que decidem a contratação e que ninguém
- * consegue ver. À direita, a leitura.
+ * barras tapadas, que são justamente as coisas que decidem a contratação. À
+ * direita, o contexto: as mesmas três dimensões lidas contra o que ESTA vaga
+ * pede.
  *
- * A tarja que tapa é do mesmo formato da faixa alvo do medidor, de propósito:
- * venda e faixa são o mesmo objeto. Um esconde, o outro mede.
+ * A tarja que tapa tem o mesmo formato da faixa-alvo do medidor, de propósito.
+ * É o conceito FIT em duas colunas — sozinha, nenhuma das metades decide nada.
  *
- * Bruno é o caso didático de verdade do produto — o candidato que encanta na
- * entrevista e não pede o fechamento. Os números vêm do motor, não de um mock.
+ * Bruno é o caso didático do produto: o candidato que encanta na entrevista e
+ * não pede o fechamento. Os números são coerentes com o motor, mas são
+ * demonstração — não são resultado de pessoa nenhuma.
  */
 export function ComparacaoDeVisao() {
   const semMovimento = useReducedMotion();
@@ -30,7 +32,7 @@ export function ComparacaoDeVisao() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="flex flex-col rounded-2xl border border-dashed bg-superficie-2/50 p-6"
       >
-        <p className="etiqueta">Com vendas nos olhos</p>
+        <p className="etiqueta">Currículo e entrevista</p>
 
         <div className="mt-5">
           <p className="t-corpo font-semibold">Bruno Tavares</p>
@@ -77,8 +79,8 @@ export function ComparacaoDeVisao() {
         </ul>
 
         <p className="mt-auto pt-6 t-legenda leading-relaxed text-muted-foreground">
-          Currículo diz o que a pessoa fez. Entrevista diz quem se apresenta bem.
-          O que decide a contratação fica tapado.
+          O currículo mostra histórico. A entrevista mostra quem se apresenta
+          bem. O que decide a contratação continua tapado.
         </p>
       </motion.div>
 
@@ -87,13 +89,11 @@ export function ComparacaoDeVisao() {
         initial={semMovimento ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        className="flex flex-col rounded-2xl border bg-card p-6 shadow-sm"
+        className="flex flex-col rounded-2xl border bg-card p-6 shadow-baixa"
       >
         <div className="flex items-baseline justify-between gap-3">
-          <p className="etiqueta">Com o Prumo</p>
-          <p className="leitura text-[1.625rem] leading-none font-semibold text-marca">
-            85,1
-          </p>
+          <p className="etiqueta">Com a Baliza</p>
+          <p className="t-numero">85,1</p>
         </div>
 
         <div className="mt-5">
@@ -150,7 +150,7 @@ export function ComparacaoDeVisao() {
             Cooperação bem acima da faixa
           </span>{" "}
           é o que derruba a aderência. Em prospecção, quem evita atrito não pede
-          o fechamento e dá desconto pra não desagradar. É exatamente o que a
+          o fechamento e dá desconto para não desagradar. É exatamente o que a
           entrevista leu como &ldquo;simpático&rdquo;.
         </p>
       </motion.div>

@@ -20,6 +20,7 @@ export function FormularioDeCadastro() {
         <Input
           id="empresa"
           name="empresa"
+          tamanho="lg"
           required
           placeholder="Acme Indústrias"
           aria-invalid={Boolean(estado.campos?.empresa)}
@@ -34,6 +35,7 @@ export function FormularioDeCadastro() {
         <Input
           id="nome"
           name="nome"
+          tamanho="lg"
           required
           autoComplete="name"
           placeholder="Marina Coelho"
@@ -50,6 +52,7 @@ export function FormularioDeCadastro() {
           id="email"
           name="email"
           type="email"
+          tamanho="lg"
           required
           autoComplete="email"
           placeholder="voce@empresa.com.br"
@@ -66,6 +69,7 @@ export function FormularioDeCadastro() {
           id="senha"
           name="senha"
           type="password"
+          tamanho="lg"
           required
           autoComplete="new-password"
           aria-invalid={Boolean(estado.campos?.senha)}
@@ -93,7 +97,13 @@ export function FormularioDeCadastro() {
         </div>
       )}
 
-      <Button type="submit" disabled={pendente} className="w-full gap-2">
+      <Button
+        type="submit"
+        variant="marca"
+        size="lg"
+        disabled={pendente}
+        className="w-full"
+      >
         {pendente ? (
           <>
             <Loader2 className="size-4 animate-spin" />
