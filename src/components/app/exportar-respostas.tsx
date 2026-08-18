@@ -34,8 +34,17 @@ const PERIODOS = [
  * navegador cuidar do download inteiro (nome pelo cabeçalho, progresso,
  * retomada) em vez de reimplementar pior o que ele já faz.
  */
-export function ExportarRespostas() {
+/**
+ * `podeExportar` chega decidido do servidor, e a rota decide de novo.
+ *
+ * Esconder o botão não é a trava — a trava é o 403 em `relatorios/csv`. Isto
+ * existe para que quem não pode não descubra pelo erro: um botão que sempre
+ * falha é pior que um botão que não está lá.
+ */
+export function ExportarRespostas({ podeExportar }: { podeExportar: boolean }) {
   const [periodo, setPeriodo] = useState<string>("tudo");
+
+  if (!podeExportar) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-2">

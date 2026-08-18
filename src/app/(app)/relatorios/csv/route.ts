@@ -3,7 +3,7 @@ import { lerAvaliacao } from "@/lib/analise/modulos";
 import { ROTULO_DA_DECISAO } from "@/lib/formato";
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPapelDaApi, respostaDeAutorizacao } from "@/lib/tenant";
 
 /**
  * Exportação das respostas concluídas em CSV.
@@ -24,6 +24,15 @@ import { exigirTenant } from "@/lib/tenant";
  * Sem os três bytes iniciais, o Excel abre UTF-8 como se fosse Latin-1 e todo
  * "Organização" vira "OrganizaÃ§Ã£o". O LibreOffice e o Sheets acertam
  * sozinhos; o Excel, que é onde isso vai parar, não.
+ *
+ * ─── Exportar exige RECRUITER, e não só estar logado ──────────────────────
+ * Este arquivo leva a base inteira de candidatos para fora do sistema: nome,
+ * e-mail, aderência, arquétipo e a anotação do parecer. Ele ficou por um tempo
+ * atrás de `exigirTenant()` só — quer dizer, um VIEWER, o papel de MENOR
+ * privilégio, baixava tudo. Leitura na tela e extração para arquivo não são a
+ * mesma permissão: a primeira fica dentro da ferramenta, com auditoria e
+ * expurgo por retenção; a segunda vira um .csv no Downloads de alguém, fora do
+ * alcance das duas coisas.
  *
  * ─── A anotação do parecer VAI no arquivo ─────────────────────────────────
  * Foi decisão, não descuido. É o texto mais sensível que o sistema guarda, e um
@@ -57,7 +66,15 @@ function celula(valor: string | number | null | undefined) {
 }
 
 export async function GET(requisicao: Request) {
-  const { organizationId, userId } = await exigirTenant();
+  let organizationId: string;
+  let userId: string;
+  try {
+    ({ organizationId, userId } = await exigirPapelDaApi("RECRUITER"));
+  } catch (erro) {
+    const recusa = respostaDeAutorizacao(erro);
+    if (recusa) return recusa;
+    throw erro;
+  }
 
   const periodo = new URL(requisicao.url).searchParams.get("periodo") ?? "tudo";
   const dias = PERIODOS[periodo] ?? null;

@@ -17,7 +17,7 @@ import {
 import { ROTULO_DA_DECISAO, data, duracao, numero } from "@/lib/formato";
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPapelDaApi, respostaDeAutorizacao } from "@/lib/tenant";
 
 /**
  * Download do relatório em PDF.
@@ -35,6 +35,12 @@ import { exigirTenant } from "@/lib/tenant";
  * de buscar: consulta que esquece o escopo é vazamento entre clientes, e uma
  * rota de exportação é o pior lugar para descobrir isso.
  *
+ * E o escopo não é só de empresa: é de papel. Um relatório psicométrico
+ * completo de uma pessoa não é o mesmo dado que a lista da vaga, e sair em
+ * arquivo é o que o tira do alcance da retenção e da auditoria de leitura. Por
+ * isso `exigirPapelDaApi("RECRUITER")` — antes bastava estar logado, e um
+ * VIEWER baixava o relatório inteiro de qualquer candidato.
+ *
  * O download entra na trilha de auditoria pela mesma razão: dado de candidato
  * saindo da ferramenta em arquivo é exatamente o evento que alguém vai querer
  * reconstruir depois.
@@ -44,7 +50,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const { organizationId, userId } = await exigirTenant();
+
+  let organizationId: string;
+  let userId: string;
+  try {
+    ({ organizationId, userId } = await exigirPapelDaApi("RECRUITER"));
+  } catch (erro) {
+    const recusa = respostaDeAutorizacao(erro);
+    if (recusa) return recusa;
+    throw erro;
+  }
 
   const avaliacaoId = new URL(requisicao.url).searchParams.get("avaliacao");
 

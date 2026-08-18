@@ -28,12 +28,12 @@ import {
 } from "@/lib/formato";
 import { NOMES_DE_FATOR, FATORES } from "@/lib/instrument/types";
 import { faixaQualitativa } from "@/lib/instrument/scoring";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirTenant, podeAoMenos } from "@/lib/tenant";
 
 export const metadata: Metadata = { title: "Relatórios" };
 
 export default async function PaginaDeRelatorios() {
-  const { organizationId } = await exigirTenant();
+  const { organizationId, role } = await exigirTenant();
 
   const [resumo, vagas, confianca, funil, arquetipos, medias] =
     await Promise.all([
@@ -74,7 +74,7 @@ export default async function PaginaDeRelatorios() {
         etiqueta="Agregado"
         titulo="Relatórios"
         descricao="Como o processo está andando, para além de um candidato de cada vez."
-        acoes={<ExportarRespostas />}
+        acoes={<ExportarRespostas podeExportar={podeAoMenos(role, "RECRUITER")} />}
       />
 
       <div className="space-y-4">

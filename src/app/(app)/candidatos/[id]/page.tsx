@@ -39,7 +39,7 @@ import {
   numero,
 } from "@/lib/formato";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirTenant, podeAoMenos } from "@/lib/tenant";
 import { urlBase } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Candidato" };
@@ -55,7 +55,10 @@ export default async function PaginaDoCandidato({
 }) {
   const { id } = await params;
   const { avaliacao: avaliacaoId } = await searchParams;
-  const { organizationId } = await exigirTenant();
+  const { organizationId, role } = await exigirTenant();
+  // Baixar o relatório inteiro de uma pessoa é exportação, não leitura: sai da
+  // ferramenta e escapa da retenção. Mesma régua da rota que serve o arquivo.
+  const podeExportar = podeAoMenos(role, "RECRUITER");
 
   const candidato = await prisma.candidate.findFirst({
     where: { id, organizationId },
@@ -123,6 +126,7 @@ export default async function PaginaDoCandidato({
         avaliacaoId={avaliacao.id}
         leitura={leitura}
         respondidoEm={avaliacao.completedAt}
+        podeExportar={podeExportar}
       />
     );
   }
@@ -211,9 +215,11 @@ export default async function PaginaDoCandidato({
           </div>
 
           <div className="flex items-center gap-3">
-            <BotaoSalvarPdf
-              href={`/candidatos/${candidato.id}/pdf?avaliacao=${avaliacao.id}`}
-            />
+            {podeExportar && (
+              <BotaoSalvarPdf
+                href={`/candidatos/${candidato.id}/pdf?avaliacao=${avaliacao.id}`}
+              />
+            )}
             {/* O selo e o número andam juntos, e é aqui que a regra do §4.4
                 vira layout: sem selo o número não é exibido — fit sozinho vira
                 nota de aprovação. */}
@@ -577,6 +583,7 @@ function SemOsCincoFatores({
   avaliacaoId,
   leitura,
   respondidoEm,
+  podeExportar,
 }: {
   candidatoId: string;
   candidato: string;
@@ -585,6 +592,7 @@ function SemOsCincoFatores({
   avaliacaoId: string;
   leitura: LeituraDaAvaliacao;
   respondidoEm: Date | null;
+  podeExportar: boolean;
 }) {
   const roteiro = montarRoteiro({
     contribuicoes: [],
@@ -626,9 +634,11 @@ function SemOsCincoFatores({
               {respondidoEm && ` · respondeu em ${data(respondidoEm)}`}
             </p>
           </div>
-          <BotaoSalvarPdf
-            href={`/candidatos/${candidatoId}/pdf?avaliacao=${avaliacaoId}`}
-          />
+          {podeExportar && (
+            <BotaoSalvarPdf
+              href={`/candidatos/${candidatoId}/pdf?avaliacao=${avaliacaoId}`}
+            />
+          )}
         </header>
       </div>
 

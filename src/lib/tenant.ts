@@ -1,6 +1,16 @@
 import { redirect } from "next/navigation";
 import type { UserRole } from "@/generated/prisma/enums";
 import { auth } from "@/lib/auth";
+import {
+  ErroDeAutorizacao,
+  podeAoMenos,
+  respostaDeAutorizacao,
+} from "@/lib/permissoes";
+
+// Reexportados daqui porque este sempre foi o endereço deles para o resto
+// do código. A mudança é de arrumação — `permissoes.ts` não importa sessão e
+// por isso pode ser testado —, não de interface.
+export { ErroDeAutorizacao, podeAoMenos, respostaDeAutorizacao };
 
 /**
  * Ponto único de entrada do escopo multiempresa.
@@ -56,18 +66,6 @@ export async function exigirTenant(): Promise<Contexto> {
   };
 }
 
-/** Hierarquia de papéis: número maior manda mais. */
-const PESO: Record<UserRole, number> = {
-  VIEWER: 1,
-  RECRUITER: 2,
-  ADMIN: 3,
-  OWNER: 4,
-};
-
-export function podeAoMenos(papel: UserRole, minimo: UserRole) {
-  return PESO[papel] >= PESO[minimo];
-}
-
 /** Exige um papel mínimo dentro da empresa. */
 export async function exigirPapel(minimo: UserRole): Promise<Contexto> {
   const contexto = await exigirTenant();
@@ -85,17 +83,18 @@ export async function exigirAdminPlataforma() {
 }
 
 /**
- * Erro de autorização para uso em rotas de API e Server Actions, onde
- * `redirect()` não é a resposta certa.
+ * Papel mínimo em rota de arquivo, onde `redirect()` é a resposta errada.
+ *
+ * A recusa sai por `respostaDeAutorizacao`, e o porquê está lá.
  */
-export class ErroDeAutorizacao extends Error {
-  constructor(
-    message = "Não autorizado",
-    readonly status = 403,
-  ) {
-    super(message);
-    this.name = "ErroDeAutorizacao";
-  }
+export async function exigirPapelDaApi(minimo: UserRole): Promise<Contexto> {
+  const contexto = await tenantDaApi();
+  if (!podeAoMenos(contexto.role, minimo))
+    throw new ErroDeAutorizacao(
+      "Seu perfil de acesso não permite exportar dados de candidatos.",
+      403,
+    );
+  return contexto;
 }
 
 /** Versão para API: lança em vez de redirecionar. */
