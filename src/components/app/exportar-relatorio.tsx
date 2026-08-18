@@ -14,7 +14,19 @@ const PERIODOS = [
 ] as const;
 
 /**
- * Baixa as respostas concluídas em CSV.
+ * Baixa o relatório do processo em PDF.
+ *
+ * ─── O CSV saiu ────────────────────────────────────────────────────────────
+ * Esta tela exportava linha por candidato em CSV. Era o artefato errado para a
+ * pergunta que ela faz — "como o processo está andando" — e para quem recebe o
+ * arquivo, que costuma ser quem não abre o painel. O agregado em PDF responde
+ * isso e, de quebra, não carrega dado pessoal: circula por e-mail sem levar o
+ * risco junto.
+ *
+ * O que se perdeu foi a saída em formato de conta: ninguém dinamiza um PDF. Se
+ * um dia voltar a ser necessário cruzar com o ATS, a rota antiga está no
+ * histórico do git — mas volte-a como exportação de dado, com o nome dizendo
+ * isso, e não como "relatório".
  *
  * ─── Por que o período fica AQUI, e não filtrando a tela inteira ──────────
  * "Últimos 30 dias" é uma pergunta que faz sentido sobre uma LISTA de
@@ -37,11 +49,11 @@ const PERIODOS = [
 /**
  * `podeExportar` chega decidido do servidor, e a rota decide de novo.
  *
- * Esconder o botão não é a trava — a trava é o 403 em `relatorios/csv`. Isto
+ * Esconder o botão não é a trava — a trava é o 403 em `relatorios/pdf`. Isto
  * existe para que quem não pode não descubra pelo erro: um botão que sempre
  * falha é pior que um botão que não está lá.
  */
-export function ExportarRespostas({ podeExportar }: { podeExportar: boolean }) {
+export function ExportarRelatorio({ podeExportar }: { podeExportar: boolean }) {
   const [periodo, setPeriodo] = useState<string>("tudo");
 
   if (!podeExportar) return null;
@@ -64,30 +76,14 @@ export function ExportarRespostas({ podeExportar }: { podeExportar: boolean }) {
         ))}
       </select>
 
-      {/* O PDF é o principal porque responde à pergunta desta tela: "como o
-          processo está andando", num arquivo que se manda para quem não abre o
-          painel. É agregado — não leva nome de candidato. */}
+      {/* Agregado, sem nome de candidato: é o que permite mandar por e-mail
+          para quem não abre o painel. */}
       <a
         href={`/relatorios/pdf?periodo=${periodo}`}
         className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
       >
         <Download className="size-3.5" />
         Exportar PDF
-      </a>
-
-      {/* O CSV continua, em segundo plano, porque responde a OUTRA pergunta:
-          "me dá os dados para eu fazer minha conta". Ninguém dinamiza um PDF, e
-          cruzar com o ATS é o motivo pelo qual esta exportação nasceu. Tirá-lo
-          da tela seria tirar a capacidade — e ela é linha por candidato, então
-          o lugar dela é discreto, não em destaque. */}
-      <a
-        href={`/relatorios/csv?periodo=${periodo}`}
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "sm" }),
-          "gap-1.5 text-muted-foreground",
-        )}
-      >
-        CSV
       </a>
     </div>
   );
