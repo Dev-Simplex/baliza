@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "8mb" },
   },
 
-  serverExternalPackages: ["@react-pdf/renderer", "exceljs", "bcryptjs"],
+  serverExternalPackages: ["@react-pdf/renderer", "bcryptjs"],
 
   async headers() {
     return [
