@@ -7,6 +7,7 @@ import { RotateCw } from "lucide-react";
 import { Marca } from "@/components/marca";
 import { Button } from "@/components/ui/button";
 import { BotaoLink } from "@/components/ui/botao-link";
+import { ehVersaoVelha } from "@/lib/versao-velha";
 
 /** Rotas onde quem está do outro lado é o candidato, não o cliente. */
 const DO_CANDIDATO = ["/t/", "/vaga/", "/acesso"];
@@ -27,15 +28,11 @@ const DO_CANDIDATO = ["/t/", "/vaga/", "/acesso"];
  *
  * Sem `digest`: isto acontece no navegador, então não há erro de servidor para
  * o Next identificar — mais um motivo para o texto não prometer código nenhum.
+ *
+ * A regra em si mora em `lib/versao-velha.ts`, com teste: ela já falhou em
+ * silêncio uma vez, quando a MESMA causa chegou pela porta da Server Action e
+ * não foi reconhecida.
  */
-function ehVersaoVelha(erro: Error) {
-  return (
-    erro.name === "ChunkLoadError" ||
-    /Loading chunk|Loading CSS chunk|dynamically imported module|Importing a module script failed/i.test(
-      erro.message,
-    )
-  );
-}
 
 /**
  * Fronteira de erro.
