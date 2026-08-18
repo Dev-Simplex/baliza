@@ -30,7 +30,9 @@ const esquema = z.object({
   SMTP_FROM: z.string().optional().default("Prumo <nao-responda@localhost>"),
 });
 
-function carregar() {
+type Ambiente = z.infer<typeof esquema>;
+
+function carregar(): Ambiente {
   const resultado = esquema.safeParse(process.env);
 
   if (!resultado.success) {
@@ -43,7 +45,50 @@ function carregar() {
   return resultado.data;
 }
 
-export const env = carregar();
+let memoria: Ambiente | null = null;
+
+// ─── Por que um Proxy, e não `export const env = carregar()` ───────────────
+// Validar no corpo do módulo faz a checagem disparar no *import*, não no uso.
+// E `next build`, ao coletar dados de página, carrega o grafo de módulos de
+// cada rota só para ler `metadata` e config — sem executar handler nenhum.
+// Resultado: uma página institucional que não toca em ambiente nenhum derrubava
+// o build inteiro por falta de DATABASE_URL, porque o layout do route group
+// arrasta `env` para o grafo dela. Segredo de produção passava a ser requisito
+// de compilação, o que é a coisa errada em dois sentidos: prende o build ao
+// ambiente e espalha credencial por onde ela não precisa estar.
+//
+// Com o Proxy, a validação acontece na primeira LEITURA de uma variável — que
+// só acontece em runtime, servindo uma requisição de verdade. A promessa do
+// arquivo continua de pé: quem lê `env.DATABASE_URL` sem ela configurada leva
+// o mesmo erro, com a mesma mensagem, na mesma hora.
+export const env = new Proxy({} as Ambiente, {
+  get(_alvo, prop) {
+    // Symbol nunca é variável de ambiente: é o runtime farejando o objeto
+    // (`Symbol.toStringTag`, `then`, inspeção do console). Responder sem
+    // carregar evita que uma dessas sondagens dispare a validação no build.
+    if (typeof prop === "symbol") return undefined;
+
+    memoria ??= carregar();
+    return memoria[prop as keyof Ambiente];
+  },
+
+  // Sem estas, `{...env}` e `Object.keys(env)` veriam um objeto vazio.
+  has(_alvo, prop) {
+    if (typeof prop === "symbol") return false;
+    memoria ??= carregar();
+    return prop in memoria;
+  },
+
+  ownKeys() {
+    memoria ??= carregar();
+    return Reflect.ownKeys(memoria);
+  },
+
+  getOwnPropertyDescriptor(_alvo, prop) {
+    memoria ??= carregar();
+    return Object.getOwnPropertyDescriptor(memoria, prop);
+  },
+});
 
 /** A IA está configurada? Se não, o sistema usa o gerador determinístico. */
 export const temIA = () => env.OPENAI_API_KEY.length > 0;
