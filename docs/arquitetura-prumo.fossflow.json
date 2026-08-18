@@ -1,0 +1,764 @@
+{
+  "version": "1.0",
+  "title": "Prumo - stack de ponta a ponta",
+  "description": "Mapeamento comportamental para processos seletivos. Azul: caminho da requisicao. Verde: persistencia. Roxo tracejado: integracao opcional que degrada sem derrubar. Laranja: entrega. O PostgreSQL e a unica peca ainda nao provisionada.",
+  "icons": [
+    {
+      "id": "laptop",
+      "name": "laptop",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/laptop.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "mobiledevice",
+      "name": "mobiledevice",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/mobiledevice.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "router",
+      "name": "router",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/router.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "firewall",
+      "name": "firewall",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/firewall.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "server",
+      "name": "server",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/server.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "lock",
+      "name": "lock",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/lock.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "function-module",
+      "name": "function-module",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/function-module.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "package-module",
+      "name": "package-module",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/package-module.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "storage",
+      "name": "storage",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/storage.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "mail",
+      "name": "mail",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/mail.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "cloud",
+      "name": "cloud",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/cloud.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "document",
+      "name": "document",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/document.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "cube",
+      "name": "cube",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/cube.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    },
+    {
+      "id": "vm",
+      "name": "vm",
+      "url": "https://isoflow-public.s3.eu-west-2.amazonaws.com/isopacks/isoflow/vm.svg",
+      "collection": "isoflow",
+      "isIsometric": true
+    }
+  ],
+  "colors": [
+    {
+      "id": "req",
+      "value": "#3b82f6"
+    },
+    {
+      "id": "dados",
+      "value": "#10b981"
+    },
+    {
+      "id": "opc",
+      "value": "#8b5cf6"
+    },
+    {
+      "id": "deploy",
+      "value": "#f59e0b"
+    },
+    {
+      "id": "falta",
+      "value": "#ef4444"
+    }
+  ],
+  "items": [
+    {
+      "id": "rh",
+      "name": "Recrutador - navegador",
+      "description": "Painel: vagas, candidatos, dashboard, relatorios. Rotas privadas atras do proxy.ts.",
+      "icon": "laptop"
+    },
+    {
+      "id": "candidato",
+      "name": "Candidato - link /t/[token]",
+      "description": "Responde a bateria sem login. O token E a credencial: no-index vai no cabecalho, nao so no metadata.",
+      "icon": "mobiledevice"
+    },
+    {
+      "id": "traefik",
+      "name": "Traefik - proxy do Coolify",
+      "description": "Termina TLS e roteia para o container na porta 3300 (corrigida de 3000).",
+      "icon": "router"
+    },
+    {
+      "id": "proxy",
+      "name": "proxy.ts - porteiro de rotas",
+      "description": "Middleware do Next 16 (renomeado de middleware.ts). Decide sessao antes de renderizar.",
+      "icon": "firewall"
+    },
+    {
+      "id": "next",
+      "name": "Next.js 16.2 - App Router",
+      "description": "React 19.2 + Turbopack. RSC por padrao; 22 rotas, 5 estaticas.",
+      "icon": "server"
+    },
+    {
+      "id": "auth",
+      "name": "NextAuth v5 - sessao JWT",
+      "description": "5.0.0-beta.32 + @auth/prisma-adapter, bcryptjs. JWT e stateless: nao existe session store para hospedar.",
+      "icon": "lock"
+    },
+    {
+      "id": "actions",
+      "name": "Server Actions - Zod",
+      "description": "Mutacoes com validacao zod 4 na borda. Limite de corpo 8mb.",
+      "icon": "function-module"
+    },
+    {
+      "id": "prisma",
+      "name": "Prisma 7.9 - adapter-pg",
+      "description": "Driver adapter: o engine binario saiu do caminho. Client gerado em src/generated/prisma (gitignored).",
+      "icon": "package-module"
+    },
+    {
+      "id": "postgres",
+      "name": "PostgreSQL - A PROVISIONAR",
+      "description": "~22 modelos, 9 migrations, multi-tenant por organizationId. Guarda tambem o RateLimitCounter.",
+      "icon": "storage"
+    },
+    {
+      "id": "smtp",
+      "name": "SMTP - nodemailer (opcional)",
+      "description": "Ausencia DEGRADA: o convite cai no log em vez de derrubar o sistema.",
+      "icon": "mail"
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI (opcional)",
+      "description": "Sem chave, o sistema usa o gerador deterministico. Nao e dependencia dura.",
+      "icon": "cloud"
+    },
+    {
+      "id": "saidas",
+      "name": "PDF - Excel - QR",
+      "description": "@react-pdf/renderer, exceljs e qrcode. Fora do bundle do cliente via serverExternalPackages.",
+      "icon": "document"
+    },
+    {
+      "id": "github",
+      "name": "GitHub - Dev-Simplex/baliza",
+      "description": "Branch main. Sem CI: nenhum workflow roda o build ou os 309 testes antes do deploy.",
+      "icon": "cube"
+    },
+    {
+      "id": "railpack",
+      "name": "Railpack - build",
+      "description": "pnpm 10.27 fixado por packageManager; Node 22.23 escolhido pelo mise, sem pin no repo.",
+      "icon": "package-module"
+    },
+    {
+      "id": "coolify",
+      "name": "Coolify - 192.168.8.141",
+      "description": "Servidor localhost. Healthcheck desligado; migrations precisam ir no start command.",
+      "icon": "vm"
+    }
+  ],
+  "views": [
+    {
+      "id": "principal",
+      "name": "Visao geral",
+      "description": "A requisicao entra pelo topo e desce ate o banco; a entrega chega pela esquerda.",
+      "items": [
+        {
+          "id": "rh",
+          "tile": {
+            "x": 0,
+            "y": -9
+          }
+        },
+        {
+          "id": "candidato",
+          "tile": {
+            "x": 5,
+            "y": -9
+          }
+        },
+        {
+          "id": "traefik",
+          "tile": {
+            "x": 2,
+            "y": -6
+          }
+        },
+        {
+          "id": "proxy",
+          "tile": {
+            "x": 2,
+            "y": -3
+          }
+        },
+        {
+          "id": "next",
+          "tile": {
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "id": "auth",
+          "tile": {
+            "x": -2,
+            "y": 0
+          }
+        },
+        {
+          "id": "actions",
+          "tile": {
+            "x": 6,
+            "y": 0
+          }
+        },
+        {
+          "id": "prisma",
+          "tile": {
+            "x": 2,
+            "y": 3
+          }
+        },
+        {
+          "id": "postgres",
+          "tile": {
+            "x": 2,
+            "y": 6
+          }
+        },
+        {
+          "id": "smtp",
+          "tile": {
+            "x": 10,
+            "y": -2
+          }
+        },
+        {
+          "id": "openai",
+          "tile": {
+            "x": 10,
+            "y": 1
+          }
+        },
+        {
+          "id": "saidas",
+          "tile": {
+            "x": 10,
+            "y": 4
+          }
+        },
+        {
+          "id": "github",
+          "tile": {
+            "x": -7,
+            "y": -6
+          }
+        },
+        {
+          "id": "railpack",
+          "tile": {
+            "x": -7,
+            "y": -3
+          }
+        },
+        {
+          "id": "coolify",
+          "tile": {
+            "x": -7,
+            "y": 0
+          }
+        }
+      ],
+      "connectors": [
+        {
+          "id": "c0",
+          "color": "req",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c0a",
+              "ref": {
+                "item": "rh"
+              }
+            },
+            {
+              "id": "c0b",
+              "ref": {
+                "item": "traefik"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c0l",
+              "text": "HTTPS",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c1",
+          "color": "req",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c1a",
+              "ref": {
+                "item": "candidato"
+              }
+            },
+            {
+              "id": "c1b",
+              "ref": {
+                "item": "traefik"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c1l",
+              "text": "token",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c2",
+          "color": "req",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c2a",
+              "ref": {
+                "item": "traefik"
+              }
+            },
+            {
+              "id": "c2b",
+              "ref": {
+                "item": "proxy"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c2l",
+              "text": "3300",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c3",
+          "color": "req",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c3a",
+              "ref": {
+                "item": "proxy"
+              }
+            },
+            {
+              "id": "c3b",
+              "ref": {
+                "item": "next"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c3l",
+              "text": "sessao ok",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c4",
+          "color": "req",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c4a",
+              "ref": {
+                "item": "proxy"
+              }
+            },
+            {
+              "id": "c4b",
+              "ref": {
+                "item": "auth"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c4l",
+              "text": "verifica JWT",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c5",
+          "color": "req",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c5a",
+              "ref": {
+                "item": "next"
+              }
+            },
+            {
+              "id": "c5b",
+              "ref": {
+                "item": "actions"
+              }
+            }
+          ]
+        },
+        {
+          "id": "c6",
+          "color": "dados",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c6a",
+              "ref": {
+                "item": "next"
+              }
+            },
+            {
+              "id": "c6b",
+              "ref": {
+                "item": "prisma"
+              }
+            }
+          ]
+        },
+        {
+          "id": "c7",
+          "color": "dados",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c7a",
+              "ref": {
+                "item": "auth"
+              }
+            },
+            {
+              "id": "c7b",
+              "ref": {
+                "item": "prisma"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c7l",
+              "text": "usuario",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c8",
+          "color": "dados",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c8a",
+              "ref": {
+                "item": "actions"
+              }
+            },
+            {
+              "id": "c8b",
+              "ref": {
+                "item": "prisma"
+              }
+            }
+          ]
+        },
+        {
+          "id": "c9",
+          "color": "dados",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c9a",
+              "ref": {
+                "item": "prisma"
+              }
+            },
+            {
+              "id": "c9b",
+              "ref": {
+                "item": "postgres"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c9l",
+              "text": "SQL",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c10",
+          "color": "opc",
+          "width": 15,
+          "style": "DASHED",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c10a",
+              "ref": {
+                "item": "actions"
+              }
+            },
+            {
+              "id": "c10b",
+              "ref": {
+                "item": "smtp"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c10l",
+              "text": "convite",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c11",
+          "color": "opc",
+          "width": 15,
+          "style": "DASHED",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c11a",
+              "ref": {
+                "item": "actions"
+              }
+            },
+            {
+              "id": "c11b",
+              "ref": {
+                "item": "openai"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c11l",
+              "text": "analise",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c12",
+          "color": "opc",
+          "width": 15,
+          "style": "DASHED",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c12a",
+              "ref": {
+                "item": "actions"
+              }
+            },
+            {
+              "id": "c12b",
+              "ref": {
+                "item": "saidas"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c12l",
+              "text": "relatorio",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c13",
+          "color": "deploy",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c13a",
+              "ref": {
+                "item": "github"
+              }
+            },
+            {
+              "id": "c13b",
+              "ref": {
+                "item": "railpack"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c13l",
+              "text": "push main",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c14",
+          "color": "deploy",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c14a",
+              "ref": {
+                "item": "railpack"
+              }
+            },
+            {
+              "id": "c14b",
+              "ref": {
+                "item": "coolify"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c14l",
+              "text": "imagem",
+              "position": 50
+            }
+          ]
+        },
+        {
+          "id": "c15",
+          "color": "deploy",
+          "width": 15,
+          "style": "SOLID",
+          "showArrow": true,
+          "anchors": [
+            {
+              "id": "c15a",
+              "ref": {
+                "item": "coolify"
+              }
+            },
+            {
+              "id": "c15b",
+              "ref": {
+                "item": "next"
+              }
+            }
+          ],
+          "labels": [
+            {
+              "id": "c15l",
+              "text": "docker run",
+              "position": 50
+            }
+          ]
+        }
+      ],
+      "rectangles": [],
+      "textBoxes": []
+    }
+  ]
+}
