@@ -35,7 +35,21 @@ SEED_DEMO=1 pnpm exec tsx prisma/seed.ts # + empresa e candidatos de exemplo
 pnpm dev                                 # http://localhost:3300
 ```
 
+Para conferir o produto com bateria variada — inclusive uma vaga **sem
+aderência**, que é a que mais importa olhar:
+
+```bash
+pnpm exec tsx prisma/dados-de-teste.ts            # cria a empresa de teste
+pnpm exec tsx prisma/dados-de-teste.ts --limpar   # apaga e recria
+```
+
 O banco esperado é PostgreSQL. Configure `DATABASE_URL` no `.env`.
+
+**Em produção a migração roda sozinha.** O `start` é
+`prisma migrate deploy && next start`, e por isso o `prisma` está em
+`dependencies` e não em `devDependencies`. A consequência assumida: migração que
+falha impede o app de subir. É melhor que a alternativa já vivida — container
+saudável, healthcheck verde e produto quebrado porque o schema ficou para trás.
 
 **Atrás de proxy?** Declare quantos em `TRUSTED_PROXIES`. É o que decide se
 `x-forwarded-for` é a origem de verdade ou um campo que o cliente preencheu — e
@@ -69,7 +83,7 @@ console. Os IPs liberados estão em `allowedDevOrigins`, no `next.config.ts`.
 ## Verificando
 
 ```bash
-pnpm exec vitest run     # 44 testes do instrumento
+pnpm exec vitest run     # 342 testes
 pnpm exec tsc --noEmit   # tipos
 pnpm build               # build de produção
 ```
@@ -102,7 +116,7 @@ src/
       presets.ts     7 perfis-alvo prontos, editáveis
       form.ts        sorteio da prova + ordenação sob restrição
       scoring.ts     motor de escoragem, fit, confiança e arquétipo
-      *.test.ts      44 testes, incluindo as regressões do modelo
+      *.test.ts      as regressões do modelo
 
     analise/roteiro.ts   roteiro de entrevista a partir dos desvios
     actions/             Server Actions (auth, vaga, avaliação)
@@ -289,13 +303,25 @@ Escopo declarado que ainda não foi construído:
 
 - Integração com OpenAI (a camada determinística já entrega o roteiro; a IA
   entraria por cima dela, com o mesmo contrato)
-- Exportação em PDF e Excel, e compartilhamento de relatório
+- Exportação em Excel, e compartilhamento de relatório — o PDF do candidato e o
+  CSV da base já existem
 - Comparação de candidatos lado a lado
-- Painel administrativo da plataforma
-- API pública para ATS/ERP
-- Perfil de cultura organizacional e matching
+- API pública para ATS/ERP — a tabela `ApiKey` existe e o campo `scopes` está
+  vazio; quando for implementada, tem que usar o vocabulário de `permissoes.ts`
+- Perfil de cultura organizacional e matching (o modelo `CultureProfile` existe
+  no schema e nada o lê)
+- Convidar alguém para a equipe por e-mail — dá para mudar papel e ligar ou
+  desligar acesso, mas criar acesso novo ainda é fora do painel
+- Área logada do candidato, com os direitos do art. 18 da LGPD
 - Agendamento do `prisma/manutencao.ts` — a rotina existe e roda à mão; falta
-  entrar no cron do servidor
+  entrar no cron do servidor. **Enquanto isso, a retenção prometida ao candidato
+  não é cumprida.**
+- Integração contínua — não existe `.github/`, então os 342 testes só rodam
+  quando alguém lembra
+- Relato de erro em produção — a tela de erro diz "a falha foi registrada" e não
+  há para onde registrar
+
+O painel administrativo da plataforma (`/admin`) foi entregue.
 
 **Não há planos, cobrança nem limite de uso.** O produto é a ferramenta de
 mapeamento, não um SaaS para vender assinatura: nenhuma vaga ou resposta é
