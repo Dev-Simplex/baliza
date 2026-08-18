@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#
+# Verificação antes de publicar.
+#
+# ─── Por que existe ──────────────────────────────────────────────────────────
+# Em 18/08/2026 três defeitos chegaram a produção no mesmo dia. Os 342 testes
+# existiam o tempo todo; ninguém os rodava antes de publicar porque nada os
+# rodava sozinho.
+#
+# `main` é deploy neste projeto: todo push nela vai para o ar. Este arquivo é a
+# única coisa entre um erro de tipo e um cliente vendo tela quebrada.
+#
+# ─── Por que `pre-push` e não `pre-commit` ───────────────────────────────────
+# Comitar é rascunho — comita-se dez vezes, inclusive no meio de um raciocínio,
+# e um gate de dois minutos ali faz a pessoa parar de comitar. Publicar é o ato
+# que tem consequência. O gate mora onde o risco mora.
+#
+# ─── Por que o build só na main ──────────────────────────────────────────────
+# O build é o passo mais lento de longe, e só a `main` publica. Em branch de
+# trabalho os três rápidos pegam quase tudo em ~25s; na `main` vale esperar o
+# minuto a mais, porque do outro lado tem gente usando.
+#
+# ─── Saída de emergência ─────────────────────────────────────────────────────
+# `git push --no-verify` pula tudo. Existe de propósito — hotfix às 2h da manhã
+# não pode ficar preso num lint. Mas é escolha explícita, e não o padrão.
+
+set -u
+
+vermelho=$'\033[31m'
+verde=$'\033[32m'
+apagado=$'\033[2m'
+limpo=$'\033[0m'
+
+# O git manda, por stdin, uma linha por ref: <ref local> <sha local> <ref remoto> <sha remoto>
+publicando_na_main=0
+while read -r _ref_local _sha_local ref_remoto _sha_remoto; do
+  case "$ref_remoto" in
+    refs/heads/main) publicando_na_main=1 ;;
+  esac
+done
+
+passo() {
+  printf '%s' "${apagado}  $1${limpo} "
+  if saida=$(eval "$2" 2>&1); then
+    printf '%s\n' "${verde}ok${limpo}"
+    return 0
+  fi
+  printf '%s\n\n' "${vermelho}falhou${limpo}"
+  printf '%s\n' "$saida" | tail -30
+  return 1
+}
+
+if [ "$publicando_na_main" = "1" ]; then
+  printf '\nVerificando antes de publicar na main %s(isto vai para o ar)%s\n' "$apagado" "$limpo"
+else
+  printf '\nVerificando antes de publicar\n'
+fi
+
+falhou=0
+passo "tipos  " "pnpm exec tsc --noEmit"        || falhou=1
+passo "lint   " "pnpm exec eslint src"          || falhou=1
+passo "testes " "pnpm exec vitest run"          || falhou=1
+
+# O build fica por último e só quando publica: falhar cedo devolve a resposta
+# antes de gastar o minuto mais caro.
+if [ "$falhou" = "0" ] && [ "$publicando_na_main" = "1" ]; then
+  passo "build  " "pnpm build"                  || falhou=1
+fi
+
+if [ "$falhou" != "0" ]; then
+  printf '\n%sPush cancelado.%s Conserte e tente de novo — ou %sgit push --no-verify%s se souber o que está fazendo.\n\n' \
+    "$vermelho" "$limpo" "$apagado" "$limpo"
+  exit 1
+fi
+
+printf '\n'
+exit 0

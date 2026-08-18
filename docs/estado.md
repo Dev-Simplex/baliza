@@ -77,11 +77,16 @@ pela RAM da máquina inteira e coleta tarde: a memória sobe e não volta. Defin
 teto (768 MB ou 1 GB) é uma linha na interface, e é a primeira coisa a tentar
 contra o consumo alto.
 
-### Não há integração contínua
+### A verificação agora roda sozinha
 
-Não existe `.github/`. Os 342 testes só rodam quando alguém lembra. Um workflow
-com `tsc --noEmit`, `vitest run` e `pnpm build` a cada push teria pego pelo menos
-um dos defeitos de 18/08.
+O hook `.githooks/pre-push` roda tipos, lint e os 342 testes antes de todo push,
+e o build junto quando o destino é a `main`. Em clone novo é preciso ligar uma
+vez: `git config core.hooksPath .githooks`.
+
+Ele é local, e essa é a diferença que importa em relação a um workflow: pega o
+erro antes de sair da máquina, sem depender de escopo de token nem de rodada
+remota. Em troca, não cobre quem publicar de outro clone sem o `hooksPath`
+configurado.
 
 ---
 

@@ -88,6 +88,19 @@ pnpm exec tsc --noEmit   # tipos
 pnpm build               # build de produção
 ```
 
+**Isso roda sozinho antes de todo `git push`.** O hook está em
+`.githooks/pre-push`, versionado junto com o código — em clone novo, ligue uma
+vez:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Em branch de trabalho ele roda tipos, lint e testes (~25 s). Na `main` roda o
+build junto, porque **`main` é deploy**: todo push nela vai para o ar. Para pular
+num caso de urgência, `git push --no-verify` — existe de propósito, mas é escolha
+explícita e não o padrão.
+
 O teste que mais importa está em `src/lib/instrument/scoring.test.ts`:
 **"com penalidade zero, quem está dentro da faixa satura em 100 e empata"**.
 Ele prova, com três candidatos dentro de todas as faixas, que sem a atenuação de
