@@ -39,7 +39,7 @@ import {
   numero,
 } from "@/lib/formato";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 import { urlBase } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Candidato" };
@@ -55,7 +55,7 @@ export default async function PaginaDoCandidato({
 }) {
   const { id } = await params;
   const { avaliacao: avaliacaoId } = await searchParams;
-  const { organizationId, pode } = await exigirTenant();
+  const { organizationId, pode } = await exigirPermissao("candidato:ler");
   // Baixar o relatório inteiro de uma pessoa é exportação, não leitura: sai da
   // ferramenta e escapa da retenção. Mesma régua da rota que serve o arquivo.
   const podeExportar = pode("dados:exportar");

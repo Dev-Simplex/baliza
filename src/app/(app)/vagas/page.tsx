@@ -14,7 +14,7 @@ import {
   haQuantoTempo,
   numero,
 } from "@/lib/formato";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 
 export const metadata: Metadata = { title: "Vagas" };
 
@@ -49,7 +49,7 @@ const ORDEM_DO_STATUS: Record<string, number> = {
 };
 
 export default async function PaginaDeVagas() {
-  const { organizationId, pode } = await exigirTenant();
+  const { organizationId, pode } = await exigirPermissao("vaga:ler");
   // Criar vaga exige RECRUITER; para quem só lê o botão levava a um
   // redirecionamento com "erro=permissao" depois de preencher o formulário.
   const podeCriar = pode("vaga:criar");

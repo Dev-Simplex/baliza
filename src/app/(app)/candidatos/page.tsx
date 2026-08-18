@@ -12,7 +12,7 @@ import { ARQUETIPO_POR_ID } from "@/lib/instrument/archetypes";
 import { ROTULO_DA_DECISAO, data, numero } from "@/lib/formato";
 import type { AnalystDecision } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 
 export const metadata: Metadata = { title: "Candidatos" };
 
@@ -44,7 +44,7 @@ export default async function PaginaDeCandidatos({
 }: {
   searchParams: Promise<{ q?: string; parecer?: string; p?: string }>;
 }) {
-  const { organizationId } = await exigirTenant();
+  const { organizationId } = await exigirPermissao("candidato:ler");
   const { q, parecer, p } = await searchParams;
 
   const busca = (q ?? "").trim();

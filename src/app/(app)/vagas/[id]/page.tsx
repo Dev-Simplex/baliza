@@ -44,7 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { gerarQr } from "@/lib/qr";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 import { urlBase, urlDaVaga } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Vaga" };
@@ -55,7 +55,7 @@ export default async function PaginaDaVaga({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { organizationId, pode } = await exigirTenant();
+  const { organizationId, pode } = await exigirPermissao("vaga:ler");
 
   // Quem só lê não pode cadastrar candidato nem mexer no perfil-alvo: as duas
   // ações exigem RECRUITER e, do outro lado, `exigirPapel` responde com um

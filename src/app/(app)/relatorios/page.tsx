@@ -28,12 +28,12 @@ import {
 } from "@/lib/formato";
 import { NOMES_DE_FATOR, FATORES } from "@/lib/instrument/types";
 import { faixaQualitativa } from "@/lib/instrument/scoring";
-import { exigirTenant } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 
 export const metadata: Metadata = { title: "Relatórios" };
 
 export default async function PaginaDeRelatorios() {
-  const contexto = await exigirTenant();
+  const contexto = await exigirPermissao("candidato:ler");
   const organizationId = contexto.organizationId;
 
   const [resumo, vagas, confianca, funil, arquetipos, medias] =

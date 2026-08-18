@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
 import {
+  DadosDaEmpresa,
+  PrazoDeRetencao,
+} from "@/components/app/dados-da-empresa";
+import {
   GestaoDeEquipe,
   type PessoaDaEquipe,
 } from "@/components/app/gestao-de-equipe";
@@ -26,6 +30,8 @@ export default async function PaginaDeConfiguracoes() {
         name: true,
         slug: true,
         segment: true,
+        website: true,
+        document: true,
         retentionMonths: true,
       },
     }),
@@ -45,6 +51,8 @@ export default async function PaginaDeConfiguracoes() {
   ]);
 
   const podeGerenciar = contexto.pode("equipe:gerenciar");
+  const podeEditarEmpresa = contexto.pode("empresa:editar");
+  const podeMudarRetencao = contexto.pode("retencao:configurar");
 
   const pessoas: PessoaDaEquipe[] = equipe.map((pessoa) => ({
     id: pessoa.id,
@@ -67,22 +75,32 @@ export default async function PaginaDeConfiguracoes() {
 
       <div className="space-y-4">
         <Painel>
-          {/* Dito na cara: uma tela chamada "Configurações" que só mostra
-              valores faz a pessoa procurar o botão de editar por minutos. Não
-              existe — e admitir isso custa uma linha. */}
           <PainelCabecalho
             titulo="Empresa"
-            descricao="Aparece para o candidato no convite e no relatório. Vem do cadastro e ainda não é editável por aqui."
+            descricao={
+              podeEditarEmpresa
+                ? "Aparece para o candidato no convite e no relatório."
+                : "Aparece para o candidato no convite e no relatório. Só quem administra a conta edita."
+            }
           />
-          <dl className="mt-5 grid gap-x-8 gap-y-4 sm:grid-cols-2">
-            <Campo rotulo="Nome" valor={empresa.name} />
-            <Campo rotulo="Identificador" valor={empresa.slug} monospace />
-            <Campo rotulo="Segmento" valor={empresa.segment ?? "—"} />
-            <Campo
-              rotulo="Retenção das respostas"
-              valor={`${empresa.retentionMonths} meses`}
+          <DadosDaEmpresa
+            empresa={{
+              nome: empresa.name,
+              slug: empresa.slug,
+              segmento: empresa.segment,
+              site: empresa.website,
+              documento: empresa.document,
+              retencaoEmMeses: empresa.retentionMonths,
+            }}
+            podeEditar={podeEditarEmpresa}
+          />
+
+          <div className="mt-6 border-t pt-5">
+            <PrazoDeRetencao
+              meses={empresa.retentionMonths}
+              podeEditar={podeMudarRetencao}
             />
-          </dl>
+          </div>
           {/* O que a manutenção apaga e o que ela preserva, dito aqui porque é
               a única tela onde o prazo aparece — e porque "apagar as respostas"
               soa como apagar o resultado, que é justamente o que não acontece.
@@ -183,25 +201,6 @@ export default async function PaginaDeConfiguracoes() {
           )}
         </Painel>
       </div>
-    </div>
-  );
-}
-
-function Campo({
-  rotulo,
-  valor,
-  monospace = false,
-}: {
-  rotulo: string;
-  valor: string;
-  monospace?: boolean;
-}) {
-  return (
-    <div>
-      <dt className="etiqueta">{rotulo}</dt>
-      <dd className={monospace ? "leitura mt-1.5 text-sm" : "mt-1.5 text-sm"}>
-        {valor}
-      </dd>
     </div>
   );
 }

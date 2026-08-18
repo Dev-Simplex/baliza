@@ -292,16 +292,24 @@ Dito com precisão, para ninguém contar com o que não está lá.
 
 | Permissão | Situação |
 |---|---|
-| `empresa:editar` | A permissão existe; a tela de edição, não. Configurações só exibe. |
-| `retencao:configurar` | O campo existe no banco e o expurgo respeita; mudar o prazo só por banco. |
 | `chave_api:gerenciar` | A tabela `ApiKey` existe com um campo `scopes` que **ninguém lê nem preenche**. Quando for implementado, tem que usar o mesmo vocabulário de `permissoes.ts` — não inventar um segundo. |
 
-### Permissões implícitas
+As doze outras têm porta. `empresa:editar` e `retencao:configurar` ganharam
+formulário em Configurações; `vaga:ler` e `candidato:ler` passaram a ser exigidas
+nas listas e nas fichas.
 
-`vaga:ler` e `candidato:ler` não têm ponto de checagem: as telas usam
-`exigirTenant()` e todos os quatro papéis têm as duas. Funciona hoje porque
-ninguém está sem elas — e vira defeito no dia em que existir um papel que não as
-tenha.
+Sobre `vaga:ler` e `candidato:ler`: exigi-las não muda comportamento nenhum hoje,
+porque os quatro papéis têm as duas. Muda o **contrato**. Enquanto a porta só
+pedia sessão, a permissão existia no papel e não existia no caminho — e bastaria
+criar um papel sem ela para descobrir, em produção, que ninguém nunca perguntou.
+
+### Dados para conferir
+
+`pnpm exec tsx prisma/dados-de-teste.ts` monta uma empresa de teste com uma
+pessoa por papel e uma vaga por situação que precisa ser olhada — inclusive a que
+aplica só DISC e SJT, que **não tem aderência** e serve para conferir que o fit
+aparece como ausente e nunca como zero. Cada módulo é escorado pela mesma função
+que a conclusão da prova usa; nada de número inventado.
 
 ### Fluxos que faltam
 
