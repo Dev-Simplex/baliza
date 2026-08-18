@@ -43,6 +43,7 @@ export const TESTES = [
   "PRUMO",
   "BIG_FIVE",
   "DISC",
+  "PERFIL_COMPORTAMENTAL",
   "ESTILO_EMOCIONAL",
   "SJT",
 ] as const;
@@ -133,6 +134,20 @@ export const CATALOGO_DE_TESTES: Record<Teste, FichaDeTeste> = {
     formato: "25 perguntas, uma alternativa por tela",
     telas: 25,
     segundos: 8 * 60,
+    produzFatores: false,
+    temGabarito: false,
+  },
+  PERFIL_COMPORTAMENTAL: {
+    id: "PERFIL_COMPORTAMENTAL",
+    nome: "Inventário de Perfil Comportamental",
+    resumo:
+      "O mesmo terreno do DISC lido por características soltas — inclusive as difíceis. Mais longo e mais granular; descreve estilo, não competência.",
+    formato: "51 telas, quatro características por tela",
+    telas: 51,
+    // 51 × 19s de `tempo-estimado.ts`, arredondado para cima no minuto. É o
+    // teste mais longo da bateria, e prometer menos que isso vira desistência
+    // no meio — que custa a prova inteira.
+    segundos: 17 * 60,
     produzFatores: false,
     temGabarito: false,
   },
@@ -361,6 +376,29 @@ export type CompetenciaSjt = {
   cenarios: number;
 };
 
+/**
+ * O Inventário de Perfil Comportamental grava a MESMA forma do DISC.
+ *
+ * De propósito: os dois leem D/I/S/C, e a ficha do analista já sabe desenhar
+ * essa forma (`montarBlocoDisc`). O que muda é a origem, e o discriminante
+ * `teste` guarda essa diferença — sem ele, duas leituras de instrumentos
+ * distintos ficariam indistinguíveis dentro de `moduleResults`.
+ *
+ * `liquidos` aqui é a contagem crua de escolhas por dimensão (soma 51), não o
+ * MAIS − MENOS do DISC de blocos. Mesmo campo, mesma pergunta ("de onde saiu
+ * este número?"), unidade própria de cada instrumento.
+ */
+export type ResultadoPerfilComportamental = {
+  teste: "PERFIL_COMPORTAMENTAL";
+  /** 0–100 por dimensão, fração das escolhas. Os quatro somam ~100. */
+  dimensoes: Record<DimensaoDisc, number>;
+  /** Contagem crua de escolhas por dimensão. A soma dos quatro é 51. */
+  liquidos: Record<DimensaoDisc, number>;
+  dominante: DimensaoDisc;
+  secundaria: DimensaoDisc | null;
+  rotulo: string;
+};
+
 export type ResultadoSjt = {
   teste: "SJT";
   /** 0–100 geral. */
@@ -395,6 +433,7 @@ export type ResultadoDeModulo =
   | ResultadoPrumo
   | ResultadoBigFive
   | ResultadoDisc
+  | ResultadoPerfilComportamental
   | ResultadoEstiloEmocional
   | ResultadoSjt;
 
@@ -408,6 +447,7 @@ export type ResultadosPorModulo = {
   PRUMO?: ResultadoPrumo;
   BIG_FIVE?: ResultadoBigFive;
   DISC?: ResultadoDisc;
+  PERFIL_COMPORTAMENTAL?: ResultadoPerfilComportamental;
   ESTILO_EMOCIONAL?: ResultadoEstiloEmocional;
   SJT?: ResultadoSjt;
 };

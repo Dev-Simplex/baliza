@@ -100,6 +100,11 @@ const TESTES = [
     faz: "Estilo de trabalho — como a pessoa tende a agir, não o quanto ela serve. Não gera aderência.",
   },
   {
+    nome: "Inventário de Perfil Comportamental",
+    tempo: "~17 min",
+    faz: "O mesmo D/I/S/C lido por características soltas, inclusive as difíceis. É o mais longo e o mais granular. Não gera aderência.",
+  },
+  {
     nome: "Estilo Emocional do Cérebro",
     tempo: "~10 min",
     faz: "Seis dimensões emocionais e de atenção. Descreve tendências e não gera aderência.",

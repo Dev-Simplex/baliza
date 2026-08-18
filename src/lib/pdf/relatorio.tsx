@@ -23,7 +23,7 @@ import { FATORES, NOMES_DE_FATOR, type Fator } from "@/lib/instrument/types";
 // declarada uma vez e as duas representações do relatório comem dela — que é
 // justamente o que impede a tela e o papel de divergirem.
 import type { Diagnostico } from "@/lib/analise/diagnostico";
-import type { FichaDeModulos } from "@/lib/analise/ficha";
+import type { BlocoDisc, FichaDeModulos } from "@/lib/analise/ficha";
 import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
 
 /**
@@ -787,64 +787,14 @@ function ModulosDoManual({
       )}
 
       {modulos.disc && (
-        <View style={e.cartao} wrap={false}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "baseline",
-            }}
-          >
-            <Text style={e.titulo}>DISC — estilo de trabalho</Text>
-            <Text style={{ fontSize: 12, fontFamily: CORPO, fontWeight: 600 }}>
-              {modulos.disc.rotulo}
-            </Text>
-          </View>
-          <Text style={[e.legenda, { marginBottom: 9 }]}>
-            {modulos.disc.resumo}
-          </Text>
+        <CartaoDiscDoPdf bloco={modulos.disc} titulo="DISC — estilo de trabalho" />
+      )}
 
-          {modulos.disc.dimensoes.map((dim) => (
-            <LinhaDeModulo
-              key={dim.dimensao}
-              rotulo={`${dim.dimensao} · ${dim.nome}`}
-              score={dim.score}
-            />
-          ))}
-
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 24,
-              marginTop: 5,
-              borderTopWidth: 0.7,
-              borderTopColor: COR.linhaClara,
-              paddingTop: 9,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[e.etiqueta, { color: COR.dentro }]}>
-                Pontos fortes típicos
-              </Text>
-              <Text style={[e.corpo, { marginTop: 2 }]}>
-                {modulos.disc.fortes.join(" · ")}
-              </Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[e.etiqueta, { color: COR.fora }]}>
-                Pontos de atenção típicos
-              </Text>
-              <Text style={[e.corpo, { marginTop: 2 }]}>
-                {modulos.disc.atencao.join(" · ")}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[e.legenda, { marginTop: 7 }]}>
-            DISC descreve estilo, não competência nem caráter — serve para
-            prever como a pessoa tende a trabalhar, nunca como nota.
-          </Text>
-        </View>
+      {modulos.perfilComportamental && (
+        <CartaoDiscDoPdf
+          bloco={modulos.perfilComportamental}
+          titulo="Inventário de Perfil Comportamental"
+        />
       )}
 
       {qualidade && (
@@ -1403,5 +1353,80 @@ export function RelatorioPdf({ d }: { d: DadosDoRelatorio }) {
         />
       </Page>
     </Document>
+  );
+}
+
+/**
+ * O cartão de D/I/S/C do PDF, usado por DOIS instrumentos.
+ *
+ * O DISC de 25 telas e o Inventário de Perfil Comportamental produzem a mesma
+ * `BlocoDisc` (quatro dimensões, perfil, fortes, atenção), então o desenho é um
+ * só e só o título muda. Duplicar o bloco faria a próxima correção de layout
+ * pegar um dos dois e esquecer o outro.
+ */
+function CartaoDiscDoPdf({
+  bloco,
+  titulo,
+}: {
+  bloco: BlocoDisc;
+  titulo: string;
+}) {
+  return (
+    <View style={e.cartao} wrap={false}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+        }}
+      >
+        <Text style={e.titulo}>{titulo}</Text>
+        <Text style={{ fontSize: 12, fontFamily: CORPO, fontWeight: 600 }}>
+          {bloco.rotulo}
+        </Text>
+      </View>
+      <Text style={[e.legenda, { marginBottom: 9 }]}>{bloco.resumo}</Text>
+
+      {bloco.dimensoes.map((dim) => (
+        <LinhaDeModulo
+          key={dim.dimensao}
+          rotulo={`${dim.dimensao} · ${dim.nome}`}
+          score={dim.score}
+        />
+      ))}
+
+      <View
+        style={{
+          flexDirection: "row",
+          gap: 24,
+          marginTop: 5,
+          borderTopWidth: 0.7,
+          borderTopColor: COR.linhaClara,
+          paddingTop: 9,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={[e.etiqueta, { color: COR.dentro }]}>
+            Pontos fortes típicos
+          </Text>
+          <Text style={[e.corpo, { marginTop: 2 }]}>
+            {bloco.fortes.join(" · ")}
+          </Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[e.etiqueta, { color: COR.fora }]}>
+            Pontos de atenção típicos
+          </Text>
+          <Text style={[e.corpo, { marginTop: 2 }]}>
+            {bloco.atencao.join(" · ")}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={[e.legenda, { marginTop: 7 }]}>
+        Descreve estilo, não competência nem caráter — serve para prever como a
+        pessoa tende a trabalhar, nunca como nota.
+      </Text>
+    </View>
   );
 }

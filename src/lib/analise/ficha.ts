@@ -157,7 +157,16 @@ function misturar(dominante: string[], secundaria: string[] | null): string[] {
   return [...new Set(lista.filter(Boolean))].slice(0, ITENS_DE_LEITURA_DISC);
 }
 
-export function montarBlocoDisc(resultado: ResultadoDisc): BlocoDisc {
+/**
+ * Vale para os dois instrumentos que leem D/I/S/C: o DISC de 25 telas e o
+ * Inventário de Perfil Comportamental. O que a ficha desenha é a MESMA coisa
+ * (quatro dimensões, um perfil dominante, o que ele tempera), e o discriminante
+ * `teste` fica de fora do parâmetro justamente para que os dois caibam sem
+ * duplicar a interpretação do §3.6 numa segunda cópia que envelheceria sozinha.
+ */
+export function montarBlocoDisc(
+  resultado: Omit<ResultadoDisc, "teste">,
+): BlocoDisc {
   const dominante = INTERPRETACAO_DISC[resultado.dominante];
   const secundaria = resultado.secundaria
     ? INTERPRETACAO_DISC[resultado.secundaria]
@@ -287,6 +296,8 @@ export function montarBlocoSjt(resultado: ResultadoSjt): BlocoSjt {
 export type FichaDeModulos = {
   bigFive: BlocoBigFive | null;
   disc: BlocoDisc | null;
+  /** Mesma forma do DISC, outro instrumento — cartão separado na tela. */
+  perfilComportamental?: BlocoDisc | null;
   estiloEmocional?: BlocoEstiloEmocional | null;
   sjt: BlocoSjt | null;
   /** Algum módulo do manual foi aplicado? */
@@ -307,6 +318,9 @@ export function montarFichaDeModulos(
     ? montarBlocoBigFive(resultados.BIG_FIVE)
     : null;
   const disc = resultados.DISC ? montarBlocoDisc(resultados.DISC) : null;
+  const perfilComportamental = resultados.PERFIL_COMPORTAMENTAL
+    ? montarBlocoDisc(resultados.PERFIL_COMPORTAMENTAL)
+    : null;
   const estiloEmocional = resultados.ESTILO_EMOCIONAL
     ? montarBlocoEstiloEmocional(resultados.ESTILO_EMOCIONAL)
     : null;
@@ -315,9 +329,12 @@ export function montarFichaDeModulos(
   return {
     bigFive,
     disc,
+    perfilComportamental,
     estiloEmocional,
     sjt,
-    temAlgum: Boolean(bigFive || disc || estiloEmocional || sjt),
+    temAlgum: Boolean(
+      bigFive || disc || perfilComportamental || estiloEmocional || sjt,
+    ),
   };
 }
 

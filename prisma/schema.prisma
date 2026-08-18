@@ -175,6 +175,7 @@ enum InstrumentoDeTeste {
   PRUMO
   BIG_FIVE
   DISC
+  PERFIL_COMPORTAMENTAL
   ESTILO_EMOCIONAL
   SJT
 }

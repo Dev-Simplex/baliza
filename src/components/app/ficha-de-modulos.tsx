@@ -84,12 +84,20 @@ function CartaoBigFive({ bloco }: { bloco: BlocoBigFive }) {
 
 // ─── DISC ──────────────────────────────────────────────────────────────────
 
-function CartaoDisc({ bloco }: { bloco: BlocoDisc }) {
+function CartaoDisc({
+  bloco,
+  titulo = "DISC",
+  etiqueta = "Estilo de trabalho · 0–100",
+}: {
+  bloco: BlocoDisc;
+  titulo?: string;
+  etiqueta?: string;
+}) {
   return (
     <section className="rounded-xl border bg-card p-5">
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="t-cartao">DISC</h2>
-        <span className="etiqueta">Estilo de trabalho · 0–100</span>
+        <h2 className="t-cartao">{titulo}</h2>
+        <span className="etiqueta">{etiqueta}</span>
       </div>
 
       <ul className="mt-4 space-y-3">
@@ -374,15 +382,24 @@ export function FichaDosModulos({
     <div className="space-y-4">
       {ficha.sjt && <CartaoSjt bloco={ficha.sjt} />}
 
-      {(ficha.bigFive || ficha.disc) && (
+      {(ficha.bigFive || ficha.disc || ficha.perfilComportamental) && (
         <div
           className={cn(
             "grid gap-4",
-            ficha.bigFive && ficha.disc && "lg:grid-cols-2",
+            [ficha.bigFive, ficha.disc, ficha.perfilComportamental].filter(
+              Boolean,
+            ).length > 1 && "lg:grid-cols-2",
           )}
         >
           {ficha.bigFive && <CartaoBigFive bloco={ficha.bigFive} />}
           {ficha.disc && <CartaoDisc bloco={ficha.disc} />}
+          {ficha.perfilComportamental && (
+            <CartaoDisc
+              bloco={ficha.perfilComportamental}
+              titulo="Inventário de Perfil Comportamental"
+              etiqueta="51 características · 0–100"
+            />
+          )}
         </div>
       )}
 

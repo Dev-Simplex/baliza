@@ -69,6 +69,7 @@ describe("montagem da prova", () => {
     const { etapas } = provaCompleta([
       "SJT",
       "ESTILO_EMOCIONAL",
+      "PERFIL_COMPORTAMENTAL",
       "DISC",
       "PRUMO",
       "BIG_FIVE",
@@ -77,6 +78,7 @@ describe("montagem da prova", () => {
       "PRUMO",
       "BIG_FIVE",
       "DISC",
+      "PERFIL_COMPORTAMENTAL",
       "ESTILO_EMOCIONAL",
       "SJT",
     ]);
@@ -119,6 +121,7 @@ describe("leitura do que está guardado", () => {
     expect(prova.cenarios.some((id) => CENARIO_SJT_POR_ID.has(id))).toBe(false);
     expect(prova.escolhas).toHaveLength(
       CATALOGO_DE_TESTES.DISC.telas +
+        CATALOGO_DE_TESTES.PERFIL_COMPORTAMENTAL.telas +
         CATALOGO_DE_TESTES.ESTILO_EMOCIONAL.telas +
         CATALOGO_DE_TESTES.SJT.telas,
     );

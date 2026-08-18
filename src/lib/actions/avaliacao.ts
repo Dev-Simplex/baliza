@@ -39,6 +39,10 @@ import {
   pontuarDiscPlanilha,
 } from "@/lib/instrument/disc-planilha";
 import {
+  BLOCO_PERFIL_COMPORTAMENTAL_POR_ID,
+  pontuarPerfilComportamental,
+} from "@/lib/instrument/perfil-comportamental";
+import {
   ITEM_ESTILO_EMOCIONAL_POR_ID,
   pontuarEstiloEmocional,
 } from "@/lib/instrument/estilo-emocional";
@@ -707,6 +711,7 @@ export async function concluirAvaliacao(token: string) {
     escolhaVisivel: (id) =>
       CENARIO_SJT_POR_ID.has(id) ||
       BLOCO_DISC_PLANILHA_POR_ID.has(id) ||
+      BLOCO_PERFIL_COMPORTAMENTAL_POR_ID.has(id) ||
       ITEM_ESTILO_EMOCIONAL_POR_ID.has(id),
   });
 
@@ -822,6 +827,17 @@ export async function concluirAvaliacao(token: string) {
     const apuracao = tentarPontuar("DISC", () => pontuarDisc(respostasDisc));
       if (apuracao) modulos.DISC = paraResultadoDeModuloDisc(apuracao);
     }
+  }
+
+  if (bateria.includes("PERFIL_COMPORTAMENTAL")) {
+    const respostas = prova.porTeste.PERFIL_COMPORTAMENTAL.blocos
+      .map((id) => ({ blocoId: id, alternativaId: escolhaPorBloco.get(id) }))
+      .filter((resposta) => Boolean(resposta.alternativaId))
+      .map((resposta) => ({
+        blocoId: resposta.blocoId,
+        alternativaId: resposta.alternativaId!,
+      }));
+    modulos.PERFIL_COMPORTAMENTAL = pontuarPerfilComportamental(respostas);
   }
 
   if (bateria.includes("ESTILO_EMOCIONAL")) {

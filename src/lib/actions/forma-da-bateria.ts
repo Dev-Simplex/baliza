@@ -34,6 +34,13 @@ import {
   OPCOES_ESTILO_EMOCIONAL,
 } from "@/lib/instrument/estilo-emocional";
 import { montarForma, ordenarOpcoesDeCenario } from "@/lib/instrument/form";
+import {
+  BLOCO_PERFIL_COMPORTAMENTAL_POR_ID,
+  ENUNCIADO_PERFIL_COMPORTAMENTAL,
+  INSTRUCAO_PERFIL_COMPORTAMENTAL,
+  montarFormaPerfilComportamental,
+  opcoesPerfilComportamentalParaCandidato,
+} from "@/lib/instrument/perfil-comportamental";
 import { ITEM_POR_ID, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
 import { CENARIO_POR_ID } from "@/lib/instrument/scenarios";
 import {
@@ -97,6 +104,7 @@ export function testeDoBloco(id: string): Teste | null {
   if (CENARIO_POR_ID.has(id)) return "PRUMO";
   if (BLOCO_DISC_POR_ID.has(id)) return "DISC";
   if (BLOCO_DISC_PLANILHA_POR_ID.has(id)) return "DISC";
+  if (BLOCO_PERFIL_COMPORTAMENTAL_POR_ID.has(id)) return "PERFIL_COMPORTAMENTAL";
   if (ITEM_ESTILO_EMOCIONAL_POR_ID.has(id)) return "ESTILO_EMOCIONAL";
   if (CENARIO_SJT_POR_ID.has(id)) return "SJT";
   return null;
@@ -117,6 +125,9 @@ export function opcoesDoBloco(id: string): Set<string> {
 
   const blocoPlanilha = BLOCO_DISC_PLANILHA_POR_ID.get(id);
   if (blocoPlanilha) return new Set(blocoPlanilha.opcoes.map((o) => o.id));
+
+  const blocoPerfil = BLOCO_PERFIL_COMPORTAMENTAL_POR_ID.get(id);
+  if (blocoPerfil) return new Set(blocoPerfil.opcoes.map((o) => o.id));
 
   if (ITEM_ESTILO_EMOCIONAL_POR_ID.has(id))
     return new Set(OPCOES_ESTILO_EMOCIONAL.map((o) => o.id));
@@ -165,6 +176,8 @@ export function montarProvaDaBateria(opcoes: {
     if (teste === "BIG_FIVE") itens.push(...ordenarItensBigFive(opcoes.semente));
     if (teste === "DISC")
       blocos.push(...montarFormaDiscPlanilha(opcoes.semente).blocos);
+    if (teste === "PERFIL_COMPORTAMENTAL")
+      blocos.push(...montarFormaPerfilComportamental(opcoes.semente).blocos);
     if (teste === "ESTILO_EMOCIONAL")
       blocos.push(...ITENS_ESTILO_EMOCIONAL.map((item) => item.id));
     if (teste === "SJT") blocos.push(...montarFormaSjt(opcoes.semente).cenarios);
@@ -248,6 +261,7 @@ export function lerProvaDaBateria(entrada: {
     ],
     escolhas: [
       ...blocosDe("DISC").filter((id) => BLOCO_DISC_PLANILHA_POR_ID.has(id)),
+      ...blocosDe("PERFIL_COMPORTAMENTAL"),
       ...blocosDe("ESTILO_EMOCIONAL"),
       ...blocosDe("SJT"),
     ],
@@ -260,6 +274,7 @@ const CURTO: Record<Teste, string> = {
   PRUMO: "Baliza",
   BIG_FIVE: "Big Five",
   DISC: "DISC",
+  PERFIL_COMPORTAMENTAL: "Perfil",
   ESTILO_EMOCIONAL: "Emocional",
   SJT: "Situações",
 };
@@ -313,9 +328,11 @@ export function montarEtapas(entrada: {
                 )
                 ? INSTRUCAO_DISC_PLANILHA
                 : INSTRUCAO_DISC
-              : teste === "ESTILO_EMOCIONAL"
-                ? INSTRUCAO_ESTILO_EMOCIONAL
-                : INSTRUCAO_SJT,
+              : teste === "PERFIL_COMPORTAMENTAL"
+                ? INSTRUCAO_PERFIL_COMPORTAMENTAL
+                : teste === "ESTILO_EMOCIONAL"
+                  ? INSTRUCAO_ESTILO_EMOCIONAL
+                  : INSTRUCAO_SJT,
       enunciado:
         teste === "PRUMO"
           ? "O quanto isso combina com você no trabalho?"
@@ -370,6 +387,23 @@ function perguntasDoTeste(
       blocos: forma.blocos,
       adjetivos,
     }).map((b): Pergunta => ({ tipo: "mais-menos", id: b.id, opcoes: b.adjetivos }));
+  }
+
+  if (teste === "PERFIL_COMPORTAMENTAL") {
+    // Sem enunciado próprio na planilha: as quatro características vêm soltas,
+    // e a pergunta é sempre a mesma. Repeti-la em cada tela é o que evita a
+    // pessoa esquecer, no meio de 51 telas, que a escolha é sobre ELA.
+    return forma.blocos
+      .map((id) => BLOCO_PERFIL_COMPORTAMENTAL_POR_ID.get(id))
+      .filter((bloco) => Boolean(bloco))
+      .map(
+        (bloco): Pergunta => ({
+          tipo: "escolha-curta",
+          id: bloco!.id,
+          situacao: ENUNCIADO_PERFIL_COMPORTAMENTAL,
+          opcoes: opcoesPerfilComportamentalParaCandidato(bloco!.id, semente),
+        }),
+      );
   }
 
   if (teste === "ESTILO_EMOCIONAL") {
