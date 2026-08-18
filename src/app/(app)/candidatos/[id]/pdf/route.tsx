@@ -17,7 +17,7 @@ import {
 import { ROTULO_DA_DECISAO, data, duracao, numero } from "@/lib/formato";
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { exigirPapelDaApi, respostaDeAutorizacao } from "@/lib/tenant";
+import { exigirPermissaoDaApi, respostaDeAutorizacao } from "@/lib/tenant";
 
 /**
  * Download do relatório em PDF.
@@ -38,8 +38,8 @@ import { exigirPapelDaApi, respostaDeAutorizacao } from "@/lib/tenant";
  * E o escopo não é só de empresa: é de papel. Um relatório psicométrico
  * completo de uma pessoa não é o mesmo dado que a lista da vaga, e sair em
  * arquivo é o que o tira do alcance da retenção e da auditoria de leitura. Por
- * isso `exigirPapelDaApi("RECRUITER")` — antes bastava estar logado, e um
- * VIEWER baixava o relatório inteiro de qualquer candidato.
+ * isso `exigirPermissaoDaApi("dados:exportar")` — antes bastava estar logado,
+ * e um VIEWER baixava o relatório inteiro de qualquer candidato.
  *
  * O download entra na trilha de auditoria pela mesma razão: dado de candidato
  * saindo da ferramenta em arquivo é exatamente o evento que alguém vai querer
@@ -54,7 +54,10 @@ export async function GET(
   let organizationId: string;
   let userId: string;
   try {
-    ({ organizationId, userId } = await exigirPapelDaApi("RECRUITER"));
+    ({ organizationId, userId } = await exigirPermissaoDaApi(
+      "dados:exportar",
+      "Seu perfil de acesso não permite baixar o relatório deste candidato.",
+    ));
   } catch (erro) {
     const recusa = respostaDeAutorizacao(erro);
     if (recusa) return recusa;

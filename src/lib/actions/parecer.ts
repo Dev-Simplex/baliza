@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
-import { exigirPapel } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 
 export type EstadoDoParecer = {
   ok?: boolean;
@@ -36,9 +36,9 @@ const esquema = z.object({
  *   pede quando alguém questiona uma decisão tomada com apoio de sistema.
  *
  * ─── Decisões desta ação ───────────────────────────────────────────────────
- * `exigirPapel("RECRUITER")` e `organizationId` DENTRO do `where`: o parecer é
- * escrita sobre dado de candidato, e o escopo nunca é conferido depois de
- * buscar.
+ * `exigirPermissao("parecer:escrever")` e `organizationId` DENTRO do `where`: o
+ * parecer é escrita sobre dado de candidato, e o escopo nunca é conferido
+ * depois de buscar.
  *
  * A avaliação precisa estar CONCLUÍDA. Parecer sobre prova pela metade seria
  * decidir com meia informação — e o resultado que embasa a decisão só existe
@@ -54,7 +54,7 @@ export async function registrarParecer(
   _estado: EstadoDoParecer,
   dados: FormData,
 ): Promise<EstadoDoParecer> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("parecer:escrever");
 
   const analise = esquema.safeParse({
     decisao: dados.get("decisao"),
@@ -131,7 +131,7 @@ export async function registrarParecer(
 export async function limparParecer(
   avaliacaoId: string,
 ): Promise<EstadoDoParecer> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("parecer:escrever");
 
   const avaliacao = await prisma.assessment.findFirst({
     where: { id: avaliacaoId, organizationId: contexto.organizationId },

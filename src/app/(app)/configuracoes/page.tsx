@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 
 import { CabecalhoDePagina } from "@/components/app/cabecalho-de-pagina";
+import {
+  GestaoDeEquipe,
+  type PessoaDaEquipe,
+} from "@/components/app/gestao-de-equipe";
 import { Painel, PainelCabecalho } from "@/components/ui/painel";
 import { usoDoMes } from "@/lib/dados/dashboard";
-import { ROTULO_DE_PAPEL, iniciais, numero } from "@/lib/formato";
+import { ROTULO_DE_PAPEL, data, iniciais, numero } from "@/lib/formato";
+import { papeisQuePodeConceder } from "@/lib/permissoes";
 import { CENARIOS_POR_PROVA, TOTAL_DE_ITENS } from "@/lib/instrument/form";
 import { ITENS, VERSAO_DO_INSTRUMENTO } from "@/lib/instrument/items";
 import { prisma } from "@/lib/prisma";
@@ -28,9 +33,29 @@ export default async function PaginaDeConfiguracoes() {
     prisma.user.findMany({
       where: { organizationId: contexto.organizationId },
       orderBy: [{ role: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, email: true, role: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+      },
     }),
   ]);
+
+  const podeGerenciar = contexto.pode("equipe:gerenciar");
+
+  const pessoas: PessoaDaEquipe[] = equipe.map((pessoa) => ({
+    id: pessoa.id,
+    nome: pessoa.name,
+    email: pessoa.email,
+    papel: pessoa.role,
+    ativo: pessoa.isActive,
+    // Formatado aqui: o componente é de cliente, e mandar `Date` cru para o
+    // navegador faz a data ser renderizada no fuso de quem abre a tela.
+    ultimoAcesso: pessoa.lastLoginAt ? data(pessoa.lastLoginAt) : null,
+  }));
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -115,34 +140,47 @@ export default async function PaginaDeConfiguracoes() {
           <PainelCabecalho
             comBorda
             titulo="Equipe"
-            descricao={`${numero(equipe.length)} ${equipe.length === 1 ? "pessoa com acesso" : "pessoas com acesso"}. Novos acessos ainda são criados fora do painel.`}
+            descricao={
+              podeGerenciar
+                ? `${numero(equipe.length)} ${equipe.length === 1 ? "pessoa com acesso" : "pessoas com acesso"}. O papel define o que cada uma enxerga — inclusive se enxerga o relatório comportamental. Convidar gente nova ainda é feito fora do painel.`
+                : `${numero(equipe.length)} ${equipe.length === 1 ? "pessoa com acesso" : "pessoas com acesso"}. Só quem administra a conta muda papéis.`
+            }
           />
-          <ul className="divide-y">
-            {equipe.map((pessoa) => (
-              <li key={pessoa.id} className="flex items-center gap-3 px-5 py-3.5">
-                <span
-                  aria-hidden
-                  className="t-legenda grid size-8 shrink-0 place-items-center rounded-full bg-secondary font-semibold text-muted-foreground"
-                >
-                  {iniciais(pessoa.name)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">
-                    {pessoa.name}
-                    {pessoa.id === contexto.userId && (
-                      <span className="etiqueta ml-2">você</span>
-                    )}
-                  </p>
-                  <p className="t-legenda truncate text-muted-foreground">
-                    {pessoa.email}
-                  </p>
-                </div>
-                <span className="etiqueta shrink-0">
-                  {ROTULO_DE_PAPEL[pessoa.role]}
-                </span>
-              </li>
-            ))}
-          </ul>
+
+          {podeGerenciar ? (
+            <GestaoDeEquipe
+              pessoas={pessoas}
+              meuId={contexto.userId}
+              papeisQuePossoConceder={[...papeisQuePodeConceder(contexto.role)]}
+            />
+          ) : (
+            <ul className="divide-y">
+              {pessoas.map((pessoa) => (
+                <li key={pessoa.id} className="flex items-center gap-3 px-5 py-3.5">
+                  <span
+                    aria-hidden
+                    className="t-legenda grid size-8 shrink-0 place-items-center rounded-full bg-secondary font-semibold text-muted-foreground"
+                  >
+                    {iniciais(pessoa.nome)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {pessoa.nome}
+                      {pessoa.id === contexto.userId && (
+                        <span className="etiqueta ml-2">você</span>
+                      )}
+                    </p>
+                    <p className="t-legenda truncate text-muted-foreground">
+                      {pessoa.email}
+                    </p>
+                  </div>
+                  <span className="etiqueta shrink-0">
+                    {ROTULO_DE_PAPEL[pessoa.papel]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Painel>
       </div>
     </div>

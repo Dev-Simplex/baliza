@@ -11,7 +11,7 @@ import { calcularFit } from "@/lib/instrument/scoring";
 import type { Fator } from "@/lib/instrument/types";
 import { lerPerfilAlvo } from "@/lib/perfil-alvo";
 import { prisma } from "@/lib/prisma";
-import { exigirPapel } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 import { gerarTokenDeVaga } from "@/lib/token-de-vaga";
 
 export type EstadoDaVaga = {
@@ -57,7 +57,7 @@ export async function criarVaga(
   _estado: EstadoDaVaga,
   dados: FormData,
 ): Promise<EstadoDaVaga> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("vaga:criar");
 
   const analise = esquema.safeParse({
     titulo: dados.get("titulo"),
@@ -140,7 +140,7 @@ export async function criarVaga(
  * convite" em vez do formulário.
  */
 export async function alternarModoDaVaga(jobId: string, aberta: boolean) {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("vaga:editar");
 
   const vaga = await prisma.job.updateMany({
     where: { id: jobId, organizationId: contexto.organizationId },
@@ -180,7 +180,7 @@ export async function atualizarBateriaDaVaga(
   jobId: string,
   escolhidos: readonly string[],
 ): Promise<EstadoDaBateria> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("vaga:editar");
 
   const bateria = validarBateria(escolhidos);
   if (!bateria.ok) return { erro: bateria.erro };
@@ -235,7 +235,7 @@ export async function atualizarPerfilDaVaga(
   _estado: EstadoDoPerfil,
   dados: FormData,
 ): Promise<EstadoDoPerfil> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("vaga:editar");
 
   const leitura = lerPerfilAlvo(dados);
   if (!leitura.ok) return { erro: leitura.erro };
@@ -368,7 +368,7 @@ export async function mudarStatusDaVaga(
   jobId: string,
   status: "OPEN" | "PAUSED" | "CLOSED",
 ) {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("vaga:encerrar");
 
   const vaga = await prisma.job.updateMany({
     where: { id: jobId, organizationId: contexto.organizationId },

@@ -31,7 +31,7 @@ import {
   volumePorSemana,
 } from "@/lib/dados/dashboard";
 import { duracao, numero } from "@/lib/formato";
-import { exigirTenant, podeAoMenos } from "@/lib/tenant";
+import { exigirTenant } from "@/lib/tenant";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PrimeirosPassos } from "@/components/app/primeiros-passos";
@@ -40,7 +40,7 @@ import { TutorialDeEntrada } from "@/components/app/tutorial-de-entrada";
 export const metadata: Metadata = { title: "Visão geral" };
 
 export default async function PaginaDoPainel() {
-  const { organizationId, role } = await exigirTenant();
+  const { organizationId, pode } = await exigirTenant();
   const sessao = await auth();
 
   const [resumo, medias, melhores, volume, arquetipos, usuario, convites] =
@@ -76,7 +76,7 @@ export default async function PaginaDoPainel() {
 
   // Quem só lê não cria vaga: o botão existia e terminava num redirecionamento
   // com "erro=permissao".
-  const criarVaga = podeAoMenos(role, "RECRUITER") ? (
+  const criarVaga = pode("vaga:criar") ? (
     <BotaoLink href="/vagas/nova" className="gap-1.5">
       <Plus className="size-4" />
       Criar vaga

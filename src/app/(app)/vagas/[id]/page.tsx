@@ -44,7 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { gerarQr } from "@/lib/qr";
-import { exigirTenant, podeAoMenos } from "@/lib/tenant";
+import { exigirTenant } from "@/lib/tenant";
 import { urlBase, urlDaVaga } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Vaga" };
@@ -55,13 +55,13 @@ export default async function PaginaDaVaga({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { organizationId, role } = await exigirTenant();
+  const { organizationId, pode } = await exigirTenant();
 
   // Quem só lê não pode cadastrar candidato nem mexer no perfil-alvo: as duas
   // ações exigem RECRUITER e, do outro lado, `exigirPapel` responde com um
   // redirecionamento para o painel. Oferecer o botão e depois expulsar a pessoa
   // é pior que não oferecer.
-  const podeEditar = podeAoMenos(role, "RECRUITER");
+  const podeEditar = pode("vaga:editar");
 
   // O escopo por empresa vai no WHERE, não numa checagem depois da leitura:
   // trocar o id na URL simplesmente não encontra nada.

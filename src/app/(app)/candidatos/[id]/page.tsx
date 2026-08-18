@@ -39,7 +39,7 @@ import {
   numero,
 } from "@/lib/formato";
 import { prisma } from "@/lib/prisma";
-import { exigirTenant, podeAoMenos } from "@/lib/tenant";
+import { exigirTenant } from "@/lib/tenant";
 import { urlBase } from "@/lib/url-publica";
 
 export const metadata: Metadata = { title: "Candidato" };
@@ -55,10 +55,10 @@ export default async function PaginaDoCandidato({
 }) {
   const { id } = await params;
   const { avaliacao: avaliacaoId } = await searchParams;
-  const { organizationId, role } = await exigirTenant();
+  const { organizationId, pode } = await exigirTenant();
   // Baixar o relatório inteiro de uma pessoa é exportação, não leitura: sai da
   // ferramenta e escapa da retenção. Mesma régua da rota que serve o arquivo.
-  const podeExportar = podeAoMenos(role, "RECRUITER");
+  const podeExportar = pode("dados:exportar");
 
   const candidato = await prisma.candidate.findFirst({
     where: { id, organizationId },
@@ -80,6 +80,26 @@ export default async function PaginaDoCandidato({
   });
 
   if (!candidato) notFound();
+
+  /*
+   * O pipeline e o perfil são dados de sensibilidade diferente.
+   *
+   * Quem tem `candidato:ler` acompanha o processo: quem entrou, em que vaga,
+   * qual a aderência, qual a decisão. Esta página é a outra coisa — faixas,
+   * facetas, arquétipo, DISC, o roteiro de entrevista. É o dado mais sensível
+   * que o sistema guarda sobre uma pessoa, e dá para conduzir um processo sem
+   * lê-lo. Enquanto a autorização era uma escada, negar isto significava negar
+   * o painel inteiro junto.
+   */
+  if (!pode("candidato:ler_perfil")) {
+    return (
+      <PerfilRestrito
+        nome={candidato.name}
+        email={candidato.email}
+        temResposta={candidato.assessments.length > 0}
+      />
+    );
+  }
 
   // Pessoa cadastrada que ainda não terminou caía num 404 — que diz "não
   // existe" de alguém que existe e está no meio do processo. O que o RH precisa
@@ -720,6 +740,50 @@ function SemOsCincoFatores({
  * pessoa está e oferecendo o que resolve — o acesso de novo. Sem isso, o RH que
  * chegasse aqui via histórico ou link salvo via só "página não encontrada".
  */
+/**
+ * O que quem não tem `candidato:ler_perfil` vê no lugar do relatório.
+ *
+ * Diz o nome de quem é e por que a página parou aqui. Um 404 mentiria — a
+ * pessoa existe e está no processo —, e uma tela em branco faria parecer defeito.
+ */
+function PerfilRestrito({
+  nome,
+  email,
+  temResposta,
+}: {
+  nome: string;
+  email: string;
+  temResposta: boolean;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl">
+      <BotaoLink href="/candidatos" variant="ghost" size="sm" className="-ml-2 gap-1.5">
+        <ArrowLeft className="size-4" />
+        Candidatos
+      </BotaoLink>
+
+      <div className="mt-4 rounded-xl border bg-card p-6">
+        <h1 className="t-titulo">{nome}</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">{email}</p>
+
+        <div className="mt-5 border-t pt-5">
+          <p className="etiqueta">Relatório comportamental</p>
+          <p className="mt-2 t-corpo leading-relaxed">
+            {temResposta
+              ? "Esta pessoa já respondeu, mas seu perfil de acesso não inclui a leitura do relatório comportamental."
+              : "Esta pessoa ainda não respondeu, e seu perfil de acesso não inclui a leitura do relatório comportamental."}
+          </p>
+          <p className="mt-3 t-corpo-sm leading-relaxed text-muted-foreground">
+            Você continua vendo o andamento do processo na lista de candidatos e
+            nas vagas. Quem administra a conta pode mudar seu papel em
+            Configurações.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 async function AguardandoResposta({
   candidatoId,
   organizationId,

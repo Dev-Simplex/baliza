@@ -18,6 +18,11 @@ export const metadata: Metadata = { title: "Entrar" };
 const EXPLICACAO: Record<string, string> = {
   "sem-empresa":
     "Sua conta existe, mas não está ligada a nenhuma empresa — é por isso que o painel não abre, e entrar de novo não resolve. Use uma conta que já tenha empresa, ou crie a sua: o cadastro cria as duas coisas juntas.",
+  // Mesmo laço da mensagem acima, por outra porta: quem teve o acesso desligado
+  // enquanto estava logado é devolvido para cá, e sem explicação tentaria a
+  // senha certa de novo achando que errou.
+  "conta-inativa":
+    "Seu acesso a esta empresa foi desligado, então o painel não abre — e entrar de novo não resolve. Fale com quem administra a conta para religar.",
 };
 
 export default async function PaginaDeLogin({

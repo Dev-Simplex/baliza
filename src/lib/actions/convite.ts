@@ -8,7 +8,7 @@ import { registrarAuditoria } from "@/lib/audit";
 import { convitePorEmail, enviarEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { gerarQr } from "@/lib/qr";
-import { exigirPapel } from "@/lib/tenant";
+import { exigirPermissao } from "@/lib/tenant";
 import { urlBase } from "@/lib/url-publica";
 
 export type EstadoDoConvite = {
@@ -61,7 +61,7 @@ export async function convidarPorEmail(
   _estado: EstadoDoConvite,
   dados: FormData,
 ): Promise<EstadoDoConvite> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("candidato:convidar");
 
   const analise = esquema.safeParse({
     nome: dados.get("nome"),
@@ -243,7 +243,7 @@ export async function convidarPorEmail(
 export async function revogarConvite(
   invitationId: string,
 ): Promise<{ ok?: boolean; erro?: string }> {
-  const contexto = await exigirPapel("RECRUITER");
+  const contexto = await exigirPermissao("candidato:convidar");
 
   const convite = await prisma.invitation.findFirst({
     where: { id: invitationId, organizationId: contexto.organizationId },

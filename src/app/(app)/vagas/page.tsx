@@ -14,7 +14,7 @@ import {
   haQuantoTempo,
   numero,
 } from "@/lib/formato";
-import { exigirTenant, podeAoMenos } from "@/lib/tenant";
+import { exigirTenant } from "@/lib/tenant";
 
 export const metadata: Metadata = { title: "Vagas" };
 
@@ -49,10 +49,10 @@ const ORDEM_DO_STATUS: Record<string, number> = {
 };
 
 export default async function PaginaDeVagas() {
-  const { organizationId, role } = await exigirTenant();
+  const { organizationId, pode } = await exigirTenant();
   // Criar vaga exige RECRUITER; para quem só lê o botão levava a um
   // redirecionamento com "erro=permissao" depois de preencher o formulário.
-  const podeCriar = podeAoMenos(role, "RECRUITER");
+  const podeCriar = pode("vaga:criar");
 
   const encontradas = await prisma.job.findMany({
     where: { organizationId },
