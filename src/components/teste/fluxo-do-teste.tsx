@@ -517,8 +517,11 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
    * não está quebrado: ela troca de wi-fi, vai para o 4G, reinicia o roteador —
    * e continua lendo a mesma frase, porque o problema é do servidor.
    */
-  const tituloDaFalha =
-    estadoDaFila.situacao === "servidor-instavel"
+  const versaoVelha = estadoDaFila.situacao === "versao-velha";
+
+  const tituloDaFalha = versaoVelha
+    ? "A Baliza foi atualizada enquanto você respondia."
+    : estadoDaFila.situacao === "servidor-instavel"
       ? "Não estamos conseguindo falar com o servidor."
       : "Sem conexão.";
 
@@ -733,32 +736,53 @@ export function FluxoDoTeste({ dados }: { dados: DadosDoTeste }) {
         {/* Leitor de tela: só o que é problema. Anunciar "salvo" 79 vezes
             atrapalharia justamente quem depende do anúncio. */}
         <p role="status" aria-live="polite" className="sr-only">
-          {estadoDaFila.situacao === "aguardando-rede" ||
-          estadoDaFila.situacao === "servidor-instavel"
-            ? `${tituloDaFalha} ${estadoDaFila.pendentes} resposta(s) guardadas no aparelho.`
-            : estadoDaFila.situacao === "recusado"
+          {versaoVelha
+            ? `${tituloDaFalha} Recarregue a página para continuar. Suas ${estadoDaFila.pendentes} resposta(s) estão guardadas no aparelho.`
+            : estadoDaFila.situacao === "aguardando-rede" ||
+                estadoDaFila.situacao === "servidor-instavel"
+              ? `${tituloDaFalha} ${estadoDaFila.pendentes} resposta(s) guardadas no aparelho.`
+              : estadoDaFila.situacao === "recusado"
               ? (estadoDaFila.erro ?? "")
               : ""}
         </p>
 
         {(estadoDaFila.situacao === "aguardando-rede" ||
-          estadoDaFila.situacao === "servidor-instavel") && (
+          estadoDaFila.situacao === "servidor-instavel" ||
+          versaoVelha) && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-fora/30 bg-fora/5 px-3 py-2.5">
             <p className="flex items-start gap-2 text-sm">
               <CloudOff className="mt-0.5 size-4 shrink-0 text-fora" />
+              {/* Duas frases muito diferentes, e a diferença é o ponto: numa a
+                  espera resolve, na outra só recarregar resolve. Prometer que
+                  "sobem sozinhas" quando não sobem é o que fazia a pessoa
+                  esperar até desistir. */}
               <span>
-                {tituloDaFalha} Suas respostas ficam guardadas neste aparelho e
-                sobem sozinhas — {textoDeEspera}
+                {versaoVelha ? (
+                  <>
+                    {tituloDaFalha} Nada do que você respondeu se perde — está
+                    guardado neste aparelho. Recarregue a página para continuar
+                    de onde parou.
+                  </>
+                ) : (
+                  <>
+                    {tituloDaFalha} Suas respostas ficam guardadas neste aparelho
+                    e sobem sozinhas — {textoDeEspera}
+                  </>
+                )}
               </span>
             </p>
             <Button
               variant="outline"
               size="sm"
               className="ml-auto gap-1.5"
-              onClick={() => filaRef.current?.tentarAgora()}
+              onClick={() =>
+                versaoVelha
+                  ? window.location.reload()
+                  : filaRef.current?.tentarAgora()
+              }
             >
               <RotateCw className="size-3.5" />
-              Tentar agora
+              {versaoVelha ? "Recarregar" : "Tentar agora"}
             </Button>
           </div>
         )}

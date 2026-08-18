@@ -24,6 +24,8 @@
  *    só queima bateria e esconde o erro de quem precisa lê-lo.
  */
 
+import { ehVersaoVelha } from "@/lib/versao-velha";
+
 export type ResultadoDoEnvio = { ok: boolean; erro?: string };
 export type Envio = () => Promise<ResultadoDoEnvio>;
 
@@ -42,6 +44,24 @@ export type SituacaoDaFila =
    * 4G, reinicia o roteador, e continua lendo a mesma frase.
    */
   | "servidor-instavel"
+  /**
+   * A prova está aberta numa versão do app que não existe mais.
+   *
+   * Publicar troca o identificador de cada Server Action, e o gravar É uma
+   * Server Action. A aba que já estava aberta manda o identificador ANTIGO, o
+   * servidor de hoje não o reconhece, e recusa — sempre, para sempre, naquela
+   * aba.
+   *
+   * Separado de `servidor-instavel` porque a saída é OUTRA, e porque o
+   * contrário é cruel: repetir não tem como funcionar, e a tela ficava
+   * prometendo "sobem sozinhas" e "está demorando mais que o normal" para uma
+   * fila que jamais subiria. Quem está no meio da prova acredita, espera, e
+   * desiste — e prova incompleta não vira relatório.
+   *
+   * A recuperação é simples e não perde nada: recarregar busca o HTML novo, com
+   * identificadores válidos, e a fila é relida do `localStorage` e reenviada.
+   */
+  | "versao-velha"
   /** O servidor recusou. Não adianta repetir. */
   | "recusado";
 
@@ -212,8 +232,23 @@ export function criarFila(opcoes: {
         try {
           resultado = await opcoes.reconstruir(dados)();
         } catch (falha) {
-          tentativa += 1;
           falhasSeguidas += 1;
+
+          /*
+           * Versão velha não entra no ciclo de repetição.
+           *
+           * Repetir aqui é gastar bateria e rede numa chamada que o servidor
+           * não tem mais como aceitar. Pior: enquanto a fila "tenta", a tela
+           * diz que as respostas sobem sozinhas — e não sobem. A pendência
+           * continua guardada no aparelho; o que muda é a tela pedir a única
+           * coisa que resolve.
+           */
+          if (ehVersaoVelha(falha as Error)) {
+            mudar("versao-velha");
+            return;
+          }
+
+          tentativa += 1;
           cancelarEspera = agendar(() => {
             cancelarEspera = null;
             void processar();

@@ -311,3 +311,60 @@ describe("servidor quebrado não é 'sem conexão'", () => {
     expect(b.ultimo().situacao).toBe("aguardando-rede");
   });
 });
+
+/**
+ * Publicar enquanto alguém responde.
+ *
+ * Existe por causa de um caso real: um candidato ficou preso na tela com "não
+ * estamos conseguindo falar com o servidor" e um botão "Tentar agora" que não
+ * tinha como funcionar. Publicar troca o identificador de cada Server Action, e
+ * o gravar É uma Server Action — a aba aberta manda o identificador antigo e o
+ * servidor de hoje recusa, sempre, naquela aba.
+ *
+ * A fila tratava isso como servidor instável e repetia com backoff, enquanto a
+ * tela prometia que as respostas "sobem sozinhas". Não subiam.
+ */
+describe("a Baliza foi publicada no meio da prova", () => {
+  const erroDeVersaoVelha = () => {
+    const e = new Error(
+      'Server Action "60f4b1d386800511dbf5ee14d51a4a196de67dc6c0" was not found on the server.',
+    );
+    e.name = "UnrecognizedActionError";
+    return e;
+  };
+
+  it("para de repetir — repetir não tem como dar certo", async () => {
+    const b = bancada();
+    b.fila.enfileirar("i1", async () => {
+      throw erroDeVersaoVelha();
+    });
+    await girar();
+
+    expect(b.ultimo()).toMatchObject({ situacao: "versao-velha", pendentes: 1 });
+    // Nada agendado: o ciclo de repetição não foi iniciado.
+    expect(b.agendados).toHaveLength(0);
+  });
+
+  it("a resposta continua na fila — recarregar reenvia, nada se perde", async () => {
+    const b = bancada();
+    b.fila.enfileirar("i1", async () => {
+      throw erroDeVersaoVelha();
+    });
+    await girar();
+
+    expect(b.ultimo().pendentes).toBe(1);
+  });
+
+  it("queda de rede continua entrando no ciclo de repetição", async () => {
+    // A separação é o ponto: uma espera resolve, a outra não. Se este caso
+    // parasse de repetir junto, quem só trocou de wi-fi ficaria parado.
+    const b = bancada();
+    b.fila.enfileirar("i1", async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    await girar();
+
+    expect(b.ultimo().situacao).toBe("aguardando-rede");
+    expect(b.agendados.length).toBeGreaterThan(0);
+  });
+});
