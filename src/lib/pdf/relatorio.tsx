@@ -71,7 +71,7 @@ import type { QualidadeDasRespostas } from "@/lib/analise/qualidade";
    `process.cwd()` funciona porque o servidor roda da raiz do projeto. Se um
    dia virar `output: "standalone"`, estes arquivos precisam entrar na cópia. */
 const PASTA_DE_FONTES = path.join(process.cwd(), "src/lib/pdf/fontes");
-const CORPO = "Inter Tight";
+export const CORPO = "Inter Tight";
 /** Mantido como nome próprio para o dia em que a marca ganhar um tipo de display. */
 const DISPLAY = CORPO;
 
@@ -96,9 +96,23 @@ Font.register({
    quebra: prefiro uma linha com mais espaço do que uma palavra partida errado. */
 Font.registerHyphenationCallback((palavra) => [palavra]);
 
+/*
+ * A base do papel — fontes, paleta e estilos — é exportada porque existe MAIS DE
+ * UM documento.
+ *
+ * O relatório agregado (`agregado.tsx`) usa exatamente a mesma. Duplicar a
+ * paleta faria os dois divergirem no primeiro ajuste de cor, e duplicar o
+ * `Font.register` carregaria as fontes duas vezes — num servidor onde o teto de
+ * memória é assunto, isso não é detalhe.
+ *
+ * Este arquivo é, de fato, a base. O nome não diz isso; a alternativa era um
+ * terceiro arquivo só para mover constantes, e o custo disso é maior que o
+ * ganho enquanto forem dois documentos.
+ */
+
 // As cores vêm dos mesmos valores do tema claro em `globals.css`. Repetidas
 // como literal porque o PDF não tem CSS custom property para resolver.
-const COR = {
+export const COR = {
   tinta: "#151515",
   suave: "#55524d",
   linha: "#d8d4ce",
@@ -131,7 +145,7 @@ const COR_DO_FATOR_IMPRESSA: Record<Fator, string> = {
   O: "#55524d",
 };
 
-const e = StyleSheet.create({
+export const e = StyleSheet.create({
   pagina: {
     paddingTop: 42,
     paddingBottom: 84,
@@ -222,7 +236,7 @@ const e = StyleSheet.create({
  * marca e não sobrevive a uma troca de fonte, e este documento circula fora do
  * produto — é a única peça que viaja sozinha.
  */
-function MarcaNoPapel() {
+export function MarcaNoPapel() {
   return (
     <Svg width={60} height={14} viewBox={LOCKUP_VIEWBOX}>
       <Path d={LOCKUP_TINTA} fill={COR.tinta} fillRule="evenodd" />

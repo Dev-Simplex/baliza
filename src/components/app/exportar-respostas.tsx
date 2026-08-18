@@ -64,15 +64,30 @@ export function ExportarRespostas({ podeExportar }: { podeExportar: boolean }) {
         ))}
       </select>
 
+      {/* O PDF é o principal porque responde à pergunta desta tela: "como o
+          processo está andando", num arquivo que se manda para quem não abre o
+          painel. É agregado — não leva nome de candidato. */}
+      <a
+        href={`/relatorios/pdf?periodo=${periodo}`}
+        className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+      >
+        <Download className="size-3.5" />
+        Exportar PDF
+      </a>
+
+      {/* O CSV continua, em segundo plano, porque responde a OUTRA pergunta:
+          "me dá os dados para eu fazer minha conta". Ninguém dinamiza um PDF, e
+          cruzar com o ATS é o motivo pelo qual esta exportação nasceu. Tirá-lo
+          da tela seria tirar a capacidade — e ela é linha por candidato, então
+          o lugar dela é discreto, não em destaque. */}
       <a
         href={`/relatorios/csv?periodo=${periodo}`}
         className={cn(
-          buttonVariants({ variant: "outline", size: "sm" }),
-          "gap-1.5",
+          buttonVariants({ variant: "ghost", size: "sm" }),
+          "gap-1.5 text-muted-foreground",
         )}
       >
-        <Download className="size-3.5" />
-        Exportar CSV
+        CSV
       </a>
     </div>
   );
