@@ -6,6 +6,14 @@ import type { NextAuthConfig } from "next-auth";
  * adicionados em `auth.ts`, que roda só no runtime Node.
  */
 export const authConfig = {
+  // Atras de proxy (Traefik -> este processo), o host que vale e o do
+  // `x-forwarded-host`, nao o que o processo enxerga. Mora AQUI, e nao so em
+  // `auth.ts`, porque `proxy.ts` monta o proprio NextAuth com este config:
+  // sem isto o middleware levanta UntrustedHost em toda requisicao, falha ao
+  // ler a sessao e devolve quem acabou de logar para /entrar, em laco.
+  // E seguro porque o unico caminho ate este processo e o proxy.
+  trustHost: true,
+
   pages: {
     signIn: "/entrar",
     error: "/entrar",
