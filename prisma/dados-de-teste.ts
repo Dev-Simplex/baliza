@@ -86,7 +86,7 @@ const VAGAS: Array<{
 }> = [
   {
     titulo: "Executivo de Vendas",
-    presetId: "vendas_hunter",
+    presetId: "vendas_cacador",
     bateria: ["PRUMO"],
     departamento: "Comercial",
     confere: "o caminho de sempre: aderência, arquétipo, selo e roteiro",
