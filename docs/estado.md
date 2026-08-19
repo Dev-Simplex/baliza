@@ -3,40 +3,38 @@
 O que está em aberto, quem consegue resolver cada coisa, e o que precisa estar de
 pé antes de começar a próxima implementação.
 
-Atualizado em 18/08/2026, com a `main` em `2558cc3`.
+Atualizado em 19/08/2026, com a `main` em `796fa52`.
 
 ---
 
 ## 1. Bloqueia trabalhar agora
 
-### O banco de desenvolvimento não existe mais
+### ~~O banco de desenvolvimento não existe mais~~ — resolvido em 19/08/2026
 
-O `DATABASE_URL` do `.env` aponta para um Prisma Postgres temporário criado por
-`create-db` em 17/08, com aviso no próprio arquivo de que seria apagado em
-18/08 às 15:51 UTC se ninguém o reivindicasse. Ninguém reivindicou.
+O Prisma Postgres temporário morreu como previsto. No lugar dele há agora um
+Postgres permanente no próprio Coolify (opção 1 do que estava recomendado aqui):
 
-```
-P1001: Can't reach database server at db.prisma.io:5432
-```
+| | |
+|---|---|
+| Recurso | `postgres-baliza-dev`, `postgres:16-alpine` |
+| Onde | projeto SPX, ambiente `development` (uuid `gkcn4meeska6ucw2ljfr5gou`) |
+| Container | **separado** do `postgres-prumo` de produção |
+| Acesso | porta pública 5433 — `192.168.8.141:5433` pela LAN, `177.22.187.7:5433` de fora |
 
-Sem banco, `pnpm dev` sobe mas nenhuma tela do painel abre, e nenhum seed roda.
-**É o primeiro item a resolver**, e nenhuma implementação começa sem ele.
+O container é separado de propósito: erro de `DATABASE_URL` em desenvolvimento
+não pode cair na base com dados reais de candidato. Custa ~40 MB a mais no
+servidor, que é apertado — se apertar demais, o caminho é um `CREATE DATABASE`
+dentro do `postgres-prumo`, mais barato e menos seguro.
 
-Três saídas, em ordem de durabilidade:
+Migrações aplicadas e os dois seeds rodados: 1 organização, 4 usuários, 14
+candidatos, 128 itens, 8 blocos de cenário. `pnpm dev` sobe e as telas abrem.
 
-1. **Um Postgres no próprio Coolify, para desenvolvimento.** Resolve de vez, fica
-   ao lado do de produção e não expira. É o que eu recomendo.
-2. **Um Neon ou Supabase gratuito.** Também permanente, fora do servidor.
-3. **Outro `pnpm dlx create-db`.** Funciona hoje e evapora em 24 h de novo — foi
-   exatamente assim que chegamos aqui.
+Duas coisas ficam em aberto:
 
-Depois de apontar o `.env` para o banco novo:
-
-```bash
-pnpm exec prisma migrate deploy
-pnpm exec tsx prisma/seed.ts
-pnpm exec tsx prisma/dados-de-teste.ts
-```
+- A porta 5433 está exposta no host. Na LAN não incomoda; se o roteador
+  encaminhar essa porta, o que protege é só a senha aleatória de 32 caracteres.
+- `limits_memory` do novo container também é `"0"`, mesmo problema descrito
+  mais abaixo para a aplicação.
 
 ### A chave do Coolify está exposta
 
@@ -142,12 +140,12 @@ interrupção no meio de um teste comportamental. Vale checar antes de publicar.
 
 Checklist curto:
 
-1. [ ] Banco de desenvolvimento novo, com `migrate deploy` e os dois seeds
+1. [x] ~~Banco de desenvolvimento novo, com `migrate deploy` e os dois seeds~~
 2. [ ] Chave do Coolify rotacionada
 3. [ ] Teto de memória definido no container
 4. [ ] Decisão sobre o repositório público (gabarito do SJT)
 5. [ ] `manutencao.ts` agendado
-6. [ ] Branch `feat/rebranding-baliza` apagada
+6. [x] ~~Branch `feat/rebranding-baliza` apagada~~
 
-Os itens 1 e 2 são bloqueantes. Do 3 ao 5 dá para conviver, mas cada um é uma
+O item 2 é o que resta de bloqueante. Do 3 ao 5 dá para conviver, mas cada um é uma
 promessa quebrada ou um risco conhecido rodando em produção.
