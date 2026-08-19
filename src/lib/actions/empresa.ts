@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { registrarAuditoria } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
+import { prazoValido } from "@/lib/prazos-de-retencao";
 import { exigirPermissao } from "@/lib/tenant";
 
 export type EstadoDaEmpresa = {
@@ -49,11 +50,16 @@ export async function atualizarEmpresa(
 ): Promise<EstadoDaEmpresa> {
   const contexto = await exigirPermissao("empresa:editar");
 
+  // `?? ""` porque `FormData.get` devolve null para campo AUSENTE, e o esquema
+  // trata "vazio" — não "inexistente". Pela tela os quatro campos sempre vêm,
+  // mas basta uma aba velha com o formulário anterior (ver `versao-velha.ts`)
+  // para o zod recusar com "expected string, received null", que não é frase
+  // que alguém consiga agir sobre. Ausente e vazio são a mesma coisa aqui.
   const analise = esquemaDaEmpresa.safeParse({
-    nome: dados.get("nome"),
-    segmento: dados.get("segmento"),
-    site: dados.get("site"),
-    documento: dados.get("documento"),
+    nome: dados.get("nome") ?? "",
+    segmento: dados.get("segmento") ?? "",
+    site: dados.get("site") ?? "",
+    documento: dados.get("documento") ?? "",
   });
 
   if (!analise.success)
@@ -92,22 +98,13 @@ export async function atualizarEmpresa(
   return { ok: true };
 }
 
-/**
- * Prazos oferecidos, em meses.
- *
- * Lista fechada e não campo livre: retenção é promessa jurídica ao candidato, e
- * um campo aberto convida a digitar 999. Os cinco valores cobrem o que se usa
- * de verdade, do processo curto ao banco de talentos.
- */
-export const PRAZOS_DE_RETENCAO = [3, 6, 12, 24, 36] as const;
-
+// A lista de prazos vive em `lib/prazos-de-retencao.ts`, e não aqui ao lado da
+// ação que a valida: este arquivo é `"use server"`, e o `<select>` que a
+// renderiza é componente de cliente. O porquê está lá, escrito por inteiro.
 const esquemaDeRetencao = z.object({
-  meses: z.coerce
-    .number()
-    .int()
-    .refine((n) => (PRAZOS_DE_RETENCAO as readonly number[]).includes(n), {
-      message: "Prazo fora da lista.",
-    }),
+  meses: z.coerce.number().int().refine(prazoValido, {
+    message: "Prazo fora da lista.",
+  }),
 });
 
 /**

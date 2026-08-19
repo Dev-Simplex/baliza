@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import {
   atualizarEmpresa,
   atualizarRetencao,
-  PRAZOS_DE_RETENCAO,
   type EstadoDaEmpresa,
 } from "@/lib/actions/empresa";
+import { PRAZOS_DE_RETENCAO } from "@/lib/prazos-de-retencao";
 
 export type Empresa = {
   nome: string;
